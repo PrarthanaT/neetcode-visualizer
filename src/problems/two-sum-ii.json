@@ -1,0 +1,343 @@
+{
+  "slug": "two-sum-ii",
+  "title": "Two Sum II",
+  "difficulty": "Medium",
+  "category": "Two Pointers",
+  "leetcode": 167,
+  "statement": [
+    "You are given a 1-indexed list of whole numbers called numbers, already sorted from smallest to largest, and a number called target.",
+    "Exactly one pair of numbers in the list adds up to target. Find them, and give back their positions, using 1-indexed positions (the first number is position 1, not position 0), as a list [index1, index2] with index1 < index2.",
+    "You may not use the same position twice.",
+    "Your solution must use only O(1) extra space, beyond the input list itself."
+  ],
+  "examples": [
+    {
+      "input": "numbers = [2, 7, 11, 15], target = 9",
+      "output": "[1, 2]",
+      "explain": "numbers[0] is 2 and numbers[1] is 7, and 2 + 7 = 9. Their 1-indexed positions are 1 and 2. This is the example the visualizer runs."
+    },
+    {
+      "input": "numbers = [1, 2, 3, 4, 4, 9, 56, 90], target = 8",
+      "output": "[4, 5]",
+      "explain": "numbers[3] and numbers[4] are both 4, and 4 + 4 = 8. Reaching this pair takes several steps: the pointers start at 1 and 90, and both move inward before landing on it."
+    }
+  ],
+  "pattern": {
+    "name": "Two pointers from both ends (sorted array)",
+    "summary": "Because numbers is already sorted, put one pointer, l, at the very first position and another, r, at the very last. Add the two numbers under the pointers together. If the sum is too big, the number at r must be the problem, since it's the larger of the two and sorted order means everything further left is even smaller, so move r inward. If the sum is too small, move l inward instead. Repeat until the sum equals target.",
+    "recognize": [
+      "The input list is sorted, or the question says it is, like Two Sum II.",
+      "You need to find a pair (or sometimes three or more items) that sum to, or otherwise combine to, a target value.",
+      "The problem asks for O(1) extra space, which rules out the hash map from Two Sum: a dictionary's memory grows with the input.",
+      "A sum that's too big or too small tells you exactly which pointer to move, because the list is sorted. If that direction isn't obvious, two pointers doesn't apply."
+    ],
+    "avoid_when": [
+      "The list isn't sorted and you must report positions from the original, unsorted order. Sorting first would scramble those positions, so a hash map (as in Two Sum) fits better there.",
+      "You need every pair that works, not just one. Two pointers finds one pair, then has to carefully skip past repeated values to look for more, which gets fiddly fast.",
+      "The comparison between the two ends doesn't tell you which pointer to move. Two pointers depends on that direction being clear from the sort order.",
+      "The list is tiny and simple, readable code matters more than saving memory. A nested loop is easier to follow and just as fast at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Sorted input is the whole trick: a sum that's too big can only be fixed by shrinking the larger end, and a sum that's too small can only be fixed by growing the smaller end. Nothing needs to be remembered, so no hash map is needed.",
+      "This problem numbers positions starting at 1, not 0, so the answer is l + 1 and r + 1, not l and r themselves.",
+      "The problem guarantees exactly one answer exists and that the same position can't be used twice, so l and r always end up pointing at two different positions.",
+      "Two Sum II trades the hash map's O(n) memory from Two Sum for O(1) memory here, at the cost of requiring numbers to already be sorted."
+    ],
+    "time": "O(n), linear time. n is the length of numbers. l only ever moves right and r only ever moves left, and together they can each visit a position at most once before meeting, so the loop runs at most n times. Double the length of numbers and the work roughly doubles.",
+    "space": "O(1), constant. Only two index variables, l and r, however long numbers is. No hash map or other extra structure is built.",
+    "edge_cases": [
+      "The two numbers sit at the very ends, like numbers = [-3, 4, 5, 8], target = 5: -3 + 8 = 5 is found immediately, before either pointer has to move.",
+      "Negative numbers, like numbers = [-5, -2, 0, 3], target = -2: -5 + 3 = -2. The sorted order and the sum comparison work the same regardless of sign.",
+      "Repeated values, like numbers = [2, 2, 3], target = 4: the two 2s sit at different positions, so using both is allowed.",
+      "Exactly two numbers in the list, like numbers = [1, 5], target = 6. l and r start at positions 0 and 1, the only two there are, and their sum either matches target right away or the problem's guarantee that an answer exists would be broken.",
+      "The target is reached only after both pointers have moved several times, like the second example above, which exercises both the if and elif branches before the pair is found."
+    ]
+  },
+  "code": "class Solution:\n    def twoSum(self, numbers: List[int], target: int) -> List[int]:\n        l, r = 0, len(numbers) - 1\n        while l < r:\n            curSum = numbers[l] + numbers[r]\n            if curSum > target:\n                r -= 1\n            elif curSum < target:\n                l += 1\n            else:\n                return [l + 1, r + 1]\n        return []\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().twoSum([2, 7, 11, 15], 9)",
+    "expected": [1, 2],
+    "describe": "numbers = [2, 7, 11, 15], target = 9"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def twoSum would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named twoSum. It takes the sorted list numbers and the goal target, and promises to give back a list of whole numbers: the two 1-indexed positions.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "twoSum", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "numbers: List[int],", "meaning": "The sorted list, hinted as a List of int (whole numbers)." },
+        { "token": "target: int)", "meaning": "The number to reach, hinted as an int." },
+        { "token": "-> List[int]", "meaning": "Return type hint: the answer is a list of whole numbers." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and inputs are chosen by LeetCode. Returning a list of two positions directly matches what the problem asks for.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def twoSum(self, numbers, target):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Forgetting self, or assuming the hints enforce anything. Python will happily run twoSum with a string for target; the hint is a note for people, not a guard.",
+      "caption": "Python remembers the twoSum instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This sets up the two pointers. l (left) starts at the first position, 0, and r (right) starts at the last position of numbers. Together they mark the whole list as still worth searching.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(numbers) - 1", "meaning": "len gives how many items numbers has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "Starting l and r at the two ends is what lets the pointers walk inward, narrowing the sum toward target one step at a time, using only the fact that numbers is sorted.",
+      "if_removed": "The while loop on line 4 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(numbers) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Writing r = len(numbers) instead of len(numbers) - 1. Then numbers[r] on line 5 would try to read one position past the end and raise an IndexError.",
+      "caption": "l starts at 0 and r starts at {len(numbers) - 1}: the two ends of numbers."
+    },
+    "4": {
+      "explain": "This loop keeps going as long as the two pointers haven't met or crossed. Each pass checks one pair and moves one pointer inward, narrowing the search.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "l < r", "meaning": "True while there's still at least one pair of distinct positions left to try." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Once l and r meet, every possible pair involving the smallest remaining candidates has already been tried, so there's nothing left to check. The problem also guarantees a solution exists, so the loop is expected to return before that happens.",
+      "if_removed": "Without the loop, only the very first pair of positions would ever be checked, and most inputs would never reach their answer.",
+      "alternatives": [
+        { "code": "while l != r:", "difference": "Works the same here, because l only increases and r only decreases, one step at a time, so neither can skip past the other without first being equal. l < r is still the clearer, safer way to write \"not finished yet\"." }
+      ],
+      "mistake": "Writing l <= r. When l equals r, that's a single position being added to itself, which the problem's \"may not use the same position twice\" rule forbids.",
+      "caption": [
+        { "when": "l < r", "text": "l = {l} and r = {r} haven't met yet. Keep searching." },
+        "l = {l} has met or passed r = {r}. Every pair has been tried."
+      ]
+    },
+    "5": {
+      "explain": "This adds the two numbers currently pointed at and stores the result in curSum, so it only has to be computed once per pass.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "curSum", "meaning": "A new variable holding the sum for this pass. Short for \"current sum\"." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "numbers[l]", "meaning": "The number at the left pointer." },
+        { "token": "+", "meaning": "Addition." },
+        { "token": "numbers[r]", "meaning": "The number at the right pointer." }
+      ],
+      "why": "The sum of the two current candidates is exactly what decides which direction to move next. Storing it in a variable avoids recomputing numbers[l] + numbers[r] on both the if and the elif below.",
+      "if_removed": "Line 6 would fail with a NameError, since curSum wouldn't exist. Writing out numbers[l] + numbers[r] again on each comparison would still work, just with repeated, slightly wasted computation.",
+      "alternatives": [
+        { "code": "if numbers[l] + numbers[r] > target:", "difference": "Skips the variable and recomputes the sum inline wherever it's needed. It gives the same answer, with a little repeated arithmetic and a line of code appearing twice." }
+      ],
+      "mistake": "Subtracting instead of adding, or mixing up the order of numbers[l] and numbers[r]. Addition doesn't care about order, so that particular mistake happens to be harmless here, but it's still worth reading carefully.",
+      "caption": "numbers[{l}] + numbers[{r}] = {numbers[l] + numbers[r]}."
+    },
+    "6": {
+      "explain": "This checks whether the sum is too big. If it is, the pair can't be the answer yet, because sorted order means the sum can only be reduced by shrinking the larger side.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "curSum", "meaning": "The sum computed on the line above." },
+        { "token": ">", "meaning": "\"Greater than\" comparison." },
+        { "token": "target", "meaning": "The goal sum." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "This is where being sorted pays off. numbers[r] is the larger of the two current candidates, and every number to its left in the sorted list is smaller or equal. If the sum is already too big, pairing numbers[l] with anything further right than r would only make it bigger, so the only useful move is to shrink r.",
+      "if_removed": "Line 7 would never run, so a too-big sum would fall through to the elif on line 8, which also wouldn't match (curSum isn't less than target), and the else on line 10 would wrongly return the current pair as if it matched.",
+      "alternatives": [
+        { "code": "if target < curSum:", "difference": "The same comparison written the other way round. Identical behaviour; pick whichever reads more naturally." }
+      ],
+      "mistake": "Moving l instead of r when the sum is too big. That would move toward larger numbers on the left side, making an already-too-big sum even bigger.",
+      "caption": [
+        { "when": "curSum > target", "text": "{curSum} is bigger than {target}: numbers[r] = {numbers[r]} is too large. Move r inward." },
+        "{curSum} isn't bigger than {target}."
+      ]
+    },
+    "7": {
+      "explain": "The sum was too big, so move r one step to the left, toward smaller numbers.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 6's condition was True." },
+        { "token": "r -= 1", "meaning": "Shorthand for r = r - 1: subtract 1 from r and store the result back in r." }
+      ],
+      "why": "Shrinking r is the only move that can lower the sum, since every number to r's left in the sorted list is smaller or equal to numbers[r], and numbers[l] hasn't been ruled out yet.",
+      "if_removed": "r would never move, so curSum would stay too big and the loop would compare the exact same pair forever: an infinite loop.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing r += 1 by accident, which would move toward larger numbers instead of smaller ones, making the sum grow instead of shrink.",
+      "caption": "Move r inward: r becomes {r - 1}."
+    },
+    "8": {
+      "explain": "Otherwise, check whether the sum is too small. If so, the fix is the mirror image of line 6: grow the smaller side instead.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 6, so this elif belongs to it." },
+        { "token": "elif", "meaning": "Short for \"else if\". Checked only if the if above it was False." },
+        { "token": "curSum < target", "meaning": "True when the current pair doesn't yet add up to enough." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "If the sum is too small, numbers[l] is the limiting side: every number to its right (other than the ones already past r) is at least as big, so moving l rightward is the only way to raise the sum. Using elif means this is only checked when line 6 already ruled out \"too big\".",
+      "if_removed": "A too-small sum would fall through to the else on line 10 and wrongly return the current pair, since neither the if nor this check would have caught it.",
+      "alternatives": [
+        { "code": "if curSum < target:", "difference": "A separate if instead of elif. Risky in general, since both branches could then run in the same pass, though here the two conditions can never both be True at once, so the behaviour happens to match. elif makes the either/or relationship explicit and safe." }
+      ],
+      "mistake": "Moving r instead of l when the sum is too small. That would move toward smaller numbers on the right side, making an already-too-small sum even smaller.",
+      "caption": [
+        { "when": "curSum < target", "text": "{curSum} is smaller than {target}: numbers[l] = {numbers[l]} is too small. Move l inward." },
+        "{curSum} isn't smaller than {target} either."
+      ]
+    },
+    "9": {
+      "explain": "The sum was too small, so move l one step to the right, toward bigger numbers.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the elif block, so it only runs when line 8's condition was True." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Growing l is the only move that can raise the sum, since every number to l's right in the sorted list is bigger or equal to numbers[l], and numbers[r] hasn't been ruled out.",
+      "if_removed": "l would never move, so curSum would stay too small and the loop would compare the exact same pair forever: an infinite loop.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing l -= 1 by accident, which would move toward smaller numbers instead of bigger ones, making the sum shrink instead of grow.",
+      "caption": "Move l inward: l becomes {l + 1}."
+    },
+    "10": {
+      "explain": "else catches the only remaining case: curSum is neither bigger nor smaller than target, so it must be EQUAL. The pair is found.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if and elif above. It's the last branch of the same chain." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when every condition above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Not bigger and not smaller means equal, so there's no need to spell out an == check.",
+      "if_removed": "Without else, line 11 would run on every pass regardless of whether curSum actually matched target, returning the wrong pair.",
+      "alternatives": [
+        { "code": "elif curSum == target:", "difference": "Spells out the equality. Clearer to some readers, but the condition can never be False here, so it's redundant." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if, which Python would catch as a SyntaxError since there'd be no matching if or elif directly above it.",
+      "caption": "curSum equals target: numbers[{l}] + numbers[{r}] = {target}. Found it!"
+    },
+    "11": {
+      "explain": "Give back the two positions, converted to 1-indexed by adding 1 to each, and end the method.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "return", "meaning": "Ends the method right now and hands the value after it back to the caller." },
+        { "token": "[l + 1, r + 1]", "meaning": "A new list holding l's 0-indexed position plus 1, and r's plus 1." }
+      ],
+      "why": "The problem numbers positions starting at 1, but Python's indexing starts at 0, so l and r have to be shifted by one before being returned.",
+      "if_removed": "Returning [l, r] instead would give 0-indexed positions, which LeetCode would mark wrong for this problem specifically (unlike plain Two Sum, which does want 0-indexed positions).",
+      "alternatives": [
+        { "code": "return [r + 1, l + 1]", "difference": "The same two positions in the opposite order. Since l < r always holds at this point, l + 1 < r + 1 too, so this would violate the problem's requirement that index1 < index2." }
+      ],
+      "mistake": "Returning [l, r], forgetting the + 1 shift entirely. It's a correct pair of 0-indexed positions, but this problem specifically asks for 1-indexed ones.",
+      "caption": "Return [{l + 1}, {r + 1}]: the 1-indexed positions of the matching pair."
+    },
+    "12": {
+      "explain": "If the loop finishes without the else branch ever returning, there was no matching pair. Give back an empty list.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop. It only runs if the loop finished without returning." },
+        { "token": "return []", "meaning": "Give back an empty list." }
+      ],
+      "why": "The problem guarantees exactly one answer exists, so this line is never actually reached on valid input, but a function should still have a defined result if its assumptions were ever violated, rather than silently returning None.",
+      "if_removed": "If the loop ever did finish without finding a pair, the method would return None instead of a list, which would be a less predictable failure.",
+      "alternatives": [
+        { "code": "return None", "difference": "Another common \"nothing found\" signal, but it doesn't match the promised List[int] return type the way an empty list does." }
+      ],
+      "mistake": "Putting this line inside the while loop. Then it would run on the very first pass that didn't immediately match, before the pointers ever got a chance to move.",
+      "caption": "The loop ended without finding a pair that sums to {target}. Return an empty list."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def twoSum(self, numbers: List[int], target: int) -> List[int]:\n        for i in range(len(numbers)):\n            for j in range(i + 1, len(numbers)):\n                if numbers[i] + numbers[j] == target:\n                    return [i + 1, j + 1]",
+    "explain": "Try every possible pair, the same way as Two Sum's brute force. The outer loop picks a first position i, the inner loop tries every position after it, j, and returns both (shifted to 1-indexed) as soon as their sum matches target.",
+    "why_slow": "For a list of n numbers, this checks about n x n / 2 pairs, which is O(n squared), quadratic time. It also completely ignores the fact that numbers is sorted, the one piece of extra information the problem hands you for free.",
+    "how_pattern_fixes": "Sorted order means a sum that's too big or too small tells you exactly which pointer to move, with no need to try every combination. Two pointers walks inward instead of nesting loops, dropping the work from about n x n to about n.",
+    "time": "O(n squared): quadratic. Double the list, about four times the work.",
+    "space": "O(1): constant. Only the two loop variables, however big the list is."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower or more memory-hungry than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(numbers).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds any key instantly.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if or elif above it was False.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [2, 7, 11], the 11 is at index 2.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return.",
+    "len": "A built-in function that gives the number of items in something: len([2, 7, 11]) is 3.",
+    "list": "An ordered collection written with square brackets, like [2, 7, 11]. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely before the outer loop moves to its next pass.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, > and < compare.",
+    "parameter": "A name in a function's definition that receives an input. numbers and target are twoSum's parameters.",
+    "pointer": "A variable holding a position (index) in a list. Here l and r are pointers.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Python's sorted(\"cab\") gives ['a', 'b', 'c']. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a sorted list, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like target: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "numbers",
+      "source": "numbers",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "[l, r] if __line__ in (5, 6, 8) else []",
+        "found": "[l, r] if __line__ == 11 else []",
+        "done": "[k for k in range(len(numbers)) if k < l or k > r]"
+      }
+    }
+  ]
+}
