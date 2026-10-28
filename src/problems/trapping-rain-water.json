@@ -1,0 +1,421 @@
+{
+  "slug": "trapping-rain-water",
+  "title": "Trapping Rain Water",
+  "difficulty": "Hard",
+  "category": "Two Pointers",
+  "leetcode": 42,
+  "statement": [
+    "You are given a list of n non-negative whole numbers called height, describing an elevation map: height[i] is the height of the ground at position i, one unit wide.",
+    "If it rains, water gets trapped in the dips between taller ground on both sides. Compute how many units of water are trapped in total, after the rain.",
+    "Water sitting above position i can rise no higher than the shorter of the tallest ground to its left and the tallest ground to its right; above that, it spills away."
+  ],
+  "examples": [
+    {
+      "input": "height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]",
+      "output": "6",
+      "explain": "Water collects above several of the low positions: 1 unit above index 2, 1 above index 4, 2 above index 5, 1 above index 6, and 1 above index 9, for a total of 6. This is the example the visualizer runs."
+    },
+    {
+      "input": "height = [4, 2, 0, 3, 2, 5]",
+      "output": "9",
+      "explain": "The tall ground at index 0 (height 4) and index 5 (height 5) caps everything between them. Above indices 1 through 4 that traps 2 + 4 + 1 + 2 = 9 units in total."
+    }
+  ],
+  "pattern": {
+    "name": "Two pointers tracking the running max from each side",
+    "summary": "Walk l in from the left and r in from the right, while tracking the tallest ground seen so far from each side: leftMax and rightMax. Whichever of those two running maxes is currently smaller is the one whose side is fully decided, because no ground further in on the OTHER side can lower it. So advance the pointer on that smaller side by one, update its running max, and add however much water sits above that position: the running max minus the ground height there (zero or more). Repeat until the pointers meet.",
+    "recognize": [
+      "The answer at each position depends on being boxed in from both sides by a tall enough wall, and whichever side is shorter is the one that decides the outcome.",
+      "You need the running maximum from the left and from the right at every position, which two pointers can track incrementally without ever building full prefix/suffix arrays.",
+      "The quantity being computed (water) only ever adds up; it's never removed once trapped, so a single running total works.",
+      "A brute-force per-position approach would rescan the whole list to the left and right of that position, and the problem hints the input can be large."
+    ],
+    "avoid_when": [
+      "You need to know exactly how high the water sits at every position, not just the total trapped. The two-pointer version here only keeps a running total, res; a position-by-position result needs the running maxes tracked alongside the position, which this code doesn't return.",
+      "The \"height\" values can be negative or don't represent a physical elevation map; the greedy argument (whichever running max is smaller is fully decided) depends on that framing.",
+      "The list is small enough that brute-force, scanning left and right from every position, is simple to read and fast enough.",
+      "You need water levels for a 2D surface instead of a 1D strip. That's a different, harder problem (Trapping Rain Water II) that needs a priority queue, not two pointers."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "leftMax and rightMax are each a running maximum, updated as their pointer advances, never recomputed from scratch.",
+      "Water above a position equals the shorter of the tallest wall to its left and the tallest wall to its right, minus the ground height there. Since leftMax and rightMax never shrink, that amount can never go negative.",
+      "The key insight: whichever of leftMax or rightMax is currently smaller is already \"locked in\", since nothing further along the OTHER side can make it smaller (it's a max of everything already seen on its own side), and nothing on the other side can raise it either. That's what makes it safe to resolve that side's next position right now.",
+      "Trapping Rain Water builds on the same shrinking l / r window as Container With Most Water, but instead of computing one area per step, it accumulates water one position at a time."
+    ],
+    "time": "O(n), linear time. n is the length of height. l and r together visit every position at most once before meeting, and each pass does a fixed amount of work: one comparison, one max, one addition. Double the length of height and the work roughly doubles.",
+    "space": "O(1), constant. Only l, r, leftMax, rightMax and res, however long height is.",
+    "edge_cases": [
+      "An empty list, height = []. The guard on line 3 catches this before l, r = 0, len(height) - 1 would try to compute len([]) - 1 and get a meaningless -1 index.",
+      "Strictly increasing or decreasing ground, like height = [1, 2, 3, 4]. There's nowhere for water to sit, since one side is always open; the algorithm correctly returns 0.",
+      "A single dip between two equal walls, like height = [3, 0, 3]. leftMax and rightMax start equal (3), so the first comparison picks a side (the code's elif path) and traps 3 - 0 = 3 units above the middle.",
+      "All the same height, like height = [2, 2, 2, 2]. leftMax and rightMax start equal and stay equal to the ground at every position, so res stays 0 throughout.",
+      "A single position, like height = [5]. l and r both start at 0, so l < r is False immediately and the loop never runs; res stays 0."
+    ]
+  },
+  "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        if not height:\n            return 0\n\n        l, r = 0, len(height) - 1\n        leftMax, rightMax = height[l], height[r]\n        res = 0\n\n        while l < r:\n            if leftMax < rightMax:\n                l += 1\n                leftMax = max(leftMax, height[l])\n                res += leftMax - height[l]\n            else:\n                r -= 1\n                rightMax = max(rightMax, height[r])\n                res += rightMax - height[r]\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().trap([0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1])",
+    "expected": 6,
+    "describe": "height = [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def trap would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named trap. It takes the elevation map height and promises to give back a whole number: the total units of water trapped.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "trap", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "height: List[int])", "meaning": "The input list of ground heights, hinted as a List of int (whole numbers)." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a single whole number, the total trapped water." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. Returning a single total matches what the problem asks for.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def trap(self, height):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning a list of per-position water levels instead of the single total the problem asks for.",
+      "caption": "Python remembers the trap instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This checks whether height is empty. An elevation map with no ground at all can't trap any water.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "not", "meaning": "Flips True to False and False to True." },
+        { "token": "height", "meaning": "Used directly as a condition here. An empty list counts as False, any non-empty list counts as True." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "The rest of the method assumes there's at least one position, since it reads height[l] and height[r] right away on line 7. Handling the empty case up front avoids ever reaching code that would crash.",
+      "if_removed": "With height = [], line 6 would set r to len(height) - 1 = -1, and line 7 would then read height[-1], Python's way of reading the LAST item, silently returning the wrong thing instead of raising an error, since -1 is a valid index into an empty-feeling but actually out-of-bounds read; in practice this raises an IndexError because there IS no last item.",
+      "alternatives": [
+        { "code": "if len(height) == 0:", "difference": "Spells out the emptiness check explicitly instead of relying on an empty list being False. Identical result; not height is the more common Python idiom." }
+      ],
+      "mistake": "Checking height is None instead of not height. An empty list is not None, so that check would miss the case that actually breaks the rest of the method.",
+      "caption": [
+        { "when": "not height", "text": "height is empty. There's no ground to trap water on." },
+        "height has at least one position. Continue."
+      ]
+    },
+    "4": {
+      "explain": "height was empty, so there's no water to compute. Return 0 immediately.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Inside the if block, so it only runs when line 3's condition was True." },
+        { "token": "return 0", "meaning": "Ends the method right now and hands back 0." }
+      ],
+      "why": "Zero ground means zero trapped water; there's nothing further to compute, so returning early avoids the rest of the method running on an input it can't handle.",
+      "if_removed": "Without this early return, the method would fall through to line 6 and eventually crash trying to read height[0] from an empty list.",
+      "alternatives": [
+        { "code": "return 0 if not height else None", "difference": "An unnecessarily convoluted way to write the same early return; this only ever runs when height is already known to be empty, so the condition inside it is redundant." }
+      ],
+      "mistake": "Returning None (by leaving this line out entirely and letting the if block do nothing) instead of 0. LeetCode expects a whole number back, not \"nothing\".",
+      "caption": "Return 0: no ground, no water."
+    },
+    "6": {
+      "explain": "This sets up the two pointers at the two ends of height: l at the first position, r at the last.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(height) - 1", "meaning": "len gives how many positions height has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "Starting from both ends is what lets the algorithm track the running max from each side as the pointers move inward, which is what this whole approach is built on.",
+      "if_removed": "Line 7 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(height) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Writing r = len(height) instead of len(height) - 1. Then height[r] on line 7 would try to read one position past the end and raise an IndexError.",
+      "caption": "l starts at 0 and r starts at {len(height) - 1}: the two ends of height."
+    },
+    "7": {
+      "explain": "This sets leftMax and rightMax to the ground height already seen at each end: the only positions examined so far.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "leftMax, rightMax", "meaning": "Two variable names: the tallest ground seen so far from the left, and from the right." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "height[l]", "meaning": "The ground height at the left pointer, position 0." },
+        { "token": ",", "meaning": "Separates the two values." },
+        { "token": "height[r]", "meaning": "The ground height at the right pointer, the last position." }
+      ],
+      "why": "leftMax and rightMax are each a running maximum: the tallest wall found so far on that side. They start as whatever's already at l and r, before either pointer has moved.",
+      "if_removed": "Line 11's comparison would crash with a NameError, since leftMax and rightMax wouldn't exist.",
+      "alternatives": [
+        { "code": "leftMax = height[0]\nrightMax = height[-1]", "difference": "Two separate lines, reading the first and last positions directly instead of through l and r. Gives the same starting values." }
+      ],
+      "mistake": "Starting both at 0 instead of the actual edge heights. That would undercount any water that should be capped by a tall wall sitting right at position 0 or at the very end.",
+      "caption": "leftMax starts at height[{l}] = {height[l]}, rightMax starts at height[{r}] = {height[r]}."
+    },
+    "8": {
+      "explain": "This creates res, the running total of trapped water, starting at 0 since nothing has been counted yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for result." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "No water counted yet." }
+      ],
+      "why": "The total trapped water is built up one position at a time as the loop runs, so there needs to be a running total that starts at 0 before any position has been resolved.",
+      "if_removed": "Line 14 (or 18) would crash with a NameError, since res wouldn't exist to add to.",
+      "alternatives": [
+        { "code": "res = 0\nres: int = 0", "difference": "Adding a type hint to a local variable. It's legal Python, but local variables are almost never given type hints this way; it would be unusual style here." }
+      ],
+      "mistake": "Creating res inside the while loop on line 10 instead of before it. That would reset the running total back to 0 on every single pass, losing everything counted so far.",
+      "caption": "Make res = 0: no water counted yet."
+    },
+    "10": {
+      "explain": "This loop keeps going as long as the two pointers haven't met or crossed. Each pass resolves exactly one position, on whichever side has the smaller running max.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "l < r", "meaning": "True while there's still at least one position between the two pointers left to resolve." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Every position strictly between the starting l and r needs to be resolved exactly once. Once l and r meet, every position has been accounted for by one side or the other.",
+      "if_removed": "Without the loop, no position would ever be resolved past the two starting ones, and res would stay 0 no matter what height contained.",
+      "alternatives": [
+        { "code": "while l != r:", "difference": "Works the same here, since l only increases and r only decreases, one step at a time. l < r is still the clearer, safer way to write \"positions remain\"." }
+      ],
+      "mistake": "Writing l <= r. When l equals r, that position was already the starting l or r (or has just been reached by the other pointer), and resolving it again would double-count it.",
+      "caption": [
+        { "when": "l < r", "text": "l = {l} and r = {r} haven't met yet. Keep resolving positions." },
+        "l = {l} has met or passed r = {r}. Every position has been resolved."
+      ]
+    },
+    "11": {
+      "explain": "This checks which running max is currently smaller. The side with the smaller running max is the one that's fully decided and safe to resolve next.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "leftMax", "meaning": "The tallest ground seen so far from the left." },
+        { "token": "<", "meaning": "\"Less than\" comparison." },
+        { "token": "rightMax", "meaning": "The tallest ground seen so far from the right." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "If leftMax is smaller, it already caps how much water the NEXT position on the left can hold, no matter what ground turns out to exist further right (any wall there can only be at least rightMax, which is already bigger). That makes it safe to resolve the next left position right now, using leftMax as its ceiling.",
+      "if_removed": "Without this check (and the else below it), the algorithm would have no rule for which side to resolve next, and couldn't make progress.",
+      "alternatives": [
+        { "code": "if leftMax <= rightMax:", "difference": "Also moves the left side when the two running maxes are exactly equal, instead of falling to the else branch. Both choices give the same correct total here, since at that moment either side is equally safe to resolve." }
+      ],
+      "mistake": "Comparing height[l] and height[r] directly instead of leftMax and rightMax. The running maxes, not the single current edge heights, are what correctly cap how much water each side can hold.",
+      "caption": [
+        { "when": "leftMax < rightMax", "text": "leftMax = {leftMax} is smaller than rightMax = {rightMax}. The left side is decided; resolve it next." },
+        "leftMax = {leftMax} isn't smaller than rightMax = {rightMax}. The right side is decided; resolve it next."
+      ]
+    },
+    "12": {
+      "explain": "The left side is the one being resolved this pass, so move l one step inward, to the next unresolved position.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 11's condition was True." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "l now points at the next position to resolve. Moving it before updating leftMax is what lets the next two lines work with the ground height AT this new position.",
+      "if_removed": "leftMax and res would be updated using the OLD l, re-resolving the same position that's already been accounted for.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Moving r instead of l in this branch, which would resolve the wrong side's next position using leftMax as if it applied there.",
+      "caption": "Move l inward: l becomes {l}."
+    },
+    "13": {
+      "explain": "This updates leftMax to include the ground height at the new l, if it's taller than anything seen on the left so far.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "leftMax", "meaning": "The running maximum from the left." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces leftMax's old value." },
+        { "token": "max(leftMax, height[l])", "meaning": "Keeps whichever is bigger: the previous leftMax, or the ground height at the new l." }
+      ],
+      "why": "leftMax has to reflect the tallest wall seen anywhere from position 0 up to and including the current l, so it never shrinks, only grows or stays the same as l advances.",
+      "if_removed": "leftMax would stay stuck at its very first value forever, understating how tall a wall has actually been seen so far, which could overstate how much water the next positions can hold.",
+      "alternatives": [
+        { "code": "if height[l] > leftMax:\n    leftMax = height[l]", "difference": "Spells out the same update with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Writing leftMax = height[l] without the max(...), which would let leftMax shrink whenever a shorter position is reached, breaking the \"running maximum\" guarantee the rest of the algorithm depends on.",
+      "caption": "leftMax becomes max({leftMax}, height[{l}]) = {max(leftMax, height[l])}."
+    },
+    "14": {
+      "explain": "This adds however much water sits above the new l to the running total: the capping height, leftMax, minus the ground height there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "res", "meaning": "The running total of trapped water." },
+        { "token": "+=", "meaning": "Shorthand for res = res + ...: add the right-hand side to res and store the result back in res." },
+        { "token": "leftMax - height[l]", "meaning": "The capping height, minus the ground height at l. This can be 0 (no water here) but never negative, since leftMax was just updated to be at least height[l]." }
+      ],
+      "why": "Water above position l can rise only as high as the shorter of the tallest wall to its left and the tallest wall to its right. Since this branch only runs when leftMax is the smaller running max, leftMax is the correct ceiling here, and whatever ground doesn't already reach that ceiling is filled with water.",
+      "if_removed": "res would never grow on this branch, and the method would undercount, or entirely miss, the water trapped above every position resolved from the left.",
+      "alternatives": [
+        { "code": "res = res + (leftMax - height[l])", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Using rightMax instead of leftMax here. This branch only runs when leftMax is the smaller (and therefore correct) ceiling for this position; using rightMax could overstate the water, since the true right-side wall might still be shorter than rightMax implies at this point.",
+      "caption": "Trap leftMax - height[{l}] = {leftMax} - {height[l]} = {leftMax - height[l]} units here. Running total: {res + (leftMax - height[l])}."
+    },
+    "15": {
+      "explain": "else handles the other case: rightMax is the smaller (or equal) running max, so the right side is the one to resolve this pass.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 11. It's the only other branch." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when line 11's condition was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Exactly one side has to be resolved each pass, and this branch is the mirror image of the if above: here, rightMax is the one that's fully decided, by the same reasoning applied from the other direction.",
+      "if_removed": "Without this branch, a pass where rightMax was the smaller running max would do nothing at all, leaving r stuck and the loop running forever.",
+      "alternatives": [
+        { "code": "elif rightMax <= leftMax:", "difference": "Spells out the complementary condition explicitly. Since this is the only remaining possibility after the if above, it's logically redundant; else already covers it." }
+      ],
+      "mistake": "Writing the same leftMax update logic in here by mistake instead of mirroring it for the right side, which would resolve the left side twice and never touch the right.",
+      "caption": "rightMax = {rightMax} is the smaller (or equal) running max: resolve the right side next."
+    },
+    "16": {
+      "explain": "The right side is the one being resolved this pass, so move r one step inward, to the next unresolved position.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "r -= 1", "meaning": "Shorthand for r = r - 1: subtract 1 from r and store the result back in r." }
+      ],
+      "why": "r now points at the next position to resolve. Moving it before updating rightMax is what lets the next two lines work with the ground height AT this new position.",
+      "if_removed": "rightMax and res would be updated using the OLD r, re-resolving the same position that's already been accounted for.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Moving l instead of r in this branch, which would resolve the wrong side's next position using rightMax as if it applied there.",
+      "caption": "Move r inward: r becomes {r}."
+    },
+    "17": {
+      "explain": "This updates rightMax to include the ground height at the new r, if it's taller than anything seen on the right so far.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "rightMax", "meaning": "The running maximum from the right." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces rightMax's old value." },
+        { "token": "max(rightMax, height[r])", "meaning": "Keeps whichever is bigger: the previous rightMax, or the ground height at the new r." }
+      ],
+      "why": "rightMax has to reflect the tallest wall seen anywhere from the current r up to the last position, so it never shrinks, only grows or stays the same as r moves inward.",
+      "if_removed": "rightMax would stay stuck at its very first value forever, understating how tall a wall has actually been seen so far on that side.",
+      "alternatives": [
+        { "code": "if height[r] > rightMax:\n    rightMax = height[r]", "difference": "Spells out the same update with an explicit if instead of max. Identical result." }
+      ],
+      "mistake": "Writing rightMax = height[r] without the max(...), which would let rightMax shrink whenever a shorter position is reached, breaking the \"running maximum\" guarantee the rest of the algorithm depends on.",
+      "caption": "rightMax becomes max({rightMax}, height[{r}]) = {max(rightMax, height[r])}."
+    },
+    "18": {
+      "explain": "This adds however much water sits above the new r to the running total: the capping height, rightMax, minus the ground height there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "res", "meaning": "The running total of trapped water." },
+        { "token": "+=", "meaning": "Shorthand for res = res + ...: add the right-hand side to res and store the result back in res." },
+        { "token": "rightMax - height[r]", "meaning": "The capping height, minus the ground height at r. This can be 0 (no water here) but never negative, since rightMax was just updated to be at least height[r]." }
+      ],
+      "why": "This mirrors line 14: since this branch only runs when rightMax is the smaller running max, rightMax is the correct ceiling here, and whatever ground doesn't already reach that ceiling is filled with water.",
+      "if_removed": "res would never grow on this branch, and the method would undercount, or entirely miss, the water trapped above every position resolved from the right.",
+      "alternatives": [
+        { "code": "res = res + (rightMax - height[r])", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Using leftMax instead of rightMax here. This branch only runs when rightMax is the smaller (and therefore correct) ceiling for this position.",
+      "caption": "Trap rightMax - height[{r}] = {rightMax} - {height[r]} = {rightMax - height[r]} units here. Running total: {res + (rightMax - height[r])}."
+    },
+    "19": {
+      "explain": "Once l and r have met, every position has been resolved by one side or the other. Return the total water trapped.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the running total." }
+      ],
+      "why": "res has been built up incrementally, one position at a time, across the whole loop, so by the time l and r meet, it holds the full answer.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the total, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return max(res, 0)", "difference": "res can never go below 0, since it only ever grows by amounts that are themselves never negative, so this extra safeguard has no effect here." }
+      ],
+      "mistake": "Putting this return statement inside the while loop. Then the method would stop after resolving only the very first position, before the rest of the elevation map had been accounted for.",
+      "caption": "Every position has been resolved. Return the total trapped water: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        res = 0\n        for i in range(len(height)):\n            leftMax = max(height[:i + 1])\n            rightMax = max(height[i:])\n            res += min(leftMax, rightMax) - height[i]\n        return res",
+    "explain": "For every position i, scan everything to its left to find the tallest wall there, and everything to its right to find the tallest wall there. The water above i is the shorter of those two walls, minus the ground height at i.",
+    "why_slow": "height[:i + 1] and height[i:] each rescan a large chunk of the list, from scratch, for every single position. Across all n positions, that's about O(n squared) work in total, quadratic time, even though each position's answer only needs one number from each side.",
+    "how_pattern_fixes": "The two-pointer version tracks leftMax and rightMax as RUNNING maximums, updating them by one comparison per step instead of rescanning. Every position still gets resolved, but each one costs O(1) instead of O(n), dropping the total from O(n squared) to O(n).",
+    "time": "O(n squared): quadratic. Each of n positions rescans up to the whole list on both sides.",
+    "space": "O(1), beyond the slices max(...) builds momentarily. No persistent extra list is kept between positions."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower or more memory-hungry than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(height).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, else and while.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [0, 1, 0, 2], the 2 is at index 3.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "key": "The part of a dictionary entry you look up by.",
+    "keyword": "A word reserved by Python, like while, if, else, return, not.",
+    "len": "A built-in function that gives the number of items in something: len([0, 1, 0]) is 3.",
+    "list": "An ordered collection written with square brackets, like [0, 1, 0]. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "not (operator)": "A logical operator that flips True to False and False to True.",
+    "object": "A thing in memory that has a type and data, like a list, a set or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, < compares, += updates in place.",
+    "parameter": "A name in a function's definition that receives an input. height is trap's parameter.",
+    "pointer": "A variable holding a position (index) in a list. Here l and r are pointers.",
+    "queue": "A first in, first out line: the oldest item leaves first. That's the opposite of a stack.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. Empty lists, empty strings, 0 and None count as False. Everything else counts as True.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a list, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like height: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of the list that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "bars",
+      "title": "height",
+      "source": "height",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "[l, r]",
+        "done": "[k for k in range(len(height)) if k < l or k > r]"
+      },
+      "water": "[max(height[:i + 1]) if i <= l else (max(height[i:]) if i >= r else height[i]) for i in range(len(height))]"
+    }
+  ]
+}
