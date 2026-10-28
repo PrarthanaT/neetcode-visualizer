@@ -10,7 +10,8 @@
     "validate": "node scripts/validate-content.mjs",
     "predev": "node scripts/copy-pyodide.mjs",
     "prebuild": "node scripts/copy-pyodide.mjs",
-    "postinstall": "node scripts/copy-pyodide.mjs"
+    "postinstall": "node scripts/copy-pyodide.mjs",
+    "check:pyodide": "node scripts/check-pyodide.mjs"
   },
   "type": "module",
   "private": true,

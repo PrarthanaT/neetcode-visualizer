@@ -97,3 +97,32 @@ body {
 .resize-handle[data-resize-handle-state="drag"]::after {
   background: rgb(124 156 255 / 0.5);
 }
+
+/* scrubber + speed slider */
+.scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-accent) var(--pct, 0%), rgb(255 255 255 / 0.08) var(--pct, 0%));
+  cursor: pointer;
+}
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(124 156 255 / 0.35), 0 0 12px rgb(124 156 255 / 0.6);
+}
+.scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(124 156 255 / 0.35), 0 0 12px rgb(124 156 255 / 0.6);
+}
+.scrubber:disabled {
+  opacity: 0.4;
+}

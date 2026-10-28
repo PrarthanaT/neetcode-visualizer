@@ -1,0 +1,71 @@
+{
+  "slug": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "Easy",
+  "category": "Arrays & Hashing",
+  "code": "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        prevMap = {}  # val -> index\n\n        for i, n in enumerate(nums):\n            diff = target - n\n            if diff in prevMap:\n                return [prevMap[diff], i]\n            prevMap[n] = i\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().twoSum([1, 3, 7, 5, 4], 9)",
+    "expected": [
+      3,
+      4
+    ]
+  },
+  "lines": {
+    "1": {
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "caption": "Python remembers the twoSum instructions inside Solution for later."
+    },
+    "3": {
+      "caption": "Make an empty map called prevMap to remember numbers we have already seen."
+    },
+    "5": {
+      "caption": [
+        "Done with i = {i}. The for loop moves on to the next number.",
+        "The for loop starts at the first number."
+      ]
+    },
+    "6": {
+      "caption": "i is {i}, so we look for {target} minus {n} = {target - n} in the map."
+    },
+    "7": {
+      "caption": [
+        {
+          "when": "diff in prevMap",
+          "text": "Is {diff} in the map? Yes! It was seen at index {prevMap[diff]}."
+        },
+        "Is {diff} in the map? No, we haven't seen it yet."
+      ]
+    },
+    "8": {
+      "caption": "Found it: {diff} is at index {prevMap[diff]} and {n} is at index {i}."
+    },
+    "9": {
+      "caption": "Remember {n} lives at index {i} by saving {n}: {i} in the map."
+    }
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i]",
+        "found": "[prevMap[diff], i] if diff in prevMap else []",
+        "done": "list(range(i))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "prevMap",
+      "source": "prevMap",
+      "lookup": "diff if __line__ in (7, 8) else None"
+    }
+  ]
+}

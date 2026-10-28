@@ -1,0 +1,99 @@
+// Shape of a src/problems/<slug>.json file.
+
+export type Difficulty = "Easy" | "Medium" | "Hard";
+
+export type CaptionOption = string | { when?: string; text: string };
+
+export interface SyntaxPiece {
+  token: string;
+  meaning: string;
+}
+
+export interface Alternative {
+  code: string;
+  difference: string;
+}
+
+export interface LineInfo {
+  explain: string;
+  syntax: SyntaxPiece[];
+  why: string;
+  if_removed: string;
+  alternatives: Alternative[];
+  mistake: string;
+  /** Template for the step caption. {python expression} is filled in by the tracer. */
+  caption?: string | CaptionOption[];
+}
+
+export type PanelSpec =
+  | {
+      type: "array";
+      title: string;
+      /** Python expression giving the list to draw. */
+      source: string;
+      /** label -> Python expression giving an index. */
+      pointers?: Record<string, string>;
+      /** compared | found | done -> Python expression giving a list of indexes. */
+      marks?: Partial<Record<MarkKind, string>>;
+    }
+  | {
+      type: "hashmap";
+      title: string;
+      source: string;
+      /** Python expression giving the key being looked up on this step, or None. */
+      lookup?: string;
+    }
+  | { type: "stack"; title: string; source: string; marks?: Partial<Record<MarkKind, string>> }
+  | { type: "linkedlist"; title: string; source: string; pointers?: Record<string, string> };
+
+export type MarkKind = "compared" | "found" | "done";
+
+export interface Problem {
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  category: string;
+  leetcode?: number;
+  statement: string[];
+  examples?: { input: string; output: string; explain: string }[];
+  pattern: {
+    name: string;
+    summary: string;
+    recognize: string[];
+    avoid_when: string[];
+  };
+  notes: {
+    takeaways: string[];
+    time: string;
+    space: string;
+    edge_cases: string[];
+  };
+  code: string;
+  run: {
+    prelude?: string;
+    call: string;
+    /** Expression turning __result__ into plain data for comparison. */
+    check?: string;
+    expected: unknown;
+    /** Plain-English description of the sample input. */
+    describe?: string;
+  };
+  lines: Record<string, LineInfo>;
+  brute_force: {
+    code: string;
+    explain: string;
+    why_slow: string;
+    how_pattern_fixes: string;
+    time: string;
+    space: string;
+  };
+  glossary: Record<string, string>;
+  visualizer: PanelSpec[];
+}
+
+export interface ProblemIndexEntry {
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  category: string;
+}
