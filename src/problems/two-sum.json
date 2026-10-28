@@ -487,6 +487,7 @@
     "loop": "Code that repeats. A for loop repeats once per item in a collection.",
     "method": "A function that lives inside a class. It's called with a dot, like Solution().twoSum(...), and its first parameter is self.",
     "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
     "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
     "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
     "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",

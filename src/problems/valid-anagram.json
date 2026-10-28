@@ -365,9 +365,9 @@
       "caption": [
         {
           "when": "s[i] in countS",
-          "text": "s[{i}] is '{s[i]}'. countS already has '{s[i]}' {countS[s[i]]} time(s), so it becomes {countS[s[i]] + 1}."
+          "text": "s[{i}] is {s[i]}. countS already has {s[i]} {countS[s[i]]} time(s), so it becomes {countS[s[i]] + 1}."
         },
-        "s[{i}] is '{s[i]}'. That's new for countS, so .get gives 0 and the count becomes 1."
+        "s[{i}] is {s[i]}. That's new for countS, so .get gives 0 and the count becomes 1."
       ]
     },
     "10": {
@@ -406,9 +406,9 @@
       "caption": [
         {
           "when": "t[i] in countT",
-          "text": "t[{i}] is '{t[i]}'. countT already has '{t[i]}' {countT[t[i]]} time(s), so it becomes {countT[t[i]] + 1}."
+          "text": "t[{i}] is {t[i]}. countT already has {t[i]} {countT[t[i]]} time(s), so it becomes {countT[t[i]] + 1}."
         },
-        "t[{i}] is '{t[i]}'. That's new for countT, so it becomes 1."
+        "t[{i}] is {t[i]}. That's new for countT, so it becomes 1."
       ]
     },
     "11": {
@@ -481,6 +481,7 @@
     "dictionary": "Python's built-in hash map, written with curly braces like {'a': 3}. It stores key → value pairs and finds a key instantly.",
     "early exit": "Returning from a function as soon as the answer is known, instead of doing unnecessary work. Also called a guard clause.",
     "edge case": "An unusual input that might break code: empty strings, different lengths, repeated letters, and so on.",
+    "else": "A keyword meaning \"otherwise\". Its block runs when the if it lines up with had a False condition.",
     "expression": "Any piece of code that produces a value, like len(s) or countS == countT.",
     "frequency": "How many times something appears. A frequency count is a tally.",
     "function": "A named, reusable set of instructions you define with def and call by name.",
@@ -501,6 +502,7 @@
     "loop": "Code that repeats. A for loop repeats once per item.",
     "method": "A function that belongs to a class or an object, called with a dot: countS.get(...), Solution().isAnagram(...).",
     "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
     "None": "Python's value for \"nothing\". A function without a return statement gives back None.",
     "object": "A thing in memory with a type and data: a string, a dictionary, a Solution. Variables are names pointing at objects.",
     "off-by-one": "A very common bug where a loop runs one time too many or too few, usually because of where counting starts or stops.",

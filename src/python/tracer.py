@@ -194,6 +194,7 @@ class Tracer:
         self.enc = Encoder()
         self.steps = []
         self.stdout = io.StringIO()
+        self.visits = {}  # line -> times it has run so far, exposed to expressions as __visits__
 
     def is_solution(self, frame):
         return frame.f_code.co_filename == SOLUTION_FILE
@@ -233,6 +234,7 @@ class Tracer:
         scope = dict(frame.f_globals)
         scope.update(dict(frame.f_locals))
         scope["__line__"] = frame.f_lineno
+        scope["__visits__"] = dict(self.visits)
 
         step = {
             "line": frame.f_lineno,
@@ -265,6 +267,8 @@ class Tracer:
     def record(self, frame, event, arg):
         if len(self.steps) >= MAX_STEPS:
             raise StepLimit()
+        if event == "line":
+            self.visits[frame.f_lineno] = self.visits.get(frame.f_lineno, 0) + 1
         self.steps.append(self.snapshot(frame, event, arg))
 
     def global_trace(self, frame, event, arg):

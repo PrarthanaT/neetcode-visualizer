@@ -1,0 +1,647 @@
+{
+  "slug": "valid-parentheses",
+  "title": "Valid Parentheses",
+  "difficulty": "Easy",
+  "category": "Stack",
+  "leetcode": 20,
+  "statement": [
+    "You are given a string s made only of bracket characters: ( ) [ ] { }.",
+    "Answer True if the brackets are valid, and False if they aren't.",
+    "Valid means three things. Every opening bracket is closed by the same kind of bracket. Brackets close in the right order: the most recently opened one must close first. And every closing bracket has an opening bracket before it.",
+    "So \"([])\" is valid, \"([)]\" is not (the ( tries to close while [ is still open), and \"(]\" is not (wrong kind)."
+  ],
+  "examples": [
+    {
+      "input": "s = \"({[]})[]\"",
+      "output": "True",
+      "explain": "Every bracket closes the most recent unclosed one of the same kind. This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"([)]\"",
+      "output": "False",
+      "explain": "When ) arrives, the most recent open bracket is [, not (, so the order is wrong."
+    }
+  ],
+  "pattern": {
+    "name": "Stack (last in, first out)",
+    "summary": "Use a list as a stack: push (append) each opening bracket onto the top, and when a closing bracket arrives, check that it matches the bracket on top, then pop (remove) it. The most recent thing you opened is always the first thing that must be closed, and that is exactly what a stack gives you.",
+    "recognize": [
+      "Things nest inside each other: brackets, HTML tags, function calls, folders inside folders.",
+      "The most recent unfinished item is the one you need to deal with next. \"Last in, first out\" describes the problem.",
+      "You need to undo or match things in reverse order: an undo button, a back button, matching pairs.",
+      "You need the nearest earlier item that satisfies something, like the previous bigger number. That is a variation called a monotonic stack."
+    ],
+    "avoid_when": [
+      "You need the OLDEST waiting item first, like people in a line. That is a queue (first in, first out). Python's collections.deque does that well.",
+      "Only one kind of bracket is involved, like just ( and ). A simple counter (add one for (, subtract one for ), never go below zero) is enough and uses no extra memory.",
+      "You need to look at or remove items from the middle. A stack only gives cheap access to its top.",
+      "Order doesn't matter, only how many of each. Counting with a hash map fits that better."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A stack only touches its top. append adds to the top, pop removes from the top, and stack[-1] looks at the top. All three are instant.",
+      "Matching pairs in reverse order is the classic stack problem: push openers, and pop when the matching closer arrives.",
+      "Use a dictionary to map each closer to its opener. It replaces a chain of if statements and makes adding new bracket kinds trivial.",
+      "Two different failures exist: a closer that doesn't match (or arrives when the stack is empty), and openers left over at the end. Check both."
+    ],
+    "time": "O(n), linear time, where n is the length of s. The loop looks at each character once. Each look does a fixed amount of work: one dictionary lookup, and maybe one append or pop, which are instant on a Python list. Double the string and the work roughly doubles.",
+    "space": "O(n), linear memory, in the worst case. A string of only openers like \"((((((\" pushes every character, so the stack can grow as large as the input. The closeToOpen dictionary is always 3 entries, so it doesn't grow.",
+    "edge_cases": [
+      "A closer with nothing open, like s = \")\" or s = \"())\". The stack is empty when ) arrives, so stack[-1] would crash with an IndexError. The `if stack and ...` check prevents this.",
+      "Leftover openers, like s = \"((\" or s = \"([]\". No closer ever fails, but the stack isn't empty at the end, so the answer must be False.",
+      "Wrong order, like s = \"([)]\". The ) arrives while [ is on top, so the match fails.",
+      "Right brackets, wrong kind, like s = \"(]\".",
+      "An odd length can never be valid, because brackets come in pairs. You could return False right away when len(s) % 2 == 1, a free early exit."
+    ]
+  },
+  "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        stack = []\n        closeToOpen = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n\n        for c in s:\n            if c in closeToOpen:\n                if stack and stack[-1] == closeToOpen[c]:\n                    stack.pop()\n                else:\n                    return False\n            else:\n                stack.append(c)\n\n        return True if not stack else False\n",
+  "run": {
+    "call": "Solution().isValid(\"({[]})[]\")",
+    "expected": true,
+    "describe": "s = \"({[]})[]\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method isValid. It takes the string s and promises to answer with a boolean: True if the brackets are valid, False if not.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "isValid",
+          "meaning": "The method name LeetCode calls."
+        },
+        {
+          "token": "(self, s: str)",
+          "meaning": "The parameters. self is the Solution object (required in every method). s is the input string, with a type hint saying it's a str."
+        },
+        {
+          "token": "-> bool",
+          "meaning": "Return type hint: the answer will be True or False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints document that a string goes in and a yes or no answer comes out.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def isValid(self, s):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Returning the text \"True\" in quotes instead of the boolean True.",
+      "caption": "Python remembers the isValid instructions for later."
+    },
+    "3": {
+      "explain": "This creates an empty list called stack. We'll use it as a stack: we only add to its end (the top) and only remove from its end. It will hold the opening brackets that haven't been closed yet.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "stack",
+          "meaning": "A variable name. Calling it stack tells the reader how we'll use it."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: the name on the left now refers to the value on the right."
+        },
+        {
+          "token": "[]",
+          "meaning": "Square brackets with nothing inside make a new, empty list."
+        }
+      ],
+      "why": "Python has no separate stack type, because a list already works perfectly as one. Adding to and removing from the END of a list are instant operations. It starts empty because nothing has been opened yet.",
+      "if_removed": "stack.append and stack[-1] would crash with a NameError. If you create it inside the loop, it's wiped on every character, so nested brackets can never match.",
+      "alternatives": [
+        {
+          "code": "stack = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        },
+        {
+          "code": "from collections import deque\nstack = deque()",
+          "difference": "A deque (double-ended queue) is also instant at both ends. You'd use it when you also need to remove from the front. For a pure stack, a list is simpler."
+        },
+        {
+          "code": "stack = \"\"",
+          "difference": "Using a string as the stack. Strings can't be changed in place, so every push builds a whole new string: s = s + c costs O(n), and the solution becomes O(n²)."
+        }
+      ],
+      "mistake": "Removing from the front with stack.pop(0). That's a queue, not a stack, so you'd match the OLDEST opener instead of the newest. pop(0) is also slow, because every other item has to shift over.",
+      "caption": "Make an empty stack. It will hold opening brackets that are still waiting to be closed."
+    },
+    "4": {
+      "explain": "This creates a dictionary that maps each closing bracket to the opening bracket it needs. Asking closeToOpen[\")\"] gives back \"(\".",
+      "syntax": [
+        {
+          "token": "closeToOpen",
+          "meaning": "A variable name that says what the dictionary maps: a close bracket to its open bracket."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "{",
+          "meaning": "Opens a dictionary."
+        },
+        {
+          "token": "\")\": \"(\"",
+          "meaning": "One entry. The key \")\" is a string of one character, written in double quotes. The colon separates the key from its value \"(\"."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates one entry from the next."
+        },
+        {
+          "token": "\"]\": \"[\", \"}\": \"{\"",
+          "meaning": "Two more entries for square and curly brackets."
+        },
+        {
+          "token": "}",
+          "meaning": "Closes the dictionary."
+        }
+      ],
+      "why": "The keys are the CLOSING brackets because that's the moment we need to ask a question: \"which opener should be on top?\". The dictionary gives that answer instantly, and the same dictionary also tells us whether a character is a closer at all (c in closeToOpen). It replaces a pile of if statements, and adding a new bracket kind is one more entry.",
+      "if_removed": "Lines 7 and 8 crash with a NameError. If you flip it to openToClose ({\"(\": \")\"}), the code below would need to be rewritten to push the expected closer instead.",
+      "alternatives": [
+        {
+          "code": "if c == \")\" and stack[-1] == \"(\":\n    ...\nelif c == \"]\" and stack[-1] == \"[\":\n    ...",
+          "difference": "A chain of if and elif checks, one per bracket kind. It works, but it's long, repetitive and easy to get wrong. (elif means \"else, if\".)"
+        },
+        {
+          "code": "pairs = {\"(\": \")\", \"[\": \"]\", \"{\": \"}\"}",
+          "difference": "Maps openers to closers instead. You'd push pairs[c] (the expected closer) for every opener, and then just check c == stack[-1] for closers. It's a neat variation of the same idea."
+        }
+      ],
+      "mistake": "Mixing up quote marks and brackets: {\")\": \"(\"} is a dictionary whose key is the TEXT \")\". The outer curly braces build the dictionary. The brackets inside quotes are just characters.",
+      "caption": "Make a lookup table: each closing bracket → the opening bracket it needs."
+    },
+    "6": {
+      "explain": "This loop visits each character of s from left to right. On each pass, c holds the current character.",
+      "syntax": [
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats the indented block once per item."
+        },
+        {
+          "token": "c",
+          "meaning": "The loop variable, short for character. Each pass it holds the next character of s."
+        },
+        {
+          "token": "in",
+          "meaning": "\"Take items one at a time from\". Looping over a string gives its characters."
+        },
+        {
+          "token": "s",
+          "meaning": "The input string."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "We need each character once, in order, and we never need its position, so looping directly over s is the simplest choice.",
+      "if_removed": "Nothing would be checked, and the function would return True for every input.",
+      "alternatives": [
+        {
+          "code": "for i in range(len(s)):\n    c = s[i]",
+          "difference": "Loops over positions and fetches each character yourself. Same behaviour, more typing. Useful only if you need i, for example to report where the error is."
+        },
+        {
+          "code": "for i, c in enumerate(s):",
+          "difference": "Gives the position and the character together. Handy if you want to say where the first bad bracket is."
+        }
+      ],
+      "mistake": "Changing s or the stack's meaning inside the loop. Keep the loop reading s, and keep all the bookkeeping in stack.",
+      "caption": [
+        {
+          "when": "__visits__[6] > len(s)",
+          "text": "Every character has been checked, so the loop ends."
+        },
+        {
+          "when": "__visits__[6] > 1",
+          "text": "Next character: {s[__visits__[6] - 1]}."
+        },
+        "Start with the first character, {s[0]}."
+      ]
+    },
+    "7": {
+      "explain": "This asks: is c a closing bracket? The closers are exactly the keys of closeToOpen, so membership in the dictionary answers it.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the loop."
+        },
+        {
+          "token": "if",
+          "meaning": "Starts a condition. The indented block runs only if it's True."
+        },
+        {
+          "token": "c in closeToOpen",
+          "meaning": "in checks whether c is one of the dictionary's KEYS. It's True for ) ] }, and False for ( [ {."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Characters fall into two groups that need opposite handling: openers get pushed, closers get matched. Reusing the dictionary for this check keeps the definition of a closer in one place.",
+      "if_removed": "Every character would go to the same branch: either everything gets pushed (always True at the end if the final check is wrong), or every opener crashes in closeToOpen[c] with a KeyError.",
+      "alternatives": [
+        {
+          "code": "if c in \")]}\":",
+          "difference": "Checks membership in a string of the three closers. It works for single characters, but now the list of closers lives in two places that must agree."
+        },
+        {
+          "code": "if c in closeToOpen.values():",
+          "difference": "Checks values instead of keys, which means the OPENERS. It's the opposite question, so the branches would be backwards, and checking values is also slower."
+        }
+      ],
+      "mistake": "Thinking in checks a dictionary's values. It only checks keys.",
+      "caption": [
+        {
+          "when": "c in closeToOpen",
+          "text": "{c} is a closing bracket, so it must match the opener on top of the stack."
+        },
+        "{c} is an opening bracket, not a key in the map."
+      ]
+    },
+    "8": {
+      "explain": "For a closer, two things must be true. The stack must not be empty (something must be open), and the bracket on top must be the opener this closer needs. If both hold, it's a match.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the outer if, so this only runs for closers."
+        },
+        {
+          "token": "if",
+          "meaning": "A second, nested condition."
+        },
+        {
+          "token": "stack",
+          "meaning": "Used alone as a condition, a list counts as True if it has items and False if it's empty. This is called truthiness."
+        },
+        {
+          "token": "and",
+          "meaning": "True only if BOTH sides are True. Python stops early: if the left side is False, the right side is never checked. That's called short-circuiting, and it matters here."
+        },
+        {
+          "token": "stack[-1]",
+          "meaning": "Index -1 means the LAST item, the top of our stack. Negative indexes count from the end."
+        },
+        {
+          "token": "==",
+          "meaning": "The equality comparison: are these two values the same?"
+        },
+        {
+          "token": "closeToOpen[c]",
+          "meaning": "Look up the opener that c needs. Since c is a closer here, the key always exists."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "The order of the two checks protects us. If the stack is empty, stack[-1] would crash with an IndexError. Because and stops at the first False, an empty stack never reaches stack[-1]. We only compare against the TOP because brackets must close most-recent-first.",
+      "if_removed": "Drop the `stack and` part and an input like \")\" crashes with IndexError: list index out of range. Drop the match check and \"(]\" would be accepted.",
+      "alternatives": [
+        {
+          "code": "if len(stack) > 0 and stack[-1] == closeToOpen[c]:",
+          "difference": "Spells out the emptiness check. It's identical in behaviour, and many beginners find it clearer than relying on truthiness."
+        },
+        {
+          "code": "if stack[-1] == closeToOpen[c] and stack:",
+          "difference": "Same parts, wrong order! stack[-1] runs first and crashes on an empty stack before the safety check gets a chance."
+        },
+        {
+          "code": "if stack and stack.pop() == closeToOpen[c]:",
+          "difference": "Pops while checking, so line 9 isn't needed. It's correct, because a mismatch returns False anyway, so losing the popped item doesn't matter. It's shorter but does two jobs in one line."
+        }
+      ],
+      "mistake": "Checking stack[0] (the BOTTOM) instead of stack[-1] (the top). \"([])\" would then fail, because ] would be compared with ( instead of [.",
+      "caption": [
+        {
+          "when": "stack and stack[-1] == closeToOpen[c]",
+          "text": "Top of the stack is {stack[-1]}, and {c} needs {closeToOpen[c]}. They match!"
+        },
+        {
+          "when": "stack",
+          "text": "Top of the stack is {stack[-1]}, but {c} needs {closeToOpen[c]}. No match."
+        },
+        "The stack is empty, so there's nothing for {c} to close."
+      ]
+    },
+    "9": {
+      "explain": "The closer matched the opener on top, so that pair is complete. Remove the opener from the top of the stack.",
+      "syntax": [
+        {
+          "token": "                    (20 spaces)",
+          "meaning": "Indentation: inside the nested if, so this runs only on a match."
+        },
+        {
+          "token": "stack.pop()",
+          "meaning": ".pop() is a list method that removes the LAST item and gives it back. We don't need the value, so we ignore it."
+        }
+      ],
+      "why": "Once a pair is closed it no longer matters. Removing it exposes the next older open bracket, which is now the one that must close next. pop() on the end of a list is instant.",
+      "if_removed": "Closed openers stay on the stack. The next closer compares against an already-closed bracket, and the stack is never empty at the end, so valid strings return False.",
+      "alternatives": [
+        {
+          "code": "del stack[-1]",
+          "difference": "Deletes the last item without returning it. Same effect here."
+        },
+        {
+          "code": "stack.pop(0)",
+          "difference": "Removes the FIRST item, the oldest opener. That's wrong for nesting, and slow too, because every other item shifts down one place."
+        }
+      ],
+      "mistake": "Writing stack.pop without the brackets. That just refers to the method without calling it, so nothing is removed and Python doesn't complain.",
+      "caption": "Pop {stack[-1]} off the stack: the pair {stack[-1] + c} is closed."
+    },
+    "10": {
+      "explain": "else pairs with the if on line 8. Its block runs when that condition was False: the stack was empty, or the top didn't match.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Same indentation as the if it belongs to (line 8). An else always lines up with its if."
+        },
+        {
+          "token": "else",
+          "meaning": "A keyword: \"otherwise\". Its block runs only if the matching if's condition was False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the line. The indented block follows."
+        }
+      ],
+      "why": "A closer that can't be matched means the whole string is invalid, so we need a branch for that case.",
+      "if_removed": "Line 11 would then run for every closer, even matched ones. Python would also complain, because line 11's indentation wouldn't fit anywhere.",
+      "alternatives": [
+        {
+          "code": "if not stack or stack[-1] != closeToOpen[c]:\n    return False\nstack.pop()",
+          "difference": "Flips the condition so the failure case comes first, and the pop needs no else. It's equally correct, and some people prefer this \"fail fast\" shape."
+        }
+      ],
+      "mistake": "Indenting else to line up with the wrong if. Python pairs an else with the if at the same indentation, so else under line 7 would mean something completely different.",
+      "caption": "The match failed."
+    },
+    "11": {
+      "explain": "A closer arrived that doesn't match (or nothing was open), so the string can't be valid. Answer False and stop.",
+      "syntax": [
+        {
+          "token": "                    (20 spaces)",
+          "meaning": "Inside the else block."
+        },
+        {
+          "token": "return False",
+          "meaning": "End the method now and give back False."
+        }
+      ],
+      "why": "One bad closer makes the entire string invalid, so there's no reason to look at the remaining characters.",
+      "if_removed": "The loop would continue past the error and could end up returning True for invalid input like \"(]\" followed by more brackets.",
+      "alternatives": [
+        {
+          "code": "valid = False\nbreak",
+          "difference": "Record the answer and leave the loop with break, then return valid at the end. It works, but it needs an extra variable and is easier to get wrong. Returning directly is cleaner."
+        }
+      ],
+      "mistake": "Returning True somewhere inside the loop. You can only be sure the string is valid after checking EVERY character, so True can only be decided after the loop.",
+      "caption": "Return False: {c} has nothing to close."
+    },
+    "12": {
+      "explain": "This else pairs with the if on line 7. Its block runs when c is NOT a closer, which means it's an opener.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Same indentation as the if on line 7, which is the if it belongs to."
+        },
+        {
+          "token": "else:",
+          "meaning": "\"Otherwise\": runs when c in closeToOpen was False."
+        }
+      ],
+      "why": "Openers need different handling from closers: they can't be wrong on arrival, they just have to be remembered.",
+      "if_removed": "Line 13 would run for every character, including closers, which would push closers onto the stack too.",
+      "alternatives": [
+        {
+          "code": "elif c in \"([{\":",
+          "difference": "Explicitly checks for openers. Safer if the input could contain other characters like letters, because they'd simply be ignored instead of pushed."
+        }
+      ],
+      "mistake": "Assuming every non-closer is an opener when the input might contain other characters. This problem guarantees only brackets, but real input may not.",
+      "caption": "{c} is an opener."
+    },
+    "13": {
+      "explain": "Push the opening bracket onto the top of the stack. It now waits there for its matching closer.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the else block."
+        },
+        {
+          "token": "stack.append(c)",
+          "meaning": ".append is a list method that adds an item to the END of the list, our stack's top. c, inside the round brackets, is the item to add."
+        }
+      ],
+      "why": "The newest opener goes on top because it must be the first one closed. append on a list is instant.",
+      "if_removed": "Nothing is ever pushed, so the first closer finds an empty stack and every non-empty valid string returns False.",
+      "alternatives": [
+        {
+          "code": "stack.insert(0, c)",
+          "difference": "Adds to the FRONT instead. To stay correct you'd then have to look at stack[0] and pop(0), and every insert shifts the whole list, so it's O(n) each time."
+        },
+        {
+          "code": "stack += [c]",
+          "difference": "Adds a one-item list onto the end. Same result, a little more roundabout."
+        }
+      ],
+      "mistake": "Writing stack = stack.append(c). append changes the list in place and returns None, so this replaces your whole stack with None.",
+      "caption": "Push {c} onto the stack. It waits there for its closer."
+    },
+    "15": {
+      "explain": "Every character has been checked without a mismatch. The string is valid only if nothing is still open: the stack must be empty.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: this runs once, after the loop."
+        },
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "True if not stack else False",
+          "meaning": "A conditional expression: X if condition else Y gives X when the condition is True, and Y otherwise."
+        },
+        {
+          "token": "not stack",
+          "meaning": "not flips True and False. An empty list counts as False, so not stack is True exactly when the stack is empty."
+        }
+      ],
+      "why": "Matching every closer isn't enough. \"((\" never mismatches but leaves two openers unclosed. The final emptiness check catches leftovers.",
+      "if_removed": "The method returns None. If you write return True instead, leftover openers like \"((\" would wrongly pass.",
+      "alternatives": [
+        {
+          "code": "return not stack",
+          "difference": "The shortest version: not stack already IS True or False. Most Python programmers write it this way."
+        },
+        {
+          "code": "return len(stack) == 0",
+          "difference": "Spells out \"the stack has zero items\". It's the clearest for beginners and does exactly the same thing."
+        }
+      ],
+      "mistake": "Forgetting this check and just returning True, so unclosed openers pass.",
+      "caption": [
+        {
+          "when": "not stack",
+          "text": "The stack is empty: every opener was closed. Return True."
+        },
+        "{len(stack)} opener(s) were never closed, so return False."
+      ]
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        while \"()\" in s or \"[]\" in s or \"{}\" in s:\n            s = s.replace(\"()\", \"\").replace(\"[]\", \"\").replace(\"{}\", \"\")\n        return s == \"\"",
+    "explain": "Keep deleting adjacent matched pairs like \"()\", \"[]\" and \"{}\" until none are left. Removing an inner pair can create a new pair: \"([])\" becomes \"()\", and then the empty string \"\". If everything disappears, the string was valid. while repeats its block as long as its condition stays True. .replace(a, b) builds a new string with every a swapped for b.",
+    "why_slow": "Each round scans the whole string (about n steps) and may only remove one layer of nesting. A deeply nested string like \"((((...))))\" needs about n ÷ 2 rounds, so the total is about n × n steps. That's O(n²), quadratic time. Each round also builds brand-new strings, which costs memory.",
+    "how_pattern_fixes": "The repeated rescanning happens because we forget what we've already seen. A stack remembers exactly the openers still waiting, in order, so each character is handled once when it arrives: openers go on top, and closers check only the top. One pass, O(n).",
+    "time": "O(n²): quadratic. Up to n ÷ 2 rounds, each scanning the whole string.",
+    "space": "O(n): linear. Each .replace builds a new copy of the string."
+  },
+  "glossary": {
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B completely (short-circuiting).",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In stack.append(c), c is the argument.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n²) quadruples when the input doubles. O(1) doesn't grow.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "bool": "Python's name for the boolean type: True or False.",
+    "boolean": "A value that is either True or False.",
+    "break (keyword)": "A keyword that immediately leaves the loop it's in.",
+    "brute force": "Solving a problem in the most direct way, usually by trying or repeating everything. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by brackets, like stack.pop().",
+    "character": "A single letter, digit, space or symbol in a string. \"([\" has two characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of if, else, for, def or class lines, it means an indented block follows. Inside a dictionary, it separates a key from its value.",
+    "condition": "An expression that is True or False, used by if, while and and.",
+    "conditional expression": "A one-line choice: X if condition else Y gives X when the condition is True, otherwise Y.",
+    "deque": "A double-ended queue from the collections module: a list-like structure that's instant to add to or remove from at both ends.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {\")\": \"(\"}. It stores key → value pairs and finds a key instantly.",
+    "early exit": "Returning from a function as soon as the answer is known, instead of doing unnecessary work.",
+    "elif": "Short for \"else if\". It checks another condition when the earlier if (or elif) was False.",
+    "else": "A keyword: \"otherwise\". Its block runs when the if it lines up with had a False condition.",
+    "expression": "Any piece of code that produces a value, like stack[-1] == closeToOpen[c].",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "hash map": "A structure that stores key → value pairs and finds any key almost instantly. Python's dictionary is one.",
+    "in place": "Changing an object directly instead of making a new one. append and pop change a list in place.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to, and which if an else pairs with.",
+    "index": "A position in a string or list, counting from 0. Negative indexes count from the end: -1 is the last item.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like stack[-1] on an empty list.",
+    "key": "The part of a dictionary entry you look up by. In {\")\": \"(\"}, the key is \")\".",
+    "KeyError": "The error Python raises when you read a dictionary key that isn't there with d[key].",
+    "keyword": "A word reserved by Python, like if, else, for, return, def.",
+    "last in, first out": "The rule a stack follows: the last item added is the first one removed, like a stack of plates. Often shortened to LIFO.",
+    "len": "A built-in function that gives the number of items in something: len(\"([\") is 2.",
+    "list": "An ordered collection written with square brackets, like ['(', '[']. Python lists make perfect stacks.",
+    "loop": "Code that repeats. A for loop repeats once per item.",
+    "method": "A function that belongs to an object, called with a dot: stack.append(c), stack.pop().",
+    "monotonic stack": "A stack kept in increasing or decreasing order, used to find things like the next bigger number. It's a later NeetCode topic.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: an if inside an if, or brackets inside brackets.",
+    "None": "Python's value for \"nothing\". Methods that change things in place, like append, return None.",
+    "not (operator)": "A logical operator that flips True to False and False to True.",
+    "object": "A thing in memory with a type and data. Variables are names pointing at objects.",
+    "operator": "A symbol or word that does something with values: = assigns, == compares, and / or / not combine conditions.",
+    "parameter": "A name in a function's definition that receives an input. s is isValid's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes the LAST item and gives it back. pop(0) removes the first item instead, which is slow.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "queue": "A first in, first out line: the oldest item leaves first. That's the opposite of a stack.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    ".replace": "A string method: s.replace(a, b) gives a new string with every a swapped for b.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "short-circuiting": "and and or stop as soon as the answer is known. False and X never evaluates X, which lets you guard risky checks.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "stack": "A collection where you only add and remove at one end, the top. The last item in is the first out.",
+    "str": "Python's name for the string type.",
+    "string": "Text written in quotes, like \"([])\". Each character has an index starting at 0.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, stack[-1].",
+    "truthiness": "Using a non-boolean value as a condition. Empty lists, empty strings, 0 and None count as False. Everything else counts as True.",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {\")\": \"(\"}, the value is \"(\". More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": {
+        "c": "__visits__.get(6, 0) - 1 if __visits__.get(6, 0) else None"
+      },
+      "marks": {
+        "compared": "[__visits__[6] - 1] if __line__ in (7, 8) else []",
+        "found": "[__visits__[6] - 1] if __line__ == 9 else []",
+        "done": "list(range(__visits__.get(6, 1) - 1)) if __line__ != 15 else list(range(len(s)))"
+      }
+    },
+    {
+      "type": "stack",
+      "title": "stack",
+      "source": "stack",
+      "marks": {
+        "compared": "[len(stack) - 1] if __line__ == 8 and stack else []",
+        "found": "[len(stack) - 1] if __line__ == 9 else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "closeToOpen  (closer → opener)",
+      "source": "closeToOpen",
+      "lookup": "c if __line__ in (7, 8) else None"
+    }
+  ]
+}

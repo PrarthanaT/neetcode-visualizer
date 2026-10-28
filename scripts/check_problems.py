@@ -59,6 +59,9 @@ def check(path):
     uncaptioned = sorted({s["line"] for s in out["steps"] if s["caption"] is None} - set(map(int, captions)))
     if uncaptioned:
         problems.append("line(s) {} run but have no caption".format(uncaptioned))
+    doubled = sorted({s["line"] for s in out["steps"] if s["caption"] and "''" in s["caption"]})
+    if doubled:
+        problems.append("caption on line(s) {} has doubled quotes: values are already quoted, so drop the ' around {{...}}".format(doubled))
     for key, expr in exprs.items():
         if all(s["viz"].get(key) is None for s in out["steps"]):
             problems.append("visualizer expression {} ({!r}) never evaluated".format(key, expr))
