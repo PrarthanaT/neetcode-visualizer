@@ -1,0 +1,366 @@
+{
+  "slug": "valid-palindrome",
+  "title": "Valid Palindrome",
+  "difficulty": "Easy",
+  "category": "Two Pointers",
+  "leetcode": 125,
+  "statement": [
+    "You are given a string s. Check whether it reads the same forwards and backwards once you ignore everything except letters and digits, and ignore uppercase vs lowercase.",
+    "Return True if s is a palindrome under these rules, and False otherwise.",
+    "An empty string, or a string with no letters or digits at all, counts as a palindrome: there's nothing left that could mismatch."
+  ],
+  "examples": [
+    {
+      "input": "s = \"A man, a plan, a canal: Panama\"",
+      "output": "True",
+      "explain": "Dropping the spaces, comma and colon leaves \"amanaplanacanalpanama\", and lowercasing it reads the same forwards and backwards. This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"race a car\"",
+      "output": "False",
+      "explain": "Dropping the space leaves \"raceacar\". Reversed, that's \"racaecar\", which doesn't match: the two c's and the e land in different spots."
+    }
+  ],
+  "pattern": {
+    "name": "Two pointers from both ends (skip, then compare)",
+    "summary": "Walk two pointers inward from the two ends of the string at the same time, l from the left and r from the right. Before comparing, skip past any characters on each side that aren't letters or digits. Once both pointers sit on a usable character, compare them, ignoring case. If they ever disagree, it's not a palindrome. If the pointers meet or cross without a disagreement, it is.",
+    "recognize": [
+      "The question is about something being symmetric around its center: a palindrome, or matching from two ends inward.",
+      "You need to compare the first remaining item with the last remaining item, then the second with the second-to-last, and so on, narrowing inward.",
+      "The input can be read in its original order, so you don't need to build a cleaned-up or reversed copy of it just to answer the question.",
+      "Characters that don't count (punctuation, spaces) need to be skipped without shifting which positions you're actually comparing."
+    ],
+    "avoid_when": [
+      "You need to find a pair that satisfies some other relationship across the whole collection (like Two Sum), not compare from both ends inward. A hash map fits those better.",
+      "The data isn't ordered in a way where \"first vs last, second vs second-to-last\" makes sense, such as a graph or an unordered set.",
+      "You need to check many different substrings for the palindrome property, not just the whole string once. Longest Palindromic Substring needs a different approach (expanding from a center, or dynamic programming).",
+      "The input is small and building a cleaned, reversed copy to compare against the original reads more clearly. Two pointers mainly pay off when you want to avoid that extra O(n) memory."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Two pointers starting at both ends and walking inward turns \"does this match itself in reverse\" into a single pass, without ever building a reversed copy.",
+      "Skipping and comparing are separate steps. The two inner while loops only move pointers past characters that don't matter; the if statement is the only place a real mismatch gets decided.",
+      "Comparing with .lower() on both sides handles case-insensitivity without needing a cleaned-up copy of the whole string.",
+      "The loop condition l < r is what lets the two pointers stop exactly when they meet or cross, after every pair has been checked once."
+    ],
+    "time": "O(n), linear time. n is the length of s. Between them, l and r each visit every position in s at most once as they move inward, and .isalnum(), .lower() and the comparisons are all O(1) per character. Double the length of s and the work roughly doubles.",
+    "space": "O(1), constant. Only two index variables, l and r, however long s is. No cleaned-up copy or reversed copy of the string is ever built.",
+    "edge_cases": [
+      "An empty string, s = \"\". r starts at -1, so l < r is False immediately and the function returns True without checking anything.",
+      "A string with no letters or digits at all, like s = \", .\". Both inner while loops run until l and r meet in the middle, never finding a usable character, and the function returns True.",
+      "A single character, like s = \"a\". l and r both start at 0, so l < r is False immediately and it returns True.",
+      "Mixed case, like s = \"Aa\". Without .lower(), 'A' != 'a' would wrongly return False.",
+      "Punctuation sitting right next to both pointers at once, like s = \"a.,a\". Both inner while loops skip past their side's punctuation before the comparison on line 9 ever runs."
+    ]
+  },
+  "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        l, r = 0, len(s) - 1\n        while l < r:\n            while l < r and not s[l].isalnum():\n                l += 1\n            while l < r and not s[r].isalnum():\n                r -= 1\n            if s[l].lower() != s[r].lower():\n                return False\n            l += 1\n            r -= 1\n        return True\n",
+  "run": {
+    "call": "Solution().isPalindrome(\"A man, a plan, a canal: Panama\")",
+    "expected": true,
+    "describe": "s = \"A man, a plan, a canal: Panama\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def isPalindrome would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named isPalindrome. It takes the string s and promises to give back a boolean: True if s is a palindrome under the problem's rules, False otherwise.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "isPalindrome", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "s: str)", "meaning": "The input string, hinted as a str." },
+        { "token": "-> bool", "meaning": "Return type hint: the answer is a boolean, True or False." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. Returning a boolean directly answers the yes/no question the problem asks.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def isPalindrome(self, s):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning something other than True or False, like 1 or 0. LeetCode checks for an actual boolean.",
+      "caption": "Python remembers the isPalindrome instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This sets up the two pointers. l (left) starts at the first index, 0, and r (right) starts at the last index of s. Together they mark the whole string as still needing to be checked.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any string." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(s) - 1", "meaning": "len gives how many characters s has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "Starting l and r at the two ends is what lets the pointers walk inward and compare the string against itself in reverse, one pair at a time, without ever building a reversed copy.",
+      "if_removed": "The while loop on line 4 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(s) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Writing r = len(s) instead of len(s) - 1. Then s[r] on line 7 would try to read one character past the end and raise an IndexError.",
+      "caption": "l starts at 0 and r starts at {len(s) - 1}: the two ends of s."
+    },
+    "4": {
+      "explain": "This loop keeps going as long as the two pointers haven't met or crossed. Each pass checks one pair of characters, after skipping any that don't count, and then moves both pointers one step inward.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "l < r", "meaning": "True while there's still at least one pair of distinct positions left to compare." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Once l and r meet, or cross on an even-length string, every pair has already been checked, so there's nothing left to compare.",
+      "if_removed": "Without the loop, only the first pair of characters would ever be checked, and the function couldn't tell whether the rest of s matches.",
+      "alternatives": [
+        { "code": "while l != r:", "difference": "Works the same here, because l only ever increases and r only ever decreases, one step at a time, so neither can skip past the other without first being equal. l < r is still the clearer, safer way to write \"not finished yet\"." }
+      ],
+      "mistake": "Writing l <= r instead of l < r. When l equals r, that's the single middle character of an odd-length string. Comparing it to itself is harmless, but the loop body would then move l past r, comparing positions that no longer form a real pair.",
+      "caption": [
+        { "when": "l < r", "text": "l = {l} and r = {r} haven't met yet. Keep comparing." },
+        "l = {l} has met or passed r = {r}. Every pair has been checked."
+      ]
+    },
+    "5": {
+      "explain": "This inner loop skips the left pointer forward past any character that isn't a letter or a digit, like a space, comma or colon. It stops as soon as l lands on a usable character, or reaches r.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the outer while loop." },
+        { "token": "while", "meaning": "Starts another loop, nested inside the outer one." },
+        { "token": "l < r", "meaning": "Stop skipping once the pointers meet, even if the character at l still isn't usable." },
+        { "token": "and", "meaning": "Both sides must be True for the loop to keep running." },
+        { "token": "not", "meaning": "Flips True to False and False to True." },
+        { "token": "s[l]", "meaning": "The character at position l." },
+        { "token": ".isalnum()", "meaning": "A string method that returns True if the character is a letter or a digit, and False for punctuation, spaces and symbols." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "The problem says to ignore everything except letters and digits. Walking l forward here, before any comparison happens, is what makes punctuation and spaces invisible to the rest of the algorithm.",
+      "if_removed": "Without this loop, s[l] on line 9 could be a space or punctuation mark, and comparing it against a real letter on the other side would wrongly report a mismatch.",
+      "alternatives": [
+        { "code": "cleaned = [c for c in s if c.isalnum()]", "difference": "Builds a whole new list of just the usable characters up front, which you could then run two pointers over instead. It works, but it uses O(n) extra memory, which two pointers is specifically trying to avoid." }
+      ],
+      "mistake": "Forgetting the l < r part of the condition. Then, if s ends in only punctuation, l could walk straight past r and off the end of the string, raising an IndexError on s[l].",
+      "caption": [
+        { "when": "l < r and not s[l].isalnum()", "text": "s[l] = {s[l]} isn't a letter or digit. Skip it: move l forward." },
+        "s[l] = {s[l]} is usable, or l has reached r. Stop skipping from the left."
+      ]
+    },
+    "6": {
+      "explain": "Moves l one step to the right, past the character that was just found to be punctuation or a space.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the inner while block." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Advancing l is what lets the inner loop eventually either find a usable character or reach r.",
+      "if_removed": "The inner while loop's condition would never change, so it would run forever on the first piece of punctuation it finds: an infinite loop.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing l -= 1 by accident, which would move the left pointer backward, off the string, instead of forward.",
+      "caption": "Move l forward, past the character to skip: l becomes {l + 1}."
+    },
+    "7": {
+      "explain": "The mirror image of line 5: this skips the right pointer backward past any character that isn't a letter or a digit.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the while on line 5, so this is a separate loop that runs after it, not inside it." },
+        { "token": "while", "meaning": "Starts another loop, nested inside the outer one." },
+        { "token": "l < r", "meaning": "Stop skipping once the pointers meet." },
+        { "token": "and", "meaning": "Both sides must be True for the loop to keep running." },
+        { "token": "not", "meaning": "Flips True to False and False to True." },
+        { "token": "s[r]", "meaning": "The character at position r." },
+        { "token": ".isalnum()", "meaning": "True for letters and digits, False for punctuation, spaces and symbols." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "After line 5 finishes, l already points at a usable character, or has reached r. Skipping from the right now makes sure r points at a usable character too, so the comparison on line 9 is fair.",
+      "if_removed": "s[r] on line 9 could then be punctuation, which would never match a real letter, and the function would wrongly return False.",
+      "alternatives": [
+        { "code": "while l < r and not s[r].isalnum():\n    r -= 1", "difference": "That's exactly what this line and the next one already do. Written this way it reads identically, just without the clarity of a separate, indented step." }
+      ],
+      "mistake": "Checking s[l] again here instead of s[r]. That would skip the left pointer twice and never actually examine the right side.",
+      "caption": [
+        { "when": "l < r and not s[r].isalnum()", "text": "s[r] = {s[r]} isn't a letter or digit. Skip it: move r backward." },
+        "s[r] = {s[r]} is usable, or l has reached r. Stop skipping from the right."
+      ]
+    },
+    "8": {
+      "explain": "Moves r one step to the left, past the character that was just found to be punctuation or a space.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the inner while block." },
+        { "token": "r -= 1", "meaning": "Shorthand for r = r - 1: subtract 1 from r and store the result back in r." }
+      ],
+      "why": "Advancing r backward is what lets this inner loop eventually either find a usable character or reach l.",
+      "if_removed": "The inner while loop's condition would never change, so it would run forever on the first piece of punctuation it finds from the right: an infinite loop.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing r += 1 by accident, which would move the right pointer forward, off the string, instead of backward.",
+      "caption": "Move r backward, past the character to skip: r becomes {r - 1}."
+    },
+    "9": {
+      "explain": "Now that both l and r sit on usable characters, this compares them, ignoring uppercase vs lowercase. If they're different, s can't be a palindrome.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the outer while loop, after both inner while loops." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "s[l]", "meaning": "The character at the left pointer." },
+        { "token": ".lower()", "meaning": "A string method that returns a lowercase copy: 'A'.lower() is 'a'. It leaves non-letters and already-lowercase letters unchanged." },
+        { "token": "!=", "meaning": "\"Not equal to\" comparison." },
+        { "token": "s[r]", "meaning": "The character at the right pointer." },
+        { "token": ".lower()", "meaning": "The same lowercasing applied to the right-hand character." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "The problem treats 'A' and 'a' as the same character, so comparing lowercased copies is simpler and safer than writing out a separate case for every combination of upper and lower case.",
+      "if_removed": "Without .lower(), s[l] != s[r] would treat 'A' and 'a' as different characters, and a palindrome like \"Aa\" would wrongly return False.",
+      "alternatives": [
+        { "code": "if s[l].upper() != s[r].upper():", "difference": "Uppercases both sides instead of lowercasing them. Equally correct; it's purely a style choice." },
+        { "code": "if s[l] != s[r] and s[l].lower() != s[r].lower():", "difference": "Checks the exact characters first as a shortcut before falling back to the case-insensitive check. It gives the same answer, just with an unnecessary extra comparison, since the lowercase check alone already covers the exact-match case." }
+      ],
+      "mistake": "Comparing s[l] != s[r] without .lower(). That makes the check case-sensitive, which this problem explicitly says not to do.",
+      "caption": [
+        { "when": "s[l].lower() != s[r].lower()", "text": "s[l] = {s[l]} and s[r] = {s[r]} don't match, even ignoring case. Not a palindrome." },
+        "s[l] = {s[l]} and s[r] = {s[r]} match, ignoring case. Keep going."
+      ]
+    },
+    "10": {
+      "explain": "A mismatched pair was found, so s cannot be a palindrome. This ends the method immediately with the answer False.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 9's condition was True." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and hands the value after it back to the caller." },
+        { "token": "False", "meaning": "Python's boolean value for \"no\"." }
+      ],
+      "why": "One mismatched pair is enough to disprove the palindrome, so there's no reason to keep checking the rest of the string.",
+      "if_removed": "The mismatch would be silently ignored and the loop would keep running, possibly reaching line 13 and returning True for a string that isn't actually a palindrome.",
+      "alternatives": [
+        { "code": "is_palindrome = False\nbreak", "difference": "Breaks out of the loop instead of returning immediately, then needs an extra line after the loop to return is_palindrome. It works, but it's more code to do the same thing." }
+      ],
+      "mistake": "Returning True here by accident, or returning the mismatched characters instead of the boolean False the problem asks for.",
+      "caption": "Return False: a mismatched pair proves s isn't a palindrome."
+    },
+    "11": {
+      "explain": "The pair matched, so move l one step inward, toward r, to check the next pair on the next pass of the outer loop.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at the outer while loop's level, after the if block, so it runs whenever line 9 didn't return." },
+        { "token": "l += 1", "meaning": "Add 1 to l and store the result back in l." }
+      ],
+      "why": "This pair is done with. Moving both pointers inward, this line and the next, is what makes the outer loop eventually finish, by shrinking the gap between l and r on every pass.",
+      "if_removed": "l would never move forward on a match, so the outer while loop would compare the exact same pair forever: an infinite loop.",
+      "alternatives": [
+        { "code": "l, r = l + 1, r - 1", "difference": "Moves both pointers inward in a single tuple-unpacking line instead of two separate lines. Identical result; purely a style choice." }
+      ],
+      "mistake": "Moving l by more than one step, or forgetting to move it at all, which would skip over a pair that still needs checking.",
+      "caption": "That pair matched. Move l inward: l becomes {l + 1}."
+    },
+    "12": {
+      "explain": "And move r one step inward too, so the next pass compares the next pair in from both sides.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Same level as line 11: runs on every pass that didn't return False." },
+        { "token": "r -= 1", "meaning": "Subtract 1 from r and store the result back in r." }
+      ],
+      "why": "Both pointers have to move together, one step each, so that every character in s is checked exactly once by the time l and r meet.",
+      "if_removed": "r would stay still while l kept advancing, so the pointers would compare the wrong pairs, or l could run past r without the loop noticing.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Forgetting this line entirely. Then only l would move, and the loop would eventually compare l against a stale r, giving the wrong answer.",
+      "caption": "And move r inward too: r becomes {r - 1}."
+    },
+    "13": {
+      "explain": "The outer while loop ended because l met or passed r without ever hitting a mismatch, so every pair matched. Return True: s is a palindrome.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop. It only runs once the loop has finished without returning False." },
+        { "token": "return", "meaning": "Ends the method and hands back the value after it." },
+        { "token": "True", "meaning": "Python's boolean value for \"yes\"." }
+      ],
+      "why": "Checking every pair without finding a single mismatch is exactly what it means for a string to be a palindrome under these rules.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of True, and LeetCode would mark that wrong even though the logic found no mismatch.",
+      "alternatives": [
+        { "code": "return l >= r", "difference": "Since this line is only reached when the loop ended normally, l >= r is already guaranteed True here, so this is logically equivalent. It just hides the reasoning: it reads like a check is still being made, instead of stating the simple fact that no mismatch was ever found." }
+      ],
+      "mistake": "Putting return True inside the while loop instead of after it. Then it would run after checking only the very first pair, before the rest of the string was ever compared.",
+      "caption": "l and r met or crossed without any mismatch: return True, s is a palindrome."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = [c.lower() for c in s if c.isalnum()]\n        return cleaned == cleaned[::-1]",
+    "explain": "Build a new list with only the lowercased letters and digits from s, in order, then compare that cleaned list to its own reverse. If they're equal, s is a palindrome.",
+    "why_slow": "This isn't slower in Big O terms, it's still O(n) time, but it uses O(n) extra memory: the cleaned list, plus another full copy made by cleaned[::-1]. For a huge string, that's twice as much memory as the two-pointer version, which uses none.",
+    "how_pattern_fixes": "Two pointers compares characters directly inside the original string, from both ends inward, so no cleaned copy and no reversed copy ever need to exist. The memory drops from O(n) to O(1), while the time stays O(n).",
+    "time": "O(n): linear. Building the cleaned list visits every character once, and reversing and comparing it takes time proportional to its length too.",
+    "space": "O(n): linear. The cleaned list, and the reversed copy compared against it, can each be as long as s itself."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "alphanumeric": "A letter (a-z, A-Z) or a digit (0-9). Spaces, punctuation and symbols are not alphanumeric.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if statements produce booleans.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(s).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower or more memory-hungry than a more targeted approach.",
+    "character": "A single letter, digit, space or symbol in a string. \"cat\" has three characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1).",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "in place": "Changing a variable's own value directly, like l += 1, instead of creating a new copy of the data.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a string or list, counting from 0. In \"cat\", the 't' is at index 2.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like reading past the end of a string.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "keyword": "A word reserved by Python, like while, if, not, and, return.",
+    "len": "A built-in function that gives the number of items in something: len(\"cat\") is 3.",
+    "list": "An ordered collection written with square brackets, like ['a', 'b', 'c']. You reach items by their index.",
+    ".isalnum()": "A string method: c.isalnum() is True if c is a letter or digit, False otherwise.",
+    ".lower()": "A string method that returns a lowercase copy of a string: 'HI'.lower() is 'hi'.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely before the outer loop moves to its next pass.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, != compares, += updates in place.",
+    "palindrome": "Text that reads the same forwards and backwards, like \"racecar\" or, ignoring case and punctuation, \"A man, a plan, a canal: Panama\".",
+    "parameter": "A name in a function's definition that receives an input. s is isPalindrome's parameter.",
+    "pointer": "A variable holding a position (index) in a string or list. Here l and r are pointers.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for the string type.",
+    "string": "Text, written in quotes like 'cat' or \"hello\".",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a list or string, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "Any piece of data: a number, a string, a boolean, a list, and so on.",
+    "variable": "A name that refers to a value, created with =."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "[l, r] if __line__ in (9, 10) else ([l] if __line__ in (5, 6) else ([r] if __line__ in (7, 8) else []))",
+        "found": "list(range(len(s))) if __line__ == 13 else []",
+        "done": "[k for k in range(len(s)) if k < l or k > r]"
+      }
+    }
+  ]
+}
