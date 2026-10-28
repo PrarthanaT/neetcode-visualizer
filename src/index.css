@@ -126,3 +126,33 @@ body {
 .scrubber:disabled {
   opacity: 0.4;
 }
+
+.resize-handle-h {
+  height: 6px;
+  position: relative;
+  outline: none;
+}
+.resize-handle-h::after {
+  content: "";
+  position: absolute;
+  inset: 2px 0;
+  border-radius: 2px;
+  transition: background 150ms;
+}
+.resize-handle-h[data-resize-handle-state="hover"]::after,
+.resize-handle-h[data-resize-handle-state="drag"]::after {
+  background: rgb(124 156 255 / 0.5);
+}
+
+/* Monaco colorize output inside snippets */
+.mtk1 { color: #e4e4e7; }
+
+/* beginners must see exactly what to type: no -> or == ligatures */
+code,
+pre,
+kbd,
+.font-mono,
+.monaco-editor {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}

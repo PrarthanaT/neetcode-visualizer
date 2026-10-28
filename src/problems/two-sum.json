@@ -3,6 +3,58 @@
   "title": "Two Sum",
   "difficulty": "Easy",
   "category": "Arrays & Hashing",
+  "leetcode": 1,
+  "statement": [
+    "You are given a list of whole numbers called nums, and one more number called target.",
+    "Exactly two numbers in the list add up to target. Find them, and give back their positions (their index numbers) in the list.",
+    "You may not use the same position twice. For example, if target is 6 and the list has a single 3, you cannot use that 3 twice.",
+    "You can give the two positions back in any order."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 3, 7, 5, 4], target = 9",
+      "output": "[3, 4]",
+      "explain": "nums[3] is 5 and nums[4] is 4, and 5 + 4 = 9. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [3, 3], target = 6",
+      "output": "[0, 1]",
+      "explain": "The two 3s are at different positions, so using both is allowed."
+    }
+  ],
+  "pattern": {
+    "name": "Hash map lookup (complement search)",
+    "summary": "Walk through the list once. For each number, work out the partner it needs (target minus the number), and ask a hash map, which answers instantly, whether that partner has already been seen. If not, write the current number into the hash map so a later number can find it.",
+    "recognize": [
+      "The question asks you to find two things that combine into a goal: two numbers that add up to something, two words that match, two times that differ by an exact amount.",
+      "For every item you could say exactly what its partner must be. Here the partner of n is target - n. That missing piece is called the complement.",
+      "The obvious answer checks every pair with a loop inside a loop, and the problem hints the list can be large.",
+      "The answer needs positions (indexes) or counts, not just a yes or no. A hash map can remember the position next to each value."
+    ],
+    "avoid_when": [
+      "The list is already sorted and you must use almost no extra memory. Then the two pointers pattern (one pointer at each end walking inward) finds the pair without a hash map. That is the problem Two Sum II.",
+      "You need every pair, not just one. A single hash map entry per value forgets duplicates, so you would need counts or a different approach.",
+      "The items cannot be used as dictionary keys. Lists, for example, cannot be keys, because a list can change after it is stored.",
+      "The input is tiny, like 3 or 4 numbers, and simple code matters more than speed. The nested loop is easier to read and just as fast at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Turn \"find a pair\" into \"for each item, have I already seen its partner?\" That turns a search over pairs into one pass over the list.",
+      "A dictionary (Python's hash map) answers \"is this key here?\" in constant time, no matter how many entries it holds. That is the whole speed-up.",
+      "Store value -> index, because the question wants positions. The key is what you search by, and the value is what you want back.",
+      "Check before you store. Checking first stops a number from pairing with itself, and it still handles duplicates like [3, 3]."
+    ],
+    "time": "O(n), called \"linear time\". n is how many numbers are in the list. The loop visits each number once, and each visit does a fixed amount of work: one subtraction, one dictionary lookup, maybe one dictionary insert. If the list doubles in length, the work roughly doubles. Compare the brute force, where doubling the list makes about four times as much work.",
+    "space": "O(n), linear extra memory. In the worst case the pair is the last two numbers, so the dictionary ends up holding almost every number before we finish. Memory grows in step with the list. We trade memory for speed: the brute force uses no extra memory but is much slower.",
+    "edge_cases": [
+      "Duplicates that form the answer, like nums = [3, 3], target = 6. This works because we check for 3 before storing the first 3, then the second 3 finds the first one.",
+      "A number that is exactly half the target but appears only once, like nums = [3, 4, 2], target = 6. The 3 must not pair with itself. Checking before storing guarantees it can't.",
+      "Negative numbers and zero, like nums = [-3, 4, 3, 90], target = 0. The subtraction still works: 0 - (-3) = 3.",
+      "The answer uses index 0. Code that tests if prevMap.get(diff): would wrongly treat index 0 as \"not found\", because 0 counts as False in Python. Using diff in prevMap avoids this bug.",
+      "The problem promises exactly one answer exists, so the function never reaches its end without returning. If it did, Python would hand back None."
+    ]
+  },
   "code": "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        prevMap = {}  # val -> index\n\n        for i, n in enumerate(nums):\n            diff = target - n\n            if diff in prevMap:\n                return [prevMap[diff], i]\n            prevMap[n] = i\n",
   "run": {
     "prelude": "from typing import List",
@@ -10,42 +62,450 @@
     "expected": [
       3,
       4
-    ]
+    ],
+    "describe": "nums = [1, 3, 7, 5, 4], target = 9"
   },
   "lines": {
     "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S, so don't change it."
+        },
+        {
+          "token": ":",
+          "meaning": "A colon ends the header line and tells Python an indented block follows. Everything indented underneath belongs to the class."
+        }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm. The name starts with a capital letter because Python programmers capitalize class names by convention.",
+      "if_removed": "Without this line, def twoSum would be a plain function, not part of a class. LeetCode would fail with an error saying Solution is not defined. If you forget the colon you get a SyntaxError (Python cannot read the line).",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "Older Python 2 style. Writing (object) says the class builds on Python's base object. In Python 3 every class already does this, so it behaves exactly the same."
+        },
+        {
+          "code": "def twoSum(nums, target):",
+          "difference": "A standalone function with no class. That is perfectly fine in your own programs, and it is how most real Python is written, but LeetCode's tester will not find it."
+        }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python cares about upper and lower case, so Solution and solution are two different names and LeetCode reports that Solution doesn't exist.",
       "caption": "Python reads the Solution blueprint. Nothing runs yet."
     },
     "2": {
-      "caption": "Python remembers the twoSum instructions inside Solution for later."
+      "explain": "This defines a method named twoSum. A method is a function that lives inside a class. It takes the list of numbers (nums) and the goal (target), and promises to give back a list of whole numbers. Defining it doesn't run it. Python only remembers the instructions until someone calls the method.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation. These 4 spaces put the line inside the class above it. Python uses indentation, not braces, to decide what belongs to what."
+        },
+        {
+          "token": "def",
+          "meaning": "Short for \"define\". A keyword that starts a function or method definition."
+        },
+        {
+          "token": "twoSum",
+          "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capital S matter."
+        },
+        {
+          "token": "(",
+          "meaning": "Opens the parameter list: the names for the inputs this method receives."
+        },
+        {
+          "token": "self",
+          "meaning": "The first parameter of every method. It refers to the Solution object the method was called on. We never use it in this problem, but Python requires it to be there."
+        },
+        {
+          "token": ",",
+          "meaning": "A comma separates one parameter from the next."
+        },
+        {
+          "token": "nums",
+          "meaning": "The name for the first real input: the list of numbers."
+        },
+        {
+          "token": ": List[int]",
+          "meaning": "A type hint. It tells human readers (and tools) that nums should be a List of int (whole numbers). Python doesn't enforce it. The colon here means \"has the type\". It is a different job from the colon at the end of the line."
+        },
+        {
+          "token": "target: int",
+          "meaning": "The second input, named target, hinted to be an int (a whole number)."
+        },
+        {
+          "token": ")",
+          "meaning": "Closes the parameter list."
+        },
+        {
+          "token": "->",
+          "meaning": "An arrow that introduces the return type hint: what the method promises to give back."
+        },
+        {
+          "token": "List[int]",
+          "meaning": "The method promises to return a list of whole numbers. In our answer that is the two indexes. The square brackets after List say what is inside the list."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented lines below are the method's body, the code that runs when it is called."
+        }
+      ],
+      "why": "The name and inputs are chosen by LeetCode. The type hints are optional, but they act like labels on a box: a reader instantly knows nums is a list of whole numbers and the answer is a list too. List comes from Python's typing module. LeetCode imports it for you behind the scenes (the visualizer does the same).",
+      "if_removed": "Remove self and Python passes the Solution object into nums, target gets the list, and the call crashes with a TypeError about the wrong number of arguments. Remove the type hints and nothing changes when the code runs. Remove the final colon and you get a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "def twoSum(self, nums, target):",
+          "difference": "No type hints. It runs identically. You lose the documentation, and editors can't warn you about mistakes as easily."
+        },
+        {
+          "code": "def twoSum(self, nums: list[int], target: int) -> list[int]:",
+          "difference": "Uses the built-in lowercase list instead of typing.List. This works in Python 3.9 and newer without importing anything. It means exactly the same thing."
+        }
+      ],
+      "mistake": "Forgetting self, or treating the type hints as if they check anything. Python will happily run twoSum with a string for target. The hint is a note for people, not a guard.",
+      "caption": "Python remembers the twoSum instructions inside Solution for later. Nothing inside it runs yet."
     },
     "3": {
-      "caption": "Make an empty map called prevMap to remember numbers we have already seen."
+      "explain": "This creates an empty dictionary and gives it the name prevMap. A dictionary stores pairs: a key you look things up by, and a value that comes back. Here the key will be a number we've already passed, and the value will be the index where we saw it. The text after # is a comment, a note Python ignores.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: two levels deep, so this line is inside twoSum, which is inside Solution."
+        },
+        {
+          "token": "prevMap",
+          "meaning": "A variable name we chose. It is short for \"previous map\", meaning the numbers we have previously seen. Any name would work, but a clear name helps the reader."
+        },
+        {
+          "token": "=",
+          "meaning": "The assignment operator. It means \"make the name on the left refer to the value on the right\". It does NOT mean \"is equal to\". Python uses == for that."
+        },
+        {
+          "token": "{}",
+          "meaning": "Curly braces with nothing inside make a new, empty dictionary."
+        },
+        {
+          "token": "# val -> index",
+          "meaning": "A comment. Everything from # to the end of the line is ignored by Python. This one documents what the dictionary will hold: a value maps to its index."
+        }
+      ],
+      "why": "We need a memory of what we have seen, and we need to ask it \"have I seen this exact number?\" very quickly. A dictionary answers that in constant time, meaning instantly, however big it gets. We store the index as the value because the question asks for positions, not the numbers themselves. It starts empty because before the loop we haven't seen anything.",
+      "if_removed": "Line 7 would crash with NameError: name 'prevMap' is not defined, because you can't look inside something that doesn't exist. If you create it inside the loop instead, it gets wiped clean on every pass and never remembers anything, so no pair is ever found.",
+      "alternatives": [
+        {
+          "code": "prevMap = dict()",
+          "difference": "Calls the dict function to make an empty dictionary. It gives exactly the same result. {} is shorter and slightly faster."
+        },
+        {
+          "code": "seen = []",
+          "difference": "A list instead of a dictionary. Checking if diff in seen has to walk through the whole list (slow, O(n) per check), and it can't tell you where the number was without another search. The whole solution would become O(n²)."
+        },
+        {
+          "code": "seen = set()",
+          "difference": "A set gives the same instant \"have I seen it?\" check, but it stores only values, not positions. You'd know a partner exists but not its index, so you couldn't build the answer."
+        }
+      ],
+      "mistake": "Writing prevMap = {} inside the for loop. It looks harmless, but it resets the memory on every pass, so the function finishes without ever finding the pair and returns None.",
+      "caption": "Make an empty map called prevMap. It will remember each number we've seen and where we saw it."
     },
     "5": {
+      "explain": "This starts a for loop that visits each number in nums, from first to last. On every pass, i holds the current position (0, 1, 2, ...) and n holds the number at that position. The indented lines below run once per pass.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation at the same level as prevMap = {}: this line is part of twoSum's body."
+        },
+        {
+          "token": "for",
+          "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"."
+        },
+        {
+          "token": "i, n",
+          "meaning": "Two loop variables separated by a comma. Each pass, enumerate hands back a pair (index, number). Python unpacks the pair, putting the first part into i and the second into n. This is called tuple unpacking."
+        },
+        {
+          "token": "in",
+          "meaning": "In a for loop, in means \"take items one at a time from\". (In line 7, in has a different job: checking membership.)"
+        },
+        {
+          "token": "enumerate(",
+          "meaning": "A built-in function that walks through a collection and gives back (index, item) pairs: (0, 1), (1, 3), (2, 7), and so on. The opening bracket starts its argument."
+        },
+        {
+          "token": "nums",
+          "meaning": "The argument passed to enumerate: the list we are walking through."
+        },
+        {
+          "token": ")",
+          "meaning": "Closes the enumerate call."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header. The indented block below is the loop body."
+        }
+      ],
+      "why": "The answer needs indexes, so we need the position of each number, not just the number. enumerate gives both at once without any index arithmetic. Visiting each number exactly once is what makes the solution O(n). Python runs this line again at the start of every pass to fetch the next pair, which is why the highlight keeps returning here.",
+      "if_removed": "Without the loop, the lines below would run once at most and i and n wouldn't exist, so you'd get a NameError. Writing for n in nums: instead loses i, and line 8 couldn't report a position.",
+      "alternatives": [
+        {
+          "code": "for i in range(len(nums)):\n    n = nums[i]",
+          "difference": "len(nums) is how many items the list has. range(len(nums)) counts 0, 1, ..., len - 1, and you fetch the number yourself with nums[i]. It produces the same i and n. It's more typing, and the extra line is one more place to make a mistake, but beginners often find it clearer."
+        },
+        {
+          "code": "for n in nums:",
+          "difference": "Gives only the numbers. Simpler, but you lose the positions, which this problem needs. Fine when you only care about values."
+        },
+        {
+          "code": "for i, n in enumerate(nums, 1):",
+          "difference": "The second argument makes counting start at 1 instead of 0. Every index would be off by one, so the answer would be wrong, because Python lists start at 0."
+        }
+      ],
+      "mistake": "Swapping the order: for n, i in enumerate(nums):. enumerate always gives the index first, so n would hold the position and i the number. The code still runs, but every result is nonsense.",
       "caption": [
-        "Done with i = {i}. The for loop moves on to the next number.",
-        "The for loop starts at the first number."
+        "Done with i = {i}. The loop moves to the next number in nums.",
+        "The for loop starts at the first number in nums."
       ]
     },
     "6": {
+      "explain": "This works out the partner number we need: if the current number is n, the other number must be target - n for the two to add up to target. We store the result in a variable called diff (short for difference).",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Three levels of indentation: inside the for loop, inside twoSum, inside Solution. So this runs once per loop pass."
+        },
+        {
+          "token": "diff",
+          "meaning": "A new variable that holds the number we're looking for. Many people call this the complement."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: compute the right side, then make diff refer to the result."
+        },
+        {
+          "token": "target",
+          "meaning": "The goal sum that was passed into the method."
+        },
+        {
+          "token": "-",
+          "meaning": "The subtraction operator."
+        },
+        {
+          "token": "n",
+          "meaning": "The current number from the loop."
+        }
+      ],
+      "why": "This is the key insight of the pattern. Instead of trying every possible partner, we compute exactly which partner would work. That is simple algebra: n + partner = target, so partner = target - n. Now the problem is just \"have I seen this one number before?\", and a dictionary answers that instantly.",
+      "if_removed": "Line 7 would fail with NameError because diff wouldn't exist. If you write n - target by mistake, you look for the wrong number. With target 9 and n = 4 you'd look for -5 instead of 5 and never find the pair.",
+      "alternatives": [
+        {
+          "code": "if target - n in prevMap:",
+          "difference": "Skip the variable and compute it inline. It works, but you then have to repeat target - n on line 8, and the code gets harder to read. A named variable explains what the number means."
+        },
+        {
+          "code": "complement = target - n",
+          "difference": "Same thing with a more descriptive name. Pure style. Good names are a gift to whoever reads your code next, including future you."
+        }
+      ],
+      "mistake": "Subtracting in the wrong order (n - target). Addition doesn't care about order, but subtraction does.",
       "caption": "i is {i}, so we look for {target} minus {n} = {target - n} in the map."
     },
     "7": {
+      "explain": "This asks the dictionary: is diff one of your keys? In other words, have we already passed a number that pairs with the current one? If yes, Python runs the indented line below it. If no, Python skips that line.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "A keyword that starts a condition check. The indented block below runs only when the condition is True."
+        },
+        {
+          "token": "diff",
+          "meaning": "The number we're searching for."
+        },
+        {
+          "token": "in",
+          "meaning": "The membership operator. For a dictionary, x in d is True if x is one of d's keys. It checks keys only, never values. Dictionaries do this check in constant time."
+        },
+        {
+          "token": "prevMap",
+          "meaning": "The dictionary of numbers seen so far."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition. The indented block below is what runs when it is True."
+        }
+      ],
+      "why": "This one line replaces the inner loop of the brute force. The dictionary uses hashing to jump straight to where diff would be stored, so the check takes the same tiny time whether the dictionary has 3 entries or 3 million. We search the keys because we stored numbers as keys.",
+      "if_removed": "Without the check, line 8 would run on every pass and prevMap[diff] would crash with a KeyError the first time diff isn't stored, which is on the very first number.",
+      "alternatives": [
+        {
+          "code": "if prevMap.get(diff) is not None:",
+          "difference": ".get returns the stored value, or None if the key is missing. This works correctly, but it is longer, and it would break if None were ever stored as a value."
+        },
+        {
+          "code": "if prevMap.get(diff):",
+          "difference": "A subtle bug! If the partner was at index 0, .get returns 0, and Python treats 0 as False. So the pair at index 0 is never found. Use in instead."
+        },
+        {
+          "code": "if diff in prevMap.keys():",
+          "difference": "Same result and same speed. .keys() is just extra typing, because in already checks keys."
+        },
+        {
+          "code": "if diff in nums:",
+          "difference": "Searching the list instead. That is slow (it walks the whole list each time), and it can find the current number itself, for example 3 + 3 when there is only one 3."
+        }
+      ],
+      "mistake": "Expecting in to search the dictionary's values. 2 in {7: 2} is False, because 2 is a value, not a key. Store the thing you will search by as the key.",
       "caption": [
         {
           "when": "diff in prevMap",
-          "text": "Is {diff} in the map? Yes! It was seen at index {prevMap[diff]}."
+          "text": "Is {diff} in the map? Yes! We saw it at index {prevMap[diff]}."
         },
-        "Is {diff} in the map? No, we haven't seen it yet."
+        "Is {diff} in the map? No, we haven't seen {diff} yet."
       ]
     },
     "8": {
-      "caption": "Found it: {diff} is at index {prevMap[diff]} and {n} is at index {i}."
+      "explain": "We found the pair. This builds a list of the two positions, the partner's index (looked up in the dictionary) and the current index i, and hands that list back as the answer. return also ends the method immediately, so the loop stops here.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Four levels deep: this line belongs to the if block, so it only runs when the condition was True."
+        },
+        {
+          "token": "return",
+          "meaning": "A keyword that ends the function right now and gives the value after it back to whoever called the function."
+        },
+        {
+          "token": "[ ... ]",
+          "meaning": "Square brackets around comma-separated values build a new list."
+        },
+        {
+          "token": "prevMap[diff]",
+          "meaning": "Square brackets right after a dictionary name look up a key: \"give me the value stored for diff\". That value is the index where we saw the partner."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates the two items in the list."
+        },
+        {
+          "token": "i",
+          "meaning": "The current position from the loop."
+        }
+      ],
+      "why": "The partner was seen earlier, so its index is smaller. Putting it first returns the indexes in increasing order, which reads naturally (LeetCode accepts either order). Returning right away matters: the problem promises exactly one answer, so there is no reason to keep looping.",
+      "if_removed": "If the function never returns, Python reaches the end and gives back None, and the answer is marked wrong. If you return only i, you've lost half the answer.",
+      "alternatives": [
+        {
+          "code": "return [i, prevMap[diff]]",
+          "difference": "The same two indexes in the opposite order. LeetCode accepts it. Some test systems compare exactly, and this would fail there."
+        },
+        {
+          "code": "return prevMap[diff], i",
+          "difference": "Without brackets, Python builds a tuple (a list that can't be changed) instead of a list. LeetCode usually accepts it, but it doesn't match the promised List[int] return type."
+        }
+      ],
+      "mistake": "Returning the numbers instead of their positions (return [diff, n]). Read the question carefully: Two Sum asks for indexes.",
+      "caption": "Found it: {diff} is at index {prevMap[diff]} and {n} is at index {i}. Return [{prevMap[diff]}, {i}]."
     },
     "9": {
-      "caption": "Remember {n} lives at index {i} by saving {n}: {i} in the map."
+      "explain": "The partner wasn't found, so we remember the current number for later. This stores n as a key in the dictionary with i (its position) as the value. A later number whose partner is n will then find it on line 7.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Back to three levels: this line is in the loop, but NOT inside the if. It runs whenever the if didn't return."
+        },
+        {
+          "token": "prevMap[n]",
+          "meaning": "Square brackets on the left of = mean \"the slot for key n\". If the key is new, Python creates it. If it already exists, its value is replaced."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: store the right side in that slot."
+        },
+        {
+          "token": "i",
+          "meaning": "The current position, saved as the value."
+        }
+      ],
+      "why": "The order of lines 7 and 9 is the clever part. We check first, then store. So when we look for a partner, the dictionary only holds earlier numbers, and a number can never be paired with itself. Duplicates still work: in [3, 3] with target 6, the second 3 finds the first one.",
+      "if_removed": "The dictionary stays empty forever, line 7 never finds anything, and the function returns None. If you move this line above the if check, then nums = [3, 4] with target 6 stores 3 first and immediately finds 3, returning [0, 0], which uses the same position twice.",
+      "alternatives": [
+        {
+          "code": "prevMap.update({n: i})",
+          "difference": "Same effect, but it builds a throwaway one-entry dictionary first. That is wordier and slightly slower."
+        },
+        {
+          "code": "prevMap.setdefault(n, i)",
+          "difference": "Stores i only if n isn't already a key, so it keeps the FIRST position of a repeated number. For this problem either first or latest works, but the meaning is different, and that difference matters in other problems."
+        }
+      ],
+      "mistake": "Indenting this line one level further, which puts it inside the if block, right after the return. Code after a return never runs, so nothing is ever stored.",
+      "caption": "{diff} wasn't there, so remember {n} by saving {n} → {i} in the map."
     }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def twoSum(self, nums: List[int], target: int) -> List[int]:\n        for i in range(len(nums)):\n            for j in range(i + 1, len(nums)):\n                if nums[i] + nums[j] == target:\n                    return [i, j]",
+    "explain": "The most direct idea: try every possible pair. The outer loop picks a first number at position i. The inner loop tries every number after it, at position j. If the two add up to target, return both positions. j starts at i + 1, so we never pair a number with itself and never check the same pair twice.",
+    "why_slow": "For a list of n numbers, the first number is paired with n - 1 others, the next with n - 2, and so on. That adds up to about n × n ÷ 2 checks. For 10 numbers that is 45 checks, which is fine. For 10,000 numbers it is about 50 million. If the list doubles in length, the work goes up about four times. That's O(n²), called quadratic time.",
+    "how_pattern_fixes": "The slow part is the inner loop, which hunts through the list for a partner. But we know exactly which partner we need: target - nums[i]. So instead of hunting, we ask a dictionary \"have you seen this number?\", and it answers instantly. The inner loop disappears, and the work drops from about n × n to about n. The price is memory: the dictionary may hold up to n entries.",
+    "time": "O(n²): quadratic. Double the list, about four times the work.",
+    "space": "O(1): constant. Only a couple of loop variables, however big the list is."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it. In twoSum([1, 3], 4), the list [1, 3] and the number 4 are the arguments.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n²) means doubling the input quadruples the work. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "boolean": "A value that is either True or False. Conditions in if statements produce booleans.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like enumerate(nums).",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "complement": "The missing partner. If you need two numbers that add to 9 and you have 4, the complement is 9 - 4 = 5.",
+    "condition": "An expression that is either True or False, used to decide whether code runs, as in if diff in prevMap.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Dictionary lookups are constant time.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key → value pairs and finds any key instantly.",
+    "edge case": "An unusual input that might break code: an empty list, duplicates, negative numbers, the answer at position 0, and so on.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like target - n or diff in prevMap.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "hash map": "A structure that stores key → value pairs and finds a key almost instantly by turning the key into a storage location (hashing). Python's dictionary is a hash map.",
+    "hashing": "Turning a value into a number that says where to store it. That lets a hash map jump straight to the right spot instead of searching.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "index": "A position in a list, counting from 0. In [1, 3, 7], the 7 is at index 2.",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "key": "The part of a dictionary entry you look things up by. In {7: 2}, the key is 7.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there with d[key].",
+    "keyword": "A word Python reserves for itself, like def, for, if, return, class, in. You can't use these as variable names.",
+    "list": "An ordered collection written with square brackets, like [1, 3, 7]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection.",
+    "method": "A function that lives inside a class. It's called with a dot, like Solution().twoSum(...), and its first parameter is self.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, == compares, in checks membership.",
+    "parameter": "A name in a function's definition that will hold an input. nums and target are the parameters of twoSum.",
+    "pattern": "A reusable technique that solves a whole family of problems, like hash map lookup or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a list, used to point at one item. Several pointers can move through a list together, as in the two pointers pattern.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set": "A collection of unique values with instant membership checks, like a dictionary with keys but no values. It is written set() when empty.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Splitting a pair (or a longer tuple) into separate variables in one step, as in i, n = (0, 1).",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a sorted list, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
   },
   "visualizer": [
     {
@@ -56,14 +516,14 @@
         "i": "i"
       },
       "marks": {
-        "compared": "[i]",
-        "found": "[prevMap[diff], i] if diff in prevMap else []",
+        "compared": "[i] if __line__ in (6, 7, 9) else []",
+        "found": "[prevMap[diff], i] if __line__ == 8 or (__line__ == 7 and diff in prevMap) else []",
         "done": "list(range(i))"
       }
     },
     {
       "type": "hashmap",
-      "title": "prevMap",
+      "title": "prevMap  (number → index)",
       "source": "prevMap",
       "lookup": "diff if __line__ in (7, 8) else None"
     }

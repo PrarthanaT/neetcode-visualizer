@@ -54,7 +54,7 @@ export default function CodePane() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-line px-4 text-xs text-ink-faint">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-line px-4 text-xs text-ink-faint">
         <span className="font-mono text-ink-dim">solution.py</span>
         <span className="ml-auto">Click any line to read about it</span>
       </div>
