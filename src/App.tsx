@@ -3,14 +3,15 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import CodePane from "./components/CodePane";
 import Player from "./components/Player";
 import { usePlayback } from "./lib/usePlayback";
-import { useCurrentStep, useStore } from "./store/useStore";
+import { useStore } from "./store/useStore";
+import Visualizer from "./components/Visualizer";
+import Caption from "./components/Caption";
+import FramesView from "./components/FramesView";
 import twoSum from "./problems/two-sum.json";
 import type { Problem } from "./types/problem";
 
 export default function App() {
   usePlayback();
-  const status = useStore((s) => s.status);
-  const step = useCurrentStep();
 
   useEffect(() => {
     useStore.getState().loadProblem(twoSum as unknown as Problem);
@@ -32,13 +33,11 @@ export default function App() {
         </Panel>
         <PanelResizeHandle className="resize-handle" />
         <Panel defaultSize={42} minSize={30}>
-          <div className="flex flex-col gap-4 p-4">
+          <div className="flex h-full flex-col gap-3 overflow-y-auto p-4 [&>*]:shrink-0">
+            <Visualizer />
+            <Caption />
             <Player />
-            <div className="card p-4 font-mono text-xs text-ink-dim">
-              <div>status: {status}</div>
-              <div>line {step?.line} · {step?.event}</div>
-              <div className="mt-2 text-sm text-ink">{step?.caption}</div>
-            </div>
+            <FramesView />
           </div>
         </Panel>
       </PanelGroup>

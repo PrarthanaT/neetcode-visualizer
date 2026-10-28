@@ -64,7 +64,7 @@ export default function CodePane() {
             key={problem.slug}
             language="python"
             theme="nv-dark"
-            value={problem.code}
+            value={problem.code.replace(/\n+$/, "")}
             onMount={onMount}
             options={{
               readOnly: true,
