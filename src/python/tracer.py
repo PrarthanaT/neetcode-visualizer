@@ -21,6 +21,18 @@ class StepLimit(Exception):
     pass
 
 
+class _Hide(object):
+    """Visualizer expressions return HIDE to leave a value out (e.g. hide a
+    pointer on some lines). Expressions that raise are left out the same way,
+    so a hidden pointer is different from one that is really None."""
+
+    def __repr__(self):
+        return "HIDE"
+
+
+HIDE = _Hide()
+
+
 # ---------------------------------------------------------------- formatting
 
 def fmt(value):
@@ -43,6 +55,11 @@ def fmt(value):
         return "{" + ", ".join(fmt(v) for v in value) + "}" if value else "set()"
     if isinstance(value, dict):
         return "{" + ", ".join(fmt(k) + ": " + fmt(v) for k, v in value.items()) + "}"
+    if hasattr(value, "__dict__") and not isinstance(value, type) and not callable(value):
+        # never show "<__main__.ListNode object at 0x...>" to a beginner
+        if hasattr(value, "val"):
+            return "the node holding " + fmt(value.val)
+        return "a " + type(value).__name__ + " object"
     return repr(value)
 
 
@@ -239,6 +256,7 @@ class Tracer:
         scope["__builtins__"] = __builtins__
         scope["__line__"] = frame.f_lineno
         scope["__visits__"] = dict(self.visits)
+        scope["HIDE"] = HIDE
 
         step = {
             "line": frame.f_lineno,
@@ -262,9 +280,11 @@ class Tracer:
         viz = {}
         for key, expr in self.exprs.items():
             try:
-                viz[key] = self.enc.plain(eval(expr, scope))
+                result = eval(expr, scope)
             except Exception:
-                viz[key] = None
+                continue
+            if result is not HIDE:
+                viz[key] = self.enc.plain(result)
         step["viz"] = viz
         return step
 

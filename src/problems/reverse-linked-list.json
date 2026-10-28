@@ -1,0 +1,606 @@
+{
+  "slug": "reverse-linked-list",
+  "title": "Reverse Linked List",
+  "difficulty": "Easy",
+  "category": "Linked List",
+  "leetcode": 206,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it. The last node's next is None, meaning \"nothing after me\".",
+    "You are given head, the first node of a linked list. Reverse the list so every arrow points the other way, and give back the new first node.",
+    "For example 1 → 2 → 3 → 4 → 5 becomes 5 → 4 → 3 → 2 → 1.",
+    "The list might be empty, in which case head is None."
+  ],
+  "examples": [
+    {
+      "input": "head = 1 → 2 → 3 → 4 → 5",
+      "output": "5 → 4 → 3 → 2 → 1",
+      "explain": "Every next arrow is flipped, and the old last node becomes the new head. This is the example the visualizer runs."
+    },
+    {
+      "input": "head = None (an empty list)",
+      "output": "None",
+      "explain": "There's nothing to reverse, so the answer is also an empty list."
+    }
+  ],
+  "pattern": {
+    "name": "Linked list pointer rewiring (prev / curr)",
+    "summary": "Walk down the list with two pointers: curr is the node you're working on, and prev is the node just behind it. At each node, save the next node so you don't lose the rest of the list, point curr's arrow back at prev, then move both pointers one step forward. When curr runs off the end, prev is the new head.",
+    "recognize": [
+      "The input is a linked list and the question asks you to change its links: reverse it (all or part), reorder it, remove nodes, merge two lists.",
+      "You need to change where arrows point while walking the list, which means you must save the next node BEFORE overwriting curr.next.",
+      "The question asks for O(1) extra memory, so copying the values into a Python list and rebuilding isn't allowed.",
+      "Harder linked list problems (Reorder List, Reverse Nodes in K-Group) use this exact reversal as one step."
+    ],
+    "avoid_when": [
+      "You only need to read the list, not rewire it, for example to sum the values. A single pointer walking forward is enough.",
+      "You need to look at nodes from both ends at once, or jump to the middle. Linked lists can't jump. Fast and slow pointers, or copying to a list, may fit better.",
+      "Memory isn't a concern and clarity matters more. Copying values into a Python list, reversing it, and rebuilding is easier to get right, though it costs O(n) extra memory.",
+      "The structure is a doubly linked list (each node also points backward). Then reversing means swapping two arrows per node, not one."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A node only knows the node after it. Once you overwrite curr.next, the rest of the list is unreachable unless you saved it first. Always save it in temp before rewiring.",
+      "Three pointers do the whole job: prev (already reversed), curr (being reversed now), temp (the rest, not yet reversed).",
+      "The order of the four lines in the loop matters: save next, flip the arrow, advance prev, advance curr. Swap any two and you lose nodes or loop forever.",
+      "When the loop ends, curr is None and prev is sitting on the old last node, which is the new head. Return prev, not curr or head."
+    ],
+    "time": "O(n), linear time. n is the number of nodes. The loop visits each node exactly once and does four quick assignments there. Double the list and the work doubles.",
+    "space": "O(1), constant extra memory. We never create new nodes or lists. We only re-point existing arrows and keep three pointer variables, however long the list is.",
+    "edge_cases": [
+      "An empty list, head = None. curr starts as None, so the loop never runs, and we return prev, which is None. Correct.",
+      "A single node, like 7 → None. One pass makes 7.next = prev = None (unchanged) and returns that node. Correct.",
+      "Two nodes, 1 → 2. This is the smallest case where arrows actually flip. It's a good one to trace by hand.",
+      "Returning head instead of prev. head still points at the old first node, which is now the LAST node, so you'd return a one-node list."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        prev, curr = None, head\n\n        while curr:\n            temp = curr.next\n            curr.next = prev\n            prev = curr\n            curr = temp\n        return prev\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    head = None\n    for v in reversed(values):\n        head = ListNode(v, head)\n    return head\n\ndef to_list(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n",
+    "call": "Solution().reverseList(build([1, 2, 3, 4, 5]))",
+    "check": "to_list(__result__)",
+    "expected": [
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "describe": "head = 1 → 2 → 3 → 4 → 5"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the list is an object made from this blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(5). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating nodes convenient: ListNode(5) makes a lone node, and ListNode(5, other) makes a node pointing at other.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. Later, node.val reads the value back.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.value = val",
+          "difference": "A different field name. All code would then have to say node.value. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node (or None at the end). Reversing the list means changing these fields.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is the link that makes it a chain. Our whole solution works by rewriting these next fields.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too. Reversing would then mean swapping both arrows on each node."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method reverseList. It receives head, the first node (or None for an empty list), and promises to give back the new first node (or None).",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def reverseList(",
+          "meaning": "def starts a method. reverseList is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "head: Optional[ListNode]",
+          "meaning": "The first node of the list. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": ") -> Optional[ListNode]",
+          "meaning": "The method returns a ListNode or None: the new head."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "A linked list is passed around by its first node: holding the head is enough to reach everything else by following next arrows. So the input is just head, and the answer is just the new head.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def reverseList(self, head):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def reverseList(self, head: ListNode | None) -> ListNode | None:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Thinking head is the whole list, like a Python list. It's a single node object. The rest of the list is only reachable through head.next, head.next.next, and so on.",
+      "caption": "Python remembers the reverseList instructions for later."
+    },
+    "8": {
+      "explain": "This sets up two pointers. prev starts as None, because nothing has been reversed yet and the new tail must point at None. curr starts at head, the first node to process.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "prev, curr",
+          "meaning": "Two variable names. prev is the node behind curr, and curr is the current node. Python assigns both at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "None, head",
+          "meaning": "prev gets None and curr gets head."
+        }
+      ],
+      "why": "The first node will become the LAST node of the reversed list, so its next must become None. Starting prev at None means the very first flip (curr.next = prev) does exactly that, with no special case.",
+      "if_removed": "The loop crashes with a NameError. If prev started as head, the first node would point at itself, creating a loop that never ends.",
+      "alternatives": [
+        {
+          "code": "prev = None\ncurr = head",
+          "difference": "Two lines. Same result."
+        },
+        {
+          "code": "prev, curr = None, head  # could also reuse head as curr",
+          "difference": "Some solutions skip curr and move head itself forward. It works, but then the name head no longer means the head, which confuses readers."
+        }
+      ],
+      "mistake": "Starting prev at head. The first node's next would point back at itself.",
+      "caption": [
+        {
+          "when": "head is None",
+          "text": "prev starts at None and curr starts at head, which is None: the list is empty."
+        },
+        "prev starts at None (nothing reversed yet), and curr starts at the first node, {head.val}."
+      ]
+    },
+    "10": {
+      "explain": "Keep looping as long as curr is a real node. When curr becomes None, we've walked off the end of the list and every node has been reversed.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "curr",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False (truthiness)."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "We don't know the list's length in advance, and we can't use range(len(...)) on a linked list, so we walk until there are no more nodes.",
+      "if_removed": "Only the first node is processed, and the method returns a one-node list.",
+      "alternatives": [
+        {
+          "code": "while curr is not None:",
+          "difference": "Spells out \"until curr is None\". It behaves the same here, and many people find it clearer."
+        },
+        {
+          "code": "while curr.next:",
+          "difference": "Stops one node early (the last node never gets flipped), and crashes on an empty list because None has no .next."
+        }
+      ],
+      "mistake": "Writing while curr.next. It skips the last node and fails on an empty list with AttributeError: 'NoneType' object has no attribute 'next'.",
+      "caption": [
+        {
+          "when": "curr is None",
+          "text": "curr is None: we've walked off the end, so every arrow has been flipped."
+        },
+        "curr is node {curr.val}, a real node, so reverse its arrow."
+      ]
+    },
+    "11": {
+      "explain": "Save the node after curr in temp. We're about to overwrite curr.next, and without this saved copy we'd lose our only way to reach the rest of the list.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "temp",
+          "meaning": "A temporary variable. Its whole job is to remember the next node for one pass."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: temp now refers to the same node that curr.next refers to. No node is copied."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The dot reads a field: \"the next of curr\". It's either the following node or None."
+        }
+      ],
+      "why": "A node only knows its successor through next. Line 12 is about to point curr.next backward, so this line is the last moment the rest of the list can be grabbed.",
+      "if_removed": "After line 12, curr.next points backward, so curr = curr.next would walk BACK to prev, and the rest of the list would be lost. The answer would be wrong or the loop wouldn't end.",
+      "alternatives": [
+        {
+          "code": "nxt = curr.next",
+          "difference": "Same thing with a more descriptive name. Pure style."
+        },
+        {
+          "code": "curr.next, prev, curr = prev, curr, curr.next",
+          "difference": "Python evaluates the whole right side BEFORE assigning anything, so this one line does the save, flip and both advances without temp. It's clever and correct, but hard to read. Reordering the names on the left breaks it."
+        }
+      ],
+      "mistake": "Doing the flip (line 12) before saving next. That's the single most common bug in this problem.",
+      "caption": [
+        {
+          "when": "curr.next is None",
+          "text": "Save curr.next in temp. Node {curr.val} is the last node, so temp = None."
+        },
+        "Save curr.next in temp, so we don't lose node {curr.next.val} and everything after it."
+      ]
+    },
+    "12": {
+      "explain": "This is the actual reversal: point curr's next arrow BACKWARD, at prev, instead of forward.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the loop."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "On the LEFT of =, this means \"the next field of curr\", the slot we're changing."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: overwrite that field."
+        },
+        {
+          "token": "prev",
+          "meaning": "The node behind curr (or None for the first node)."
+        }
+      ],
+      "why": "Each pass flips exactly one arrow. After the flip, curr is the newest node of the reversed part, which starts at curr and runs back through prev.",
+      "if_removed": "No arrow ever changes. The method returns the old last node, still pointing at None, so the result is a one-node list.",
+      "alternatives": [
+        {
+          "code": "curr.next = None",
+          "difference": "Cuts every node loose instead of linking it to prev. You'd end up with a pile of separate one-node lists."
+        }
+      ],
+      "mistake": "Writing prev.next = curr. That re-creates the original forward link, so nothing gets reversed. On the first pass prev is None, so it crashes with an AttributeError.",
+      "caption": [
+        {
+          "when": "prev is None",
+          "text": "Flip node {curr.val}'s arrow to point at prev = None. It becomes the end of the reversed list."
+        },
+        "Flip node {curr.val}'s arrow so it points back at node {prev.val}."
+      ]
+    },
+    "13": {
+      "explain": "Move prev forward to curr. The node we just flipped is now the front of the reversed part.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the loop."
+        },
+        {
+          "token": "prev = curr",
+          "meaning": "Make prev refer to the same node as curr. No node is copied: two names now point at one node."
+        }
+      ],
+      "why": "On the next pass, the following node must point back at THIS node, so this node becomes the new prev.",
+      "if_removed": "prev stays None, so every node's next is set to None. You'd return the old last node, alone.",
+      "alternatives": [
+        {
+          "code": "prev, curr = curr, temp",
+          "difference": "Advances both pointers in one line. Python evaluates both right-hand values first, so it's safe. It replaces lines 13 and 14."
+        }
+      ],
+      "mistake": "Advancing curr before prev (swapping lines 13 and 14). prev would then jump to temp, the node not yet processed, and the links come out wrong.",
+      "caption": "Move prev forward to node {curr.val}, the front of the reversed part."
+    },
+    "14": {
+      "explain": "Move curr forward to temp, the node we saved before flipping. That's the next node still waiting to be reversed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the loop."
+        },
+        {
+          "token": "curr = temp",
+          "meaning": "curr now refers to the saved node, or None if we just processed the last node."
+        }
+      ],
+      "why": "We can't use curr.next to move forward, because we just pointed it backward. That's exactly why we saved temp on line 11.",
+      "if_removed": "curr never moves, so the while loop runs forever on the same node (or until the 500-step cap stops the visualizer).",
+      "alternatives": [
+        {
+          "code": "curr = curr.next",
+          "difference": "Wrong here! After line 12, curr.next is prev, so this walks BACKWARD. The loop bounces between two nodes forever."
+        }
+      ],
+      "mistake": "Writing curr = curr.next out of habit. It's the usual way to walk a list, but not after you've flipped the arrow.",
+      "caption": [
+        {
+          "when": "temp is None",
+          "text": "Move curr to temp, which is None. There are no nodes left."
+        },
+        "Move curr forward to node {temp.val}, the next node to reverse."
+      ]
+    },
+    "15": {
+      "explain": "The loop has ended, so curr is None and prev is on the old last node, which is now the first node of the reversed list. Return it.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: runs once, after the loop."
+        },
+        {
+          "token": "return prev",
+          "meaning": "Hand back the new head node."
+        }
+      ],
+      "why": "When curr walks off the end it becomes None, and prev is the last real node it visited, the old tail. Every arrow now points backward, so that node is the start of the reversed chain.",
+      "if_removed": "The method returns None, which looks like an empty list.",
+      "alternatives": [
+        {
+          "code": "return curr",
+          "difference": "curr is None at this point, so you'd return an empty list."
+        },
+        {
+          "code": "return head",
+          "difference": "head still refers to the ORIGINAL first node, which is now the last node with next = None. You'd return a one-node list."
+        }
+      ],
+      "mistake": "Returning head. The variable head never changed, but the node it refers to is now at the end of the list.",
+      "caption": [
+        {
+          "when": "prev is None",
+          "text": "The list was empty, so return None."
+        },
+        "Return prev: node {prev.val} is the new head of the reversed list."
+      ]
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        values = []\n        node = head\n        while node:\n            values.append(node.val)\n            node = node.next\n        node = head\n        while node:\n            node.val = values.pop()\n            node = node.next\n        return head",
+    "explain": "Copy every value into a Python list, then walk the linked list again and write the values back in reverse order. values.pop() takes from the end of the list, so the last value goes into the first node. The arrows never change. Only the values move.",
+    "why_slow": "It's actually still O(n) time: two passes of n steps each. The problem is MEMORY. It stores a copy of every value, so it needs O(n) extra space, while the pattern needs O(1). It also changes the nodes' values instead of the links. If the nodes carried other data, or other code held references to particular nodes, that would be wrong.",
+    "how_pattern_fixes": "Instead of moving values around, the pattern changes where the arrows point, one node at a time, using only three pointer variables (prev, curr, temp). There's no copy of the data, so the extra memory stays constant however long the list is.",
+    "time": "O(n): linear. Two passes over the list.",
+    "space": "O(n): linear. A Python list holding every value."
+  },
+  "glossary": {
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way. It's simple, but often slow or wasteful of memory.",
+    "call": "Running a function by writing its name followed by brackets, like ListNode(5) or values.pop().",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while or if lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by while and if.",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "expression": "Any piece of code that produces a value, like curr.next.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(5). It sets up the object's fields.",
+    "keyword": "A word reserved by Python, like class, def, while, return.",
+    "len": "A built-in function that gives the number of items in a Python list or string. It doesn't work on a linked list made of nodes.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: you can jump straight to any position by index.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class, called with a dot: Solution().reverseList(head).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\".",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. head is reverseList's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around the list. prev, curr and temp are pointers.",
+    "pop": "A list method that removes the last item and gives it back.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2. It doesn't work on linked lists, because they have no length you can look up.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. None counts as False, and any node object counts as True.",
+    "tuple": "Like a list but unchangeable, written with round brackets or just commas: (1, 2) or 1, 2.",
+    "tuple unpacking": "Assigning several names at once: prev, curr = None, head.",
+    "two pointers": "Using two position variables that move through the data together. Here prev and curr walk the list side by side.",
+    "type hint": "A label like head: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like List and Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "the list (follow the arrows)",
+      "node_class": "ListNode",
+      "pointers": {
+        "prev": "prev",
+        "curr": "curr",
+        "temp": "temp if __line__ in (12, 13, 14) else HIDE"
+      },
+      "null_left": [
+        "prev"
+      ]
+    }
+  ]
+}

@@ -499,7 +499,7 @@
     "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2: it starts at 0 and stops before 3.",
     "return": "A keyword that ends a function and hands a value back to the caller.",
     "self": "The first parameter of every method. It refers to the object the method was called on.",
-    "set": "A collection of unique values with instant membership checks, like a dictionary with keys but no values. It is written set() when empty.",
+    "set (collection)": "A collection of unique values with instant membership checks, like a dictionary with keys but no values. It is written set() when empty.",
     "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
     "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
     "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",

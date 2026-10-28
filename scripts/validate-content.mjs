@@ -13,10 +13,12 @@ const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
 const problems = files.map((f) => ({ file: f, p: JSON.parse(readFileSync(join(dir, f), "utf8")) }));
 
 // Terms that must be defined whenever they appear, plus every term any problem defines.
+// Words that are also everyday English (set, and, not, while...) get a qualifier in
+// glossaries, like "set (collection)", so they are never matched against prose.
 const BASE_TERMS = [
   "algorithm", "argument", "assignment", "Big O", "boolean", "brute force", "class", "comment", "condition",
   "dictionary", "expression", "function", "hash map", "index", "indentation", "integer", "keyword", "list",
-  "loop", "method", "object", "operator", "parameter", "pointer", "recursion", "return", "self", "set",
+  "loop", "method", "object", "operator", "parameter", "pointer", "recursion", "return", "self",
   "stack", "string", "tuple", "type hint", "variable", "node", "linked list", "KeyError", "IndexError",
   "TypeError", "NameError", "SyntaxError", "None",
 ];

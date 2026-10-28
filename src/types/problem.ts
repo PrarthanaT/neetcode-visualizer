@@ -44,7 +44,20 @@ export type PanelSpec =
       lookup?: string;
     }
   | { type: "stack"; title: string; source: string; marks?: Partial<Record<MarkKind, string>> }
-  | { type: "linkedlist"; title: string; source: string; pointers?: Record<string, string> };
+  | {
+      type: "linkedlist";
+      title: string;
+      /** Name of the node class to draw, e.g. "ListNode". Every reachable node of this class is drawn. */
+      node_class: string;
+      /** Field holding the node's value / the next node. Default "val" and "next". */
+      val_field?: string;
+      next_field?: string;
+      /** label -> Python expression giving a node or None. Return HIDE to hide the pointer on a step. */
+      pointers?: Record<string, string>;
+      /** Pointer labels whose None should sit at the left end instead of the right. */
+      null_left?: string[];
+      source?: undefined;
+    };
 
 export type MarkKind = "compared" | "found" | "done";
 

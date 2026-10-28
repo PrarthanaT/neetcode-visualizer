@@ -29,6 +29,7 @@ export interface Step {
   out: string;
   caption: string | null;
   ret?: Value;
+  /** Visualizer expression results. A key is missing when its expression failed or returned HIDE. */
   viz: Record<string, Plain>;
 }
 

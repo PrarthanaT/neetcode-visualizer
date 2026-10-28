@@ -567,7 +567,7 @@
     "dictionary": "Python's built-in hash map, written with curly braces like {\")\": \"(\"}. It stores key → value pairs and finds a key instantly.",
     "early exit": "Returning from a function as soon as the answer is known, instead of doing unnecessary work.",
     "elif": "Short for \"else if\". It checks another condition when the earlier if (or elif) was False.",
-    "else": "A keyword: \"otherwise\". Its block runs when the if it lines up with had a False condition.",
+    "else (keyword)": "A keyword: \"otherwise\". Its block runs when the if it lines up with had a False condition.",
     "expression": "Any piece of code that produces a value, like stack[-1] == closeToOpen[c].",
     "function": "A named, reusable set of instructions you define with def and call by name.",
     "hash map": "A structure that stores key → value pairs and finds any key almost instantly. Python's dictionary is one.",
