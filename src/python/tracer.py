@@ -84,7 +84,7 @@ def render_template(template, scope):
         if kind == "text":
             out.append(piece)
         else:
-            out.append(fmt(eval(piece, {"__builtins__": __builtins__}, scope)))
+            out.append(fmt(eval(piece, scope)))
     return "".join(out)
 
 
@@ -102,7 +102,7 @@ def pick_caption(options, scope):
         try:
             if isinstance(opt, dict):
                 when = opt.get("when")
-                if when and not eval(when, {"__builtins__": __builtins__}, scope):
+                if when and not eval(when, scope):
                     continue
                 return render_template(opt["text"], scope)
             return render_template(opt, scope)
@@ -231,8 +231,12 @@ class Tracer:
                 "locals": [[n, self.enc.value(v, heap)] for n, v in self.visible(dict(f.f_locals), False)],
             })
 
+        # One merged namespace used as eval's globals, so comprehensions inside
+        # expressions can see local variables (they can't on Python < 3.12 when
+        # locals are passed separately).
         scope = dict(frame.f_globals)
         scope.update(dict(frame.f_locals))
+        scope["__builtins__"] = __builtins__
         scope["__line__"] = frame.f_lineno
         scope["__visits__"] = dict(self.visits)
 
@@ -258,7 +262,7 @@ class Tracer:
         viz = {}
         for key, expr in self.exprs.items():
             try:
-                viz[key] = self.enc.plain(eval(expr, {"__builtins__": __builtins__}, scope))
+                viz[key] = self.enc.plain(eval(expr, scope))
             except Exception:
                 viz[key] = None
         step["viz"] = viz
