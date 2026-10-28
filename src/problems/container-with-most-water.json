@@ -1,0 +1,377 @@
+{
+  "slug": "container-with-most-water",
+  "title": "Container With Most Water",
+  "difficulty": "Medium",
+  "category": "Two Pointers",
+  "leetcode": 11,
+  "statement": [
+    "You are given a list of n non-negative whole numbers called height. height[i] is the height of a vertical line standing at position i.",
+    "Choose any two of these lines. Together with the ground between them, they form a container. The container's width is the distance between the two positions, and the water it can hold is capped by the SHORTER of the two lines, since water would spill over a shorter wall.",
+    "Find the two lines that form the container holding the most water, and return that amount (width times the shorter height). You don't need to return which two lines they were."
+  ],
+  "examples": [
+    {
+      "input": "height = [1, 8, 6, 2, 5, 4, 8, 3, 7]",
+      "output": "49",
+      "explain": "The lines at positions 1 and 8 have heights 8 and 7. The width between them is 8 - 1 = 7, and the shorter wall is 7, so the area is 7 x 7 = 49. No other pair of lines does better. This is the example the visualizer runs."
+    },
+    {
+      "input": "height = [1, 1]",
+      "output": "1",
+      "explain": "There's only one possible pair: both lines have height 1 and the width between them is 1, so the area is 1 x 1 = 1."
+    }
+  ],
+  "pattern": {
+    "name": "Two pointers shrinking from both ends",
+    "summary": "Start with the widest possible container: l at the first line, r at the last. Compute its area and remember the best seen so far. Then look at which of the two walls is shorter. That shorter wall is the one limiting this container's water level, and moving the taller wall inward could only make things worse, since the width would shrink while the limiting height couldn't improve. So move the shorter wall inward instead, trading a little width for the chance of a taller wall. Repeat until the pointers meet.",
+    "recognize": [
+      "You're choosing two positions from a list, and the quantity you care about depends on both their distance apart (width) and something about their values (here, the smaller of the two heights).",
+      "A greedy argument tells you that one specific move, among the several you could make, can never do better, so you can safely rule it out instead of trying everything.",
+      "The brute-force answer checks every pair with a loop inside a loop, and the problem hints that the input can be large.",
+      "There's no need to track extra state besides the current best answer. No hash map or sorting step is needed, just two positions walking toward each other."
+    ],
+    "avoid_when": [
+      "The quantity you're optimizing doesn't shrink monotonically as the window narrows in an obvious direction. Here, narrowing the window always lowers the width, which is what makes moving the shorter wall the only move worth making.",
+      "You need the actual positions of the best pair, not just the resulting number, and keeping track of them would need extra bookkeeping beyond what's shown here (which this problem doesn't ask for).",
+      "The relationship between the two chosen items isn't \"capped by the smaller of two values times a distance\". A different shape of problem needs a different pattern.",
+      "The list is tiny and a nested loop is simple enough to read and just as fast at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "The core insight is a greedy proof: moving the TALLER wall inward can never increase the area, since the width shrinks and the limiting (shorter) height can't get any taller by moving the wall that wasn't the limit. So the only move worth making is shrinking the shorter wall.",
+      "res has to be updated BEFORE deciding which pointer to move, since the current pair's area needs to be checked before the window changes.",
+      "The water level actually shown for a container is min(height[l], height[r]), not the taller wall's height. Water can't sit higher than its shorter wall without spilling over it.",
+      "No extra memory beyond a couple of index variables is needed. The whole list is examined, but never copied, sorted, or stored a second time."
+    ],
+    "time": "O(n), linear time. n is the length of height. l and r together visit at most n positions before meeting, and each pass does a fixed amount of work: one area calculation and one comparison. Double the length of height and the work roughly doubles.",
+    "space": "O(1), constant. Only l, r and res, however long height is.",
+    "edge_cases": [
+      "Only two lines, like height = [1, 1]. l and r start at the only two positions there are; the single pass computes that one area and the loop ends immediately after, since l and r then meet.",
+      "The tallest lines are already at both ends, like height = [9, 1, 1, 9]. The very first area checked, 3 x 9 = 27, turns out to be the best one, and every later, narrower container can only do worse.",
+      "A long run of short lines between two tall ones, like height = [8, 1, 1, 1, 1, 8]: the width stays large until one of the inner, shorter lines forces a pointer to move, but since both end lines are tall, moving either wall first only lowers the width without raising the limiting height.",
+      "All lines the same height, like height = [4, 4, 4, 4]. Every pair has the same limiting height, so the widest pair (the two ends) gives the largest area, and that's exactly the first one checked.",
+      "A line of height 0 at one end, like height = [0, 3, 5, 2]. Any container using position 0 holds no water at all, since its shorter wall is 0; the algorithm moves past it (height[l] < height[r] is True) without ever needing a special case for it."
+    ]
+  },
+  "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        l, r = 0, len(height) - 1\n        res = 0\n        while l < r:\n            res = max(res, (r - l) * min(height[l], height[r]))\n            if height[l] < height[r]:\n                l += 1\n            elif height[r] < height[l]:\n                r -= 1\n            else:\n                l += 1\n                r -= 1\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().maxArea([1, 8, 6, 2, 5, 4, 8, 3, 7])",
+    "expected": 49,
+    "describe": "height = [1, 8, 6, 2, 5, 4, 8, 3, 7]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def maxArea would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named maxArea. It takes the list height and promises to give back a whole number: the largest container area possible.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "maxArea", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "height: List[int])", "meaning": "The input list of line heights, hinted as a List of int (whole numbers)." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a single whole number, the best area found." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. Returning a single number directly matches what the problem asks for: the largest amount of water, not the two positions that achieve it.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def maxArea(self, height):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning the two positions, or the shorter height, instead of the full area (width times shorter height). The problem asks for the amount of water, not a description of the container.",
+      "caption": "Python remembers the maxArea instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This sets up the two pointers at the widest possible container: l at the first position and r at the last.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(height) - 1", "meaning": "len gives how many lines height has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "Starting as wide as possible is deliberate: the widest container is checked first, and every later container considered is narrower, so the algorithm only needs to ask \"is this new, narrower container better?\" from here on.",
+      "if_removed": "The while loop on line 5 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(height) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Writing r = len(height) instead of len(height) - 1. Then height[r] on line 6 would try to read one position past the end and raise an IndexError.",
+      "caption": "l starts at 0 and r starts at {len(height) - 1}: the widest possible container."
+    },
+    "4": {
+      "explain": "This creates res, the best area found so far, starting at 0 since no container has been checked yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for result." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The smallest possible area: no water held at all." }
+      ],
+      "why": "The algorithm needs to remember the best area seen across every pair of walls it checks, not just the most recent one, since a narrower, later container might turn out worse than one checked earlier.",
+      "if_removed": "Line 6 would crash with a NameError, since res wouldn't exist to compare against.",
+      "alternatives": [
+        { "code": "res = float('-inf')", "difference": "Starts from negative infinity instead of 0. Since every real area is at least 0, this gives the same final answer here; starting at 0 is simpler and reads more naturally for a quantity that can't be negative." }
+      ],
+      "mistake": "Creating res inside the while loop on line 5 instead of before it. That would reset the best answer back to 0 on every single pass, losing track of anything found earlier.",
+      "caption": "Make res = 0: no container has been checked yet."
+    },
+    "5": {
+      "explain": "This loop keeps going as long as the two pointers haven't met or crossed. Each pass checks one container and then narrows the window by moving one pointer inward.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "l < r", "meaning": "True while there are still two distinct walls left to consider." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Once l and r meet, there's no second wall left to pair with, so there's nothing more to check. Every possible width, from widest down to 0, gets a chance to be checked before that happens.",
+      "if_removed": "Without the loop, only the very first, widest container would ever be checked, and a narrower but taller one might be missed entirely.",
+      "alternatives": [
+        { "code": "while l != r:", "difference": "Works the same here, since l only increases and r only decreases, one step at a time. l < r is still the clearer, safer way to write \"two walls remain\"." }
+      ],
+      "mistake": "Writing l <= r. When l equals r, that's the same single line acting as both walls, which can't hold any water at all and isn't a real container.",
+      "caption": [
+        { "when": "l < r", "text": "l = {l} and r = {r} haven't met yet. Keep checking containers." },
+        "l = {l} has met or passed r = {r}. Every width has been checked."
+      ]
+    },
+    "6": {
+      "explain": "This computes the current container's area, width times the shorter of the two walls, and updates res if it beats the best seen so far.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "res", "meaning": "The best area found so far." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces res's old value." },
+        { "token": "max(", "meaning": "A built-in function that returns the larger of its arguments." },
+        { "token": "res,", "meaning": "The best area found before this pass." },
+        { "token": "(r - l)", "meaning": "The width of the current container: the distance between the two positions." },
+        { "token": "*", "meaning": "Multiplication." },
+        { "token": "min(height[l], height[r])", "meaning": "min is a built-in function that returns the smaller of its arguments: here, the shorter of the two walls, which is the water's limit." },
+        { "token": ")", "meaning": "Closes the max call." }
+      ],
+      "why": "The area of any container is its width times whichever wall is shorter, since water can't rise above the shorter wall without spilling. Comparing this pass's area against res, instead of just overwriting it, is what lets the best answer survive even after the window narrows and later areas get smaller.",
+      "if_removed": "Without this line, res would stay 0 forever, and the method would always return 0 no matter what height contained.",
+      "alternatives": [
+        { "code": "area = (r - l) * min(height[l], height[r])\nif area > res:\n    res = area", "difference": "Spells out the same comparison with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Using max(height[l], height[r]) instead of min. Water can only rise to the shorter wall's height; using the taller one would overstate the container's real capacity.",
+      "caption": "Width {r - l} x height {min(height[l], height[r])} = {(r - l) * min(height[l], height[r])}. Best so far: {max(res, (r - l) * min(height[l], height[r]))}."
+    },
+    "7": {
+      "explain": "This checks whether the left wall is shorter than the right wall. If it is, the left wall is the one limiting this container's water level.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "height[l]", "meaning": "The height of the wall at the left pointer." },
+        { "token": "<", "meaning": "\"Less than\" comparison." },
+        { "token": "height[r]", "meaning": "The height of the wall at the right pointer." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Moving the TALLER wall inward can never help: the width would shrink, and the limiting height is still set by the shorter wall, which hasn't changed. Moving the shorter wall instead is the only move that could possibly find a taller wall later, trading a bit of width for a chance at more height.",
+      "if_removed": "Without this check (and the branches below it), the algorithm would have no rule for which wall to move, and couldn't narrow the window at all.",
+      "alternatives": [
+        { "code": "if height[r] > height[l]:", "difference": "The same comparison written the other way round. Identical behaviour; pick whichever reads more naturally." }
+      ],
+      "mistake": "Moving r instead of l when the left wall is shorter. That would discard the taller right wall and keep the shorter, already-limiting left wall, which can only make the next container's area smaller or equal, never bigger.",
+      "caption": [
+        { "when": "height[l] < height[r]", "text": "height[l] = {height[l]} is shorter than height[r] = {height[r]}. The left wall is limiting; move it inward." },
+        "height[l] = {height[l]} isn't shorter than height[r] = {height[r]}."
+      ]
+    },
+    "8": {
+      "explain": "The left wall was the shorter one, so move l one step to the right, hoping to find a taller wall there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 7's condition was True." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "The left wall was already limiting the container's height, so keeping it in place while narrowing the width could only make things worse. Moving it is the only move that has any chance of raising the limiting height on the next pass.",
+      "if_removed": "l would never move, so the loop would check the exact same container forever: an infinite loop.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing l -= 1 by accident, which would move the left pointer backward, outside the valid range, instead of inward.",
+      "caption": "Move l inward: l becomes {l + 1}."
+    },
+    "9": {
+      "explain": "Otherwise, check whether the right wall is the shorter one. If line 7 was False, the walls are either equal or the right one is shorter, and this tells which.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 7, so this elif belongs to it." },
+        { "token": "elif", "meaning": "Short for \"else if\". Checked only if the if above it was False." },
+        { "token": "height[r] < height[l]", "meaning": "True when the right wall is strictly shorter than the left one." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "This is the mirror image of line 7: if the right wall is shorter, it's the one limiting the container, so it's the one worth moving. Using elif means this is only checked after line 7 already ruled out \"left wall is shorter\".",
+      "if_removed": "A shorter right wall would fall through to the else on line 11 and move both pointers, which (while still safe) would skip checking the in-between width where only r moves, slightly changing which containers get examined.",
+      "alternatives": [
+        { "code": "if height[r] < height[l]:", "difference": "A separate if instead of elif. Risky in general, since both branches could then run in the same pass, though the two conditions here can never both be True at once, so the behaviour happens to match. elif makes the either/or relationship explicit and safe." }
+      ],
+      "mistake": "Writing height[l] < height[r] again by accident instead of flipping it. That would just repeat line 7's check and never actually consider moving r.",
+      "caption": [
+        { "when": "height[r] < height[l]", "text": "height[r] = {height[r]} is shorter than height[l] = {height[l]}. The right wall is limiting; move it inward." },
+        "height[r] = {height[r]} isn't shorter than height[l] = {height[l]} either."
+      ]
+    },
+    "10": {
+      "explain": "The right wall was the shorter one, so move r one step to the left, hoping to find a taller wall there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the elif block, so it only runs when line 9's condition was True." },
+        { "token": "r -= 1", "meaning": "Shorthand for r = r - 1: subtract 1 from r and store the result back in r." }
+      ],
+      "why": "The same reasoning as line 8, mirrored: the right wall was limiting the container's height, so moving it is the only move that could raise the limiting height on the next pass.",
+      "if_removed": "r would never move in this branch, so a container with a shorter right wall would never narrow from that side.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing r += 1 by accident, which would move the right pointer forward, outside the valid range, instead of inward.",
+      "caption": "Move r inward: r becomes {r - 1}."
+    },
+    "11": {
+      "explain": "else catches the last case: the two walls are exactly equal in height. Either one is equally limiting, so both get moved inward at once.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if and elif above. It's the last branch of the same chain." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when every condition above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "When the two walls are equal, moving just one of them and leaving the other in place would keep that same height as the limit on the very next pass too (since the one left behind is still just as tall), so nothing would be gained by only moving one. Moving both narrows the window twice as fast without losing any chance at a better answer.",
+      "if_removed": "Without this branch (if it fell through to nowhere), equal walls would never be handled, and Python would raise no error, but also never move either pointer: an infinite loop.",
+      "alternatives": [
+        { "code": "elif height[l] == height[r]:", "difference": "Spells out the equality explicitly. Since this is the only remaining possibility after the if and elif above, it's logically redundant, but some readers find an explicit elif clearer than an else that's reached by elimination." }
+      ],
+      "mistake": "Only moving one pointer here instead of both. The code would still terminate, just more slowly, since it would take one extra pass to do what moving both does immediately; it wouldn't actually produce a wrong answer, just a slightly less efficient walk to it.",
+      "caption": "height[{l}] equals height[{r}]: move both l and r inward."
+    },
+    "12": {
+      "explain": "Move l one step to the right, as part of handling the equal-height case.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "l += 1", "meaning": "Add 1 to l and store the result back in l." }
+      ],
+      "why": "Since both walls were equally limiting, moving l is one half of narrowing the window from both sides at once.",
+      "if_removed": "Only r would move on this branch, which would still be correct, just slower to converge, since it would take an extra pass for l to catch up.",
+      "alternatives": [
+        { "code": "l, r = l + 1, r - 1", "difference": "Moves both pointers inward in a single tuple-unpacking line instead of two separate lines. Identical result; purely a style choice." }
+      ],
+      "mistake": "Writing l -= 1 by accident, moving the wrong direction.",
+      "caption": "Move l inward too: l becomes {l + 1}."
+    },
+    "13": {
+      "explain": "And move r one step to the left too, finishing the equal-height case.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same level as line 12: runs right after it, still inside the else block." },
+        { "token": "r -= 1", "meaning": "Subtract 1 from r and store the result back in r." }
+      ],
+      "why": "This is the other half of narrowing the window from both sides at once, when neither wall is more limiting than the other.",
+      "if_removed": "Only l would move on this branch, which would still be correct, just slower to converge.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing r += 1 by accident, moving the wrong direction.",
+      "caption": "And move r inward too: r becomes {r - 1}."
+    },
+    "14": {
+      "explain": "Once l and r have met, every width has been checked. Return the best area found across all of them.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the best area found." }
+      ],
+      "why": "res has been kept up to date on every single pass, so by the time the loop ends, it already holds the largest area any pair of walls could make.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the best area, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return max(res, 0)", "difference": "res can never go below 0, since it starts at 0 and is only ever replaced by a value from max(res, ...), so this extra safeguard has no effect here." }
+      ],
+      "mistake": "Putting this return statement inside the while loop. Then the method would stop after checking only the very first, widest container, before any narrower one had a chance to be compared.",
+      "caption": "Every width has been checked. Return the best area found: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        res = 0\n        for i in range(len(height)):\n            for j in range(i + 1, len(height)):\n                area = (j - i) * min(height[i], height[j])\n                res = max(res, area)\n        return res",
+    "explain": "Try every possible pair of walls. The outer loop picks a left wall at position i, the inner loop tries every wall after it, at position j, and the best area across every pair is kept in res.",
+    "why_slow": "For n walls, this checks about n x n / 2 pairs, which is O(n squared), quadratic time. It also completely ignores the greedy insight that moving the taller wall can never help, which is the one fact that lets two pointers skip most of those pairs.",
+    "how_pattern_fixes": "Two pointers starts from the widest container and only ever moves the shorter wall inward, because that's the only move that could possibly improve the answer. That rules out huge numbers of pairs without ever checking them, dropping the work from about n x n to about n.",
+    "time": "O(n squared): quadratic. Double the number of walls, about four times the work.",
+    "space": "O(1): constant. Only res and the two loop variables, however many walls there are."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower or more memory-hungry than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(height).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if or elif above it was False.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "in place": "Changing an object directly instead of making a new one.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [1, 8, 6], the 6 is at index 2.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return.",
+    "len": "A built-in function that gives the number of items in something: len([1, 8, 6]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 8, 6]. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, * multiplies, = assigns, < compares.",
+    "parameter": "A name in a function's definition that receives an input. height is maxArea's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like two pointers.",
+    "pointer": "A variable holding a position (index) in a list. Here l and r are pointers.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2: it starts at 0 and stops before 3.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Python's sorted(\"cab\") gives ['a', 'b', 'c']. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a list, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like height: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of the list that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "bars",
+      "title": "height",
+      "source": "height",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "[l, r]",
+        "done": "[k for k in range(len(height)) if k < l or k > r]"
+      },
+      "water": "[min(height[l], height[r]) if l <= i <= r else height[i] for i in range(len(height))]"
+    }
+  ]
+}
