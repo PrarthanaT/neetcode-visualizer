@@ -45,6 +45,19 @@ export type PanelSpec =
     }
   | { type: "stack"; title: string; source: string; marks?: Partial<Record<MarkKind, string>> }
   | {
+      type: "bars";
+      title: string;
+      /** Python expression giving the list of bar heights to draw. */
+      source: string;
+      /** label -> Python expression giving an index. */
+      pointers?: Record<string, string>;
+      /** compared | found | done -> Python expression giving a list of indexes. */
+      marks?: Partial<Record<MarkKind, string>>;
+      /** Python expression giving, per bar, the absolute level water/area sits at.
+       *  Only drawn where it's above that bar's own height. */
+      water?: string;
+    }
+  | {
       type: "linkedlist";
       title: string;
       /** Name of the node class to draw, e.g. "ListNode". Every reachable node of this class is drawn. */

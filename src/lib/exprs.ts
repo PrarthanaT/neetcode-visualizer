@@ -11,6 +11,7 @@ export function collectExprs(problem: Problem): Record<string, string> {
     if ("marks" in panel && panel.marks)
       for (const [name, expr] of Object.entries(panel.marks)) if (expr) exprs[`${i}.mark.${name}`] = expr;
     if ("lookup" in panel && panel.lookup) exprs[`${i}.lookup`] = panel.lookup;
+    if ("water" in panel && panel.water) exprs[`${i}.water`] = panel.water;
   });
   return exprs;
 }

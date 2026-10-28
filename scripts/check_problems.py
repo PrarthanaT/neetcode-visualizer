@@ -29,6 +29,8 @@ def collect_exprs(problem):
             exprs["{}.mark.{}".format(i, name)] = expr
         if panel.get("lookup"):
             exprs["{}.lookup".format(i)] = panel["lookup"]
+        if panel.get("water"):
+            exprs["{}.water".format(i)] = panel["water"]
     return exprs
 
 

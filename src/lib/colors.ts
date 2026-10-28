@@ -13,6 +13,10 @@ export const MARK = {
   miss: "#fb7185",
 } as const;
 
+// The water/area overlay drawn on top of bars, kept apart from the pointer
+// and mark colors above so it never collides with them.
+export const WATER = "#3b82f6";
+
 export const pointerColor = (i: number) => POINTER_COLORS[i % POINTER_COLORS.length].hex;
 
 export const glow = (hex: string, a = 0.55, r = 18) => {
