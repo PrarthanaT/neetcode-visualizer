@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-bg: #09090b;
+  --color-panel: #111113;
+  --color-card: #16161a;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.12);
+  --color-ink: #ededef;
+  --color-ink-dim: #a1a1aa;
+  --color-ink-faint: #63636b;
+  --color-accent: #7c9cff;
+
+  /* one accent per pointer, in assignment order */
+  --color-p-sky: #38bdf8;
+  --color-p-violet: #a78bfa;
+  --color-p-amber: #fbbf24;
+  --color-p-emerald: #34d399;
+  --color-p-rose: #fb7185;
+  --color-p-cyan: #22d3ee;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: rgb(124 156 255 / 0.35);
+}
+
+/* thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.1) transparent;
+}
+
+/* Monaco current-line decoration */
+.current-line-glow {
+  background: linear-gradient(90deg, rgb(124 156 255 / 0.18), rgb(124 156 255 / 0.04));
+  box-shadow: inset 2px 0 0 0 var(--color-accent);
+}
+.current-line-arrow::before {
+  content: "➜";
+  color: var(--color-accent);
+  font-size: 12px;
+  margin-left: 4px;
+  text-shadow: 0 0 8px rgb(124 156 255 / 0.8);
+}
+.preview-line {
+  background: rgb(255 255 255 / 0.04);
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+}
+
+.glow-backdrop {
+  background:
+    radial-gradient(60% 80% at 50% 0%, rgb(124 156 255 / 0.12), transparent 70%),
+    radial-gradient(40% 60% at 80% 100%, rgb(167 139 250 / 0.08), transparent 70%);
+}
+
+.resize-handle {
+  width: 6px;
+  position: relative;
+  outline: none;
+}
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  border-radius: 2px;
+  transition: background 150ms;
+}
+.resize-handle[data-resize-handle-state="hover"]::after,
+.resize-handle[data-resize-handle-state="drag"]::after {
+  background: rgb(124 156 255 / 0.5);
+}
