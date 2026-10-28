@@ -33,7 +33,8 @@ const fail = (file, msg) => {
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const termRegex = (t) => {
   const caseSensitive = /[A-Z]/.test(t) && t !== "Big O";
-  return new RegExp(`(^|[^A-Za-z_])${escape(t)}(s|es)?(?![A-Za-z_])`, caseSensitive ? "" : "i");
+  const before = /^[A-Za-z]/.test(t) ? "(^|[^A-Za-z_])" : "";
+  return new RegExp(`${before}${escape(t)}(s|es)?(?![A-Za-z_])`, caseSensitive ? "" : "i");
 };
 
 /** All human-readable text in a problem, excluding code and the glossary itself. */

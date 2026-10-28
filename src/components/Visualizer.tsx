@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { RENDERERS } from "../renderers";
 import { useStore } from "../store/useStore";
+import type { PanelSpec } from "../types/problem";
 
 export default function Visualizer() {
   const problem = useStore((s) => s.problem);
@@ -18,20 +19,24 @@ export default function Visualizer() {
         <Loading status={status} error={error} />
       ) : (
         <div className="flex flex-col gap-5">
-          {problem!.visualizer.map((spec, i) => {
-            const R = RENDERERS[spec.type];
-            if (!R) return null;
-            return (
-              <R
-                key={`${problem!.slug}-${i}`}
-                spec={spec}
-                step={step}
-                cursor={cursor}
-                get={(k: string) => step.viz[`${i}.${k}`]}
-                getPrev={(k: string) => prev?.viz[`${i}.${k}`]}
-              />
-            );
-          })}
+          {rows(problem!.visualizer.map((spec, i) => ({ spec, i }))).map((row) => (
+            <div key={row[0].i} className={row.length > 1 ? "grid grid-cols-2 gap-4" : ""}>
+              {row.map(({ spec, i }) => {
+                const R = RENDERERS[spec.type];
+                if (!R) return null;
+                return (
+                  <R
+                    key={`${problem!.slug}-${i}`}
+                    spec={spec}
+                    step={step}
+                    cursor={cursor}
+                    get={(k: string) => step.viz[`${i}.${k}`]}
+                    getPrev={(k: string) => prev?.viz[`${i}.${k}`]}
+                  />
+                );
+              })}
+            </div>
+          ))}
           {trace?.error && cursor === trace.steps.length - 1 && (
             <div className="rounded-lg border border-p-rose/40 bg-p-rose/10 px-3 py-2 font-mono text-xs text-p-rose">
               {trace.error.type}: {trace.error.message}
@@ -42,6 +47,17 @@ export default function Visualizer() {
       )}
     </div>
   );
+}
+
+/** Consecutive hashmaps sit side by side; everything else gets its own row. */
+function rows<T extends { spec: PanelSpec }>(panels: T[]): T[][] {
+  const out: T[][] = [];
+  for (const p of panels) {
+    const last = out[out.length - 1];
+    if (p.spec.type === "hashmap" && last?.length === 1 && last[0].spec.type === "hashmap") last.push(p);
+    else out.push([p]);
+  }
+  return out;
 }
 
 function Loading({ status, error }: { status: string; error: string | null }) {

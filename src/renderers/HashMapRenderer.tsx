@@ -27,7 +27,7 @@ export default function HashMapRenderer({ spec, get, getPrev, cursor }: Renderer
       <PanelTitle
         title={spec.title}
         extra={
-          <span className="normal-case tracking-normal text-ink-faint/70">
+          <span className="text-ink-faint/70">
             {entries.length} {entries.length === 1 ? "entry" : "entries"} · key → value
           </span>
         }

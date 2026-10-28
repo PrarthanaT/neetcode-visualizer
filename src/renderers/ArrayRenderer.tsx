@@ -133,8 +133,8 @@ function Legend(props: { compared: boolean; found: boolean; done: boolean }) {
 
 export function PanelTitle({ title, extra }: { title: string; extra?: React.ReactNode }) {
   return (
-    <div className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ink-faint">
-      <span>{title}</span>
+    <div className="mb-2 flex items-center gap-2 font-mono text-[11px] text-ink-faint">
+      <span className="font-semibold text-ink-dim">{title}</span>
       {extra}
     </div>
   );

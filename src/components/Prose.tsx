@@ -13,7 +13,8 @@ function useTermMatcher() {
     const terms = Object.keys(glossary).sort((a, b) => b.length - a.length);
     if (!terms.length) return null;
     const lookup = new Map(terms.map((t) => [t.toLowerCase(), t]));
-    const re = new RegExp(`(?<![A-Za-z_])(${terms.map(escape).join("|")})(?:s|es)?(?![A-Za-z_])`, "gi");
+    const pat = terms.map((t) => (/^[A-Za-z]/.test(t) ? `(?<![A-Za-z_])${escape(t)}` : escape(t))).join("|");
+    const re = new RegExp(`(${pat})(?:s|es)?(?![A-Za-z_])`, "gi");
     return { re, lookup, glossary };
   }, [glossary]);
 }

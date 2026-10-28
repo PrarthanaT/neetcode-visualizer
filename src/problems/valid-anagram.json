@@ -1,0 +1,567 @@
+{
+  "slug": "valid-anagram",
+  "title": "Valid Anagram",
+  "difficulty": "Easy",
+  "category": "Arrays & Hashing",
+  "leetcode": 242,
+  "statement": [
+    "You are given two strings (pieces of text) called s and t.",
+    "Answer True if t is an anagram of s, and False if it isn't.",
+    "An anagram uses exactly the same letters, each exactly the same number of times, just possibly in a different order. \"listen\" and \"silent\" are anagrams. \"rat\" and \"car\" are not, because they have different letters.",
+    "Both strings contain only lowercase English letters."
+  ],
+  "examples": [
+    {
+      "input": "s = \"anagram\", t = \"nagaram\"",
+      "output": "True",
+      "explain": "Both have three a's, one n, one g, one r and one m. This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"rat\", t = \"car\"",
+      "output": "False",
+      "explain": "s has a t and t has a c, so the letter counts differ."
+    }
+  ],
+  "pattern": {
+    "name": "Counting with a hash map (frequency count)",
+    "summary": "Walk through the data once and keep a tally in a dictionary: each character is a key, and how many times you've seen it is the value. Two collections have the same contents exactly when their tallies are equal, whatever order things came in.",
+    "recognize": [
+      "The question is about having the same items regardless of order: anagrams, permutations, \"can these letters build that word?\", \"do these two lists hold the same things?\".",
+      "The question mentions how many times something appears: the most common item, items that appear more than once, the first unique character.",
+      "Sorting would also work, but you want to beat the cost of sorting.",
+      "The items can be dictionary keys: characters, numbers, words."
+    ],
+    "avoid_when": [
+      "Order matters. \"abc\" and \"cba\" have equal tallies, so if the question cares about position (like palindromes or matching sequences), counts alone are not enough.",
+      "You only need to know whether something exists, not how many times. A set is simpler and uses less memory.",
+      "The set of possible items is tiny and known, like 26 letters. A list of 26 counters indexed by letter does the same job, often faster. That is an optimization of the same idea, not a different pattern.",
+      "You need the items in sorted order anyway for the next step. Then sorting may solve both jobs at once."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "\"Same items, any order\" means \"same counts\". Turning both strings into tallies removes the effect of order completely.",
+      "count.get(key, 0) is the standard way to read a tally that may not exist yet. It gives 0 instead of crashing.",
+      "Check the cheap thing first. Different lengths can never be anagrams, so we return False before doing any counting.",
+      "Two dictionaries compare equal with == when they have the same keys with the same values. The order the keys were added doesn't matter."
+    ],
+    "time": "O(n), linear time, where n is the length of s. The loop runs once per character and does a fixed amount of work each time: two dictionary reads and two writes. The final == compares at most 26 keys per dictionary. Double the strings and the work roughly doubles.",
+    "space": "O(1), constant, because the strings only contain lowercase English letters. Each dictionary can hold at most 26 keys, however long the strings get. If any character were allowed (emoji, accents, other alphabets), the dictionaries could grow with the input, and you'd call it O(n).",
+    "edge_cases": [
+      "Different lengths, like s = \"ab\", t = \"a\". The first check returns False immediately, and it also protects the loop: t[i] would go past the end of t and raise an IndexError.",
+      "Same letters, different counts, like s = \"aab\", t = \"abb\". The lengths match, but the tallies {a: 2, b: 1} and {a: 1, b: 2} differ, so the answer is False.",
+      "Identical strings, like s = \"abc\", t = \"abc\". A string is an anagram of itself, so the answer is True.",
+      "Single characters, like s = \"a\", t = \"a\" (True) and s = \"a\", t = \"b\" (False).",
+      "Uppercase vs lowercase. \"A\" and \"a\" are different characters to Python. This problem promises lowercase only, but in real code you might lowercase both strings first with .lower()."
+    ]
+  },
+  "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        if len(s) != len(t):\n            return False\n\n        countS, countT = {}, {}\n\n        for i in range(len(s)):\n            countS[s[i]] = 1 + countS.get(s[i], 0)\n            countT[t[i]] = 1 + countT.get(t[i], 0)\n        return countS == countT\n",
+  "run": {
+    "call": "Solution().isAnagram(\"anagram\", \"nagaram\")",
+    "expected": true,
+    "describe": "s = \"anagram\", t = \"nagaram\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A Python keyword (a word reserved by the language) meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for. The capital S matters."
+        },
+        {
+          "token": ":",
+          "meaning": "A colon ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure, not the algorithm.",
+      "if_removed": "Without it, LeetCode can't find Solution and reports a NameError. Forgetting the colon is a SyntaxError (Python can't read the line).",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        },
+        {
+          "code": "def isAnagram(s, t):",
+          "difference": "A plain function with no class. That's normal in your own programs, but LeetCode's tester won't find it."
+        }
+      ],
+      "mistake": "Writing class solution: in lowercase. Python treats Solution and solution as different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method isAnagram. A method is a function that lives inside a class. It receives two strings, s and t, and promises to answer with a boolean: True or False.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: this line is inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Short for \"define\". The keyword that starts a function or method."
+        },
+        {
+          "token": "isAnagram",
+          "meaning": "The method name LeetCode calls. Names that start with \"is\" usually answer a yes or no question."
+        },
+        {
+          "token": "(self,",
+          "meaning": "The opening bracket starts the parameter list. self is the first parameter of every method: the Solution object itself. We don't use it here, but it must be there."
+        },
+        {
+          "token": "s: str",
+          "meaning": "The first input, named s, with a type hint saying it should be a str (a string, which means text)."
+        },
+        {
+          "token": "t: str",
+          "meaning": "The second input, named t, also a string."
+        },
+        {
+          "token": ")",
+          "meaning": "Closes the parameter list."
+        },
+        {
+          "token": "-> bool",
+          "meaning": "The return type hint: the method promises to give back a bool (a boolean, True or False)."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented lines below are the method's body."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints are notes for readers: the inputs are text and the answer is yes or no. Unlike Two Sum, str and bool are built into Python, so nothing needs importing.",
+      "if_removed": "Remove self and the call crashes with a TypeError about the wrong number of arguments. Remove the type hints and nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def isAnagram(self, s, t):",
+          "difference": "No type hints. It runs identically. You lose the documentation."
+        }
+      ],
+      "mistake": "Returning the strings \"True\" or \"true\" in quotes instead of the boolean True. A string in quotes is text, not a yes or no value, so the answer is marked wrong.",
+      "caption": "Python remembers the isAnagram instructions for later. Nothing inside runs yet."
+    },
+    "3": {
+      "explain": "Before doing any real work, this checks whether the two strings have different lengths. If they do, they can't be anagrams: one has more letters than the other.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "if",
+          "meaning": "Starts a condition. The indented block runs only when the condition is True."
+        },
+        {
+          "token": "len(s)",
+          "meaning": "len is a built-in function that counts the items in something. For a string, that is the number of characters. len(\"anagram\") is 7."
+        },
+        {
+          "token": "!=",
+          "meaning": "The \"not equal\" comparison operator. a != b is True when a and b are different. (== means equal.)"
+        },
+        {
+          "token": "len(t)",
+          "meaning": "The number of characters in t."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition. The indented line below runs only if it's True."
+        }
+      ],
+      "why": "This is a cheap early exit. Comparing two lengths takes one step, and it can rule out an answer before we count anything. It also keeps the loop safe: the loop reads t[i] for every position of s, which only works if t is at least as long as s.",
+      "if_removed": "The answer is still correct in many cases, because different tallies come out unequal. But when s is longer than t, the loop reaches a position t doesn't have, and t[i] crashes with an IndexError.",
+      "alternatives": [
+        {
+          "code": "if len(s) == len(t):\n    # all the counting, indented inside\nreturn False",
+          "difference": "The same check turned around, with the main work nested inside the if. It works, but deep nesting is harder to read. Leaving early (a \"guard clause\") keeps the main code flat."
+        },
+        {
+          "code": "if not len(s) == len(t):",
+          "difference": "not flips True and False. It's the same meaning as !=, but clumsier to read."
+        }
+      ],
+      "mistake": "Writing = instead of !=, as in if len(s) = len(t):. A single = is assignment, which isn't allowed inside an if, so Python stops with a SyntaxError.",
+      "caption": [
+        {
+          "when": "len(s) != len(t)",
+          "text": "s has {len(s)} letters but t has {len(t)}. Different lengths, so they can't be anagrams."
+        },
+        "Both strings have {len(s)} letters, so they could be anagrams. Keep going."
+      ]
+    },
+    "4": {
+      "explain": "The lengths differ, so we immediately answer False and leave the method. Nothing below this line runs.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation one level deeper than the if, so this line only runs when the if's condition was True."
+        },
+        {
+          "token": "return",
+          "meaning": "Ends the method right now and hands the value after it back to the caller."
+        },
+        {
+          "token": "False",
+          "meaning": "One of Python's two boolean values. The capital F matters: false (lowercase) is just an undefined name."
+        }
+      ],
+      "why": "Once we know the answer there's no reason to keep working. Returning early is clearer than setting a flag and checking it later.",
+      "if_removed": "If you delete this line, the if has an empty block, which Python refuses with an IndentationError. If you replace it with pass (do nothing), the code moves on and can crash with an IndexError in the loop.",
+      "alternatives": [
+        {
+          "code": "return len(s) == len(t) and sorted(s) == sorted(t)",
+          "difference": "A completely different one-line solution that sorts both strings. It's correct and short, but sorting costs O(n log n), more than counting's O(n)."
+        }
+      ],
+      "mistake": "Writing return \"False\" with quotes. That returns a string of text, not the boolean False.",
+      "caption": "Return False: strings of different lengths can't be anagrams."
+    },
+    "6": {
+      "explain": "This creates two empty dictionaries in one line: countS will tally the letters of s, and countT the letters of t. Each key will be a letter, and its value will be how many times we've seen it.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: back at the method's main level, outside the if."
+        },
+        {
+          "token": "countS, countT",
+          "meaning": "Two variable names separated by a comma. Python will assign to both at once. This is tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: evaluate the right side, then give its parts to the names on the left."
+        },
+        {
+          "token": "{}, {}",
+          "meaning": "Two separate empty dictionaries, separated by a comma. Python packs them into a tuple and unpacks the first into countS and the second into countT."
+        }
+      ],
+      "why": "We need two separate tallies, one per string, and starting them empty means \"seen nothing yet\". Putting them on one line shows they're a matched pair. A dictionary is the right tool because we look up and update a letter's count instantly.",
+      "if_removed": "Line 9 would crash with a NameError (countS is not defined). If you create the dictionaries inside the loop instead, they'd be wiped on every pass and the counts would never go past 1.",
+      "alternatives": [
+        {
+          "code": "countS = {}\ncountT = {}",
+          "difference": "Two lines instead of one. It means exactly the same thing. Some people find it easier to read."
+        },
+        {
+          "code": "countS = countT = {}",
+          "difference": "A nasty bug! This makes ONE dictionary with two names pointing at it. Every letter from both strings goes into the same tally, so countS == countT is always True and every pair of same-length strings looks like an anagram."
+        },
+        {
+          "code": "countS, countT = [0] * 26, [0] * 26",
+          "difference": "Two lists of 26 zeros, one slot per letter a to z, indexed with ord(c) - ord('a'). It's faster in practice, but it only works when the alphabet is known and small."
+        }
+      ],
+      "mistake": "Using countS = countT = {} to save typing. Both names end up pointing at the same single dictionary. In the Variables view, both would show the same #id.",
+      "caption": "Make two empty tallies: countS for s and countT for t."
+    },
+    "8": {
+      "explain": "This loop runs once for every position in the strings: i is 0, then 1, then 2, up to the last position. Because both strings have the same length, each position exists in both.",
+      "syntax": [
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats the indented block once per item."
+        },
+        {
+          "token": "i",
+          "meaning": "The loop variable. Each pass it holds the next number from range."
+        },
+        {
+          "token": "in",
+          "meaning": "\"Take items one at a time from\"."
+        },
+        {
+          "token": "range(",
+          "meaning": "A built-in function that produces whole numbers. range(7) produces 0, 1, 2, 3, 4, 5, 6: it starts at 0 and stops BEFORE the number you give it."
+        },
+        {
+          "token": "len(s)",
+          "meaning": "The number of characters in s, so range covers exactly the valid positions."
+        },
+        {
+          "token": "):",
+          "meaning": "The bracket closes range, and the colon ends the loop header."
+        }
+      ],
+      "why": "We want the character at the same position from both strings on each pass, so we loop over positions (numbers) rather than characters. One loop handles both strings, and the earlier length check makes that safe.",
+      "if_removed": "Without the loop, lines 9 and 10 can't run (i doesn't exist) and nothing gets counted.",
+      "alternatives": [
+        {
+          "code": "for a, b in zip(s, t):",
+          "difference": "zip walks two strings side by side, giving one character from each per pass. You never touch an index, so there are fewer brackets. Most experienced Python programmers prefer this. The lines below would use a and b instead of s[i] and t[i]."
+        },
+        {
+          "code": "for c in s:\n    countS[c] = 1 + countS.get(c, 0)\nfor c in t:\n    countT[c] = 1 + countT.get(c, 0)",
+          "difference": "Two simple loops, one per string. It doesn't need equal lengths and avoids indexes. It's just as fast (two passes of n is still O(n))."
+        },
+        {
+          "code": "for i in range(len(s) - 1):",
+          "difference": "An off-by-one bug: it skips the last character, so \"ab\" and \"ac\" would look like anagrams."
+        }
+      ],
+      "mistake": "Thinking range(len(s)) includes len(s). It stops one before, which is exactly right, because the last position of a 7-letter string is 6.",
+      "caption": [
+        {
+          "when": "i == len(s) - 1",
+          "text": "Done with i = {i}, the last position. range has no more numbers, so the loop ends."
+        },
+        "Done with i = {i}. Move to the next position.",
+        "Start the loop at position 0."
+      ]
+    },
+    "9": {
+      "explain": "This adds one to the tally for the current letter of s. It reads the letter's current count (or 0 if we haven't seen it yet), adds 1, and stores the new count back.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the loop, so this runs once per position."
+        },
+        {
+          "token": "s[i]",
+          "meaning": "Square brackets after a string give the character at that position. If s is \"anagram\", s[0] is 'a' and s[1] is 'n'."
+        },
+        {
+          "token": "countS[s[i]]",
+          "meaning": "On the LEFT of =, this means \"the slot in countS for this letter\". The slot is created if it doesn't exist yet."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: compute the right side first, then store it in that slot."
+        },
+        {
+          "token": "1 +",
+          "meaning": "Add one to whatever comes next."
+        },
+        {
+          "token": "countS.get(",
+          "meaning": ".get is a dictionary method that looks up a key. Unlike square brackets, it doesn't crash when the key is missing."
+        },
+        {
+          "token": "s[i], 0)",
+          "meaning": "The first argument is the key to look up. The second, 0, is the default value: what .get returns if the key isn't there."
+        }
+      ],
+      "why": "The first time we meet a letter it has no entry, so countS[s[i]] on the right side would raise a KeyError. .get(s[i], 0) treats a missing letter as having count 0, so one line handles both the first sighting and every later one.",
+      "if_removed": "Without this line, countS stays empty and the final comparison is wrong. If you write countS[s[i]] += 1 instead, the first new letter raises a KeyError.",
+      "alternatives": [
+        {
+          "code": "if s[i] in countS:\n    countS[s[i]] += 1\nelse:\n    countS[s[i]] = 1",
+          "difference": "The explicit version: check with in first, then either add one or start at 1. It does the same thing, takes 4 lines instead of 1, and makes the two cases very visible. += 1 means \"add one to what's already there\"."
+        },
+        {
+          "code": "countS[s[i]] += 1",
+          "difference": "Crashes with a KeyError the first time a letter appears, because there's nothing to add 1 to yet. It does work with countS = defaultdict(int), a dictionary that invents a 0 for missing keys."
+        },
+        {
+          "code": "countS = Counter(s)  # before the loop",
+          "difference": "Counter, from Python's collections module, builds the whole tally in one call. In real code this is the cleanest choice: return Counter(s) == Counter(t). Interviewers may ask you to write the counting yourself."
+        }
+      ],
+      "mistake": "Writing countS.get(s[i]) + 1 without the default. When the letter is missing, .get returns None, and None + 1 is a TypeError.",
+      "caption": [
+        {
+          "when": "s[i] in countS",
+          "text": "s[{i}] is '{s[i]}'. countS already has '{s[i]}' {countS[s[i]]} time(s), so it becomes {countS[s[i]] + 1}."
+        },
+        "s[{i}] is '{s[i]}'. That's new for countS, so .get gives 0 and the count becomes 1."
+      ]
+    },
+    "10": {
+      "explain": "This is the same counting step for the other string: add one to t's tally for the letter at the same position.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: still inside the loop."
+        },
+        {
+          "token": "t[i]",
+          "meaning": "The character at position i of t."
+        },
+        {
+          "token": "countT[t[i]] =",
+          "meaning": "Store into countT's slot for that letter."
+        },
+        {
+          "token": "1 + countT.get(t[i], 0)",
+          "meaning": "The current count for this letter (0 if it's new), plus one."
+        }
+      ],
+      "why": "We tally both strings in the same pass. At the end each dictionary describes its string's letters, independent of order.",
+      "if_removed": "countT stays empty and the comparison is always False (except for two empty strings).",
+      "alternatives": [
+        {
+          "code": "countS[t[i]] = countS.get(t[i], 0) - 1",
+          "difference": "A clever one-dictionary version: add for s and subtract for t, then check that every count ended at 0 with all(v == 0 for v in countS.values()). It uses half the memory, but it's a little harder to read."
+        },
+        {
+          "code": "countT[t[i]] = 1 + countS.get(t[i], 0)",
+          "difference": "A copy-paste bug: it reads countS but writes countT. The counts come out wrong. When you duplicate a line, check every name in it."
+        }
+      ],
+      "mistake": "Copying line 9 and forgetting to change one of the three names. Each line must use t and countT everywhere.",
+      "caption": [
+        {
+          "when": "t[i] in countT",
+          "text": "t[{i}] is '{t[i]}'. countT already has '{t[i]}' {countT[t[i]]} time(s), so it becomes {countT[t[i]] + 1}."
+        },
+        "t[{i}] is '{t[i]}'. That's new for countT, so it becomes 1."
+      ]
+    },
+    "11": {
+      "explain": "After the loop, this compares the two tallies. If every letter has the same count in both, the strings are anagrams and the answer is True. Otherwise it's False.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: back at the method level, so this runs once, after the loop finishes, not on every pass."
+        },
+        {
+          "token": "return",
+          "meaning": "Hand the following value back as the answer, and end the method."
+        },
+        {
+          "token": "countS == countT",
+          "meaning": "== compares the two dictionaries. They're equal when they have exactly the same keys, each with the same value. The order the keys were added doesn't matter. The comparison itself produces a boolean, True or False."
+        }
+      ],
+      "why": "We return the comparison directly instead of writing if countS == countT: return True else: return False. The comparison already is the True or False we want.",
+      "if_removed": "The method ends without a return statement and gives back None, which LeetCode marks wrong.",
+      "alternatives": [
+        {
+          "code": "if countS == countT:\n    return True\nreturn False",
+          "difference": "Same result, three lines. Common in beginner code. It works, but it's redundant."
+        },
+        {
+          "code": "return countS is countT",
+          "difference": "Wrong! is checks whether both names point at the SAME object, not whether the contents match. Two separate dictionaries are never the same object, so this is always False."
+        }
+      ],
+      "mistake": "Indenting this line into the loop. It would then return after the very first letter, comparing tallies of one character each.",
+      "caption": [
+        {
+          "when": "countS == countT",
+          "text": "Both tallies match letter for letter, so return True: it's an anagram!"
+        },
+        "The tallies differ, so return False."
+      ]
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        if len(s) != len(t):\n            return False\n        remaining = list(t)\n        for c in s:\n            if c in remaining:\n                remaining.remove(c)\n            else:\n                return False\n        return True",
+    "explain": "This is how you might do it by hand. Write t's letters on cards. For each letter of s, find a matching card and throw it away. If some letter of s has no card left, it's not an anagram. If every letter found a card, it is. list(t) turns the string into a list of single characters so we can remove them.",
+    "why_slow": "Both c in remaining and remaining.remove(c) search the list from the start, one item at a time. That is up to n steps each, done for each of the n letters of s, so about n × n steps in the worst case. Double the length and the work goes up about four times. That's O(n²), quadratic time.",
+    "how_pattern_fixes": "The slow part is searching for a matching letter again and again. Counting avoids searching completely: one pass builds a tally for each string, where each update is an instant dictionary operation, and comparing two tallies of at most 26 letters is quick. The work drops from about n × n to about n. A middle option is sorting both strings and comparing them. That's O(n log n), faster than brute force but slower than counting.",
+    "time": "O(n²): quadratic. Every letter searches the remaining list.",
+    "space": "O(n): linear. The copy of t as a list grows with the input."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem.",
+    "anagram": "A word made by rearranging all the letters of another word, using each letter exactly as many times. \"listen\" and \"silent\" are anagrams.",
+    "argument": "The actual value you pass into a function when you call it. In len(s), s is the argument.",
+    "assignment": "Giving a name to a value with =, as in x = 5. It is not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n²) quadruples when the input doubles. O(1) doesn't grow.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "bool": "Python's name for the boolean type: a value that is either True or False.",
+    "boolean": "A value that is either True or False.",
+    "brute force": "Solving a problem by the most direct method, usually trying everything. It's simple but often slow.",
+    "call": "Running a function by writing its name followed by brackets with arguments, like len(s).",
+    "character": "A single letter, digit, space or symbol in a string. \"cat\" has three characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: == (equal), != (not equal), <, >, <=, >=.",
+    "condition": "An expression that is True or False, used by if to decide whether to run a block.",
+    "constant time": "Taking the same small amount of time however much data there is. Written O(1).",
+    "Counter": "A ready-made dictionary from Python's collections module that counts things for you: Counter(\"aab\") gives {'a': 2, 'b': 1}.",
+    "default value": "A fallback value used when the real one is missing. In d.get(key, 0), the 0 is returned when key isn't in d.",
+    "defaultdict": "A dictionary from the collections module that makes up a starting value for missing keys, so d[key] += 1 works on the first try.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {'a': 3}. It stores key → value pairs and finds a key instantly.",
+    "early exit": "Returning from a function as soon as the answer is known, instead of doing unnecessary work. Also called a guard clause.",
+    "edge case": "An unusual input that might break code: empty strings, different lengths, repeated letters, and so on.",
+    "expression": "Any piece of code that produces a value, like len(s) or countS == countT.",
+    "frequency": "How many times something appears. A frequency count is a tally.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    ".get": "A dictionary method: d.get(key, default) returns the value for key, or default if key is missing, without crashing.",
+    "guard clause": "An early check at the top of a function that returns straight away for inputs that can be ruled out.",
+    "hash map": "A structure that stores key → value pairs and finds any key almost instantly by turning the key into a storage location. Python's dictionary is one.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to. The standard is 4 spaces per level.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense, for example an if with nothing indented under it.",
+    "index": "A position in a string or list, counting from 0. In \"cat\", 'c' is at index 0 and 't' is at index 2.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like the 10th character of a 3-letter string.",
+    "integer": "A whole number like 0, 7 or -3. Python calls the type int.",
+    "is (operator)": "An operator that checks whether two names point at the very same object in memory, not whether two objects have equal contents.",
+    "key": "The part of a dictionary entry you look up by. In {'a': 3}, the key is 'a'.",
+    "KeyError": "The error Python raises when you read a dictionary key that isn't there using d[key].",
+    "keyword": "A word reserved by Python, like def, if, for, return or class. You can't use it as a name.",
+    "len": "A built-in function that gives the number of items in something: characters in a string, items in a list, entries in a dictionary.",
+    "list": "An ordered collection written with square brackets, like ['a', 'b']. You reach items by index.",
+    "loop": "Code that repeats. A for loop repeats once per item.",
+    "method": "A function that belongs to a class or an object, called with a dot: countS.get(...), Solution().isAnagram(...).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function without a return statement gives back None.",
+    "object": "A thing in memory with a type and data: a string, a dictionary, a Solution. Variables are names pointing at objects.",
+    "off-by-one": "A very common bug where a loop runs one time too many or too few, usually because of where counting starts or stops.",
+    "operator": "A symbol that does something with values: + adds, = assigns, == compares, != checks inequality.",
+    "parameter": "A name in a function's definition that receives an input. s and t are isAnagram's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "range": "A built-in function that produces a sequence of whole numbers. range(3) gives 0, 1, 2: it starts at 0 and stops before 3.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set": "A collection of unique values with instant membership checks, written set() when empty.",
+    "sorting": "Putting items in order. Python's sorted(\"cab\") gives ['a', 'b', 'c']. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for the string type.",
+    "string": "Text, written in quotes like \"anagram\". Each character has an index starting at 0.",
+    "SyntaxError": "The error Python raises when it can't read your code at all: a missing colon, = instead of ==, and so on.",
+    "tally": "A running count of how many times each thing has been seen.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list but unchangeable, written with round brackets or just commas: (1, 2) or 1, 2.",
+    "tuple unpacking": "Assigning several names at once from several values: a, b = 1, 2 puts 1 in a and 2 in b.",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, like None + 1, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {'a': 3}, the value is 3. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "zip": "A built-in function that walks several collections side by side: zip(\"ab\", \"cd\") gives ('a', 'c') and then ('b', 'd')."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ == 9 else []",
+        "done": "list(range(len(s))) if __line__ == 11 else list(range(i + (1 if __line__ == 10 else 0)))"
+      }
+    },
+    {
+      "type": "array",
+      "title": "t",
+      "source": "list(t)",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ == 10 else []",
+        "done": "list(range(len(t))) if __line__ == 11 else list(range(i))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "countS  (letter → count)",
+      "source": "countS",
+      "lookup": "s[i] if __line__ == 9 else None"
+    },
+    {
+      "type": "hashmap",
+      "title": "countT  (letter → count)",
+      "source": "countT",
+      "lookup": "t[i] if __line__ == 10 else None"
+    }
+  ]
+}
