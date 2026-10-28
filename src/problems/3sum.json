@@ -1,0 +1,497 @@
+{
+  "slug": "3sum",
+  "title": "3Sum",
+  "difficulty": "Medium",
+  "category": "Two Pointers",
+  "leetcode": 15,
+  "statement": [
+    "You are given a list of whole numbers called nums. Find every group of three different positions whose values add up to 0.",
+    "The same group of three VALUES must not be returned more than once, even if it could be built from different positions in nums.",
+    "You can return the groups, and the three numbers inside each group, in any order.",
+    "nums may contain repeated values."
+  ],
+  "examples": [
+    {
+      "input": "nums = [-1, 0, 1, 2, -1, -4]",
+      "output": "[[-1, -1, 2], [-1, 0, 1]]",
+      "explain": "Sorted, nums becomes [-4, -1, -1, 0, 1, 2]. The two groups that add up to 0 are -1 + -1 + 2 and -1 + 0 + 1. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [0, 0, 0]",
+      "output": "[[0, 0, 0]]",
+      "explain": "0 + 0 + 0 = 0, and even though there are several ways to pick three positions here, they all use the same three values, so the group is listed only once."
+    }
+  ],
+  "pattern": {
+    "name": "Sort, fix one number, then two pointers on the rest",
+    "summary": "Sort nums first. Then, for each position i in turn, treat nums[i] as a fixed first number and use the Two Sum II two-pointer technique on everything after it to find two more numbers that make the three add up to 0. Sorting also lets you skip over repeated values cheaply, since equal values sit next to each other, which is what keeps the same group of three from being reported twice.",
+    "recognize": [
+      "The problem wants groups of three (or more) items whose values combine to a target, where the core of the work is a smaller, already-known pattern, here Two Sum, repeated for each choice of the extra item.",
+      "The same combination of values must not be returned twice, even though it may be reachable from several different positions. Sorting first makes repeated values sit next to each other, so they're easy to detect and skip.",
+      "Reducing the problem's size by fixing one item at a time, then solving a smaller version of the same kind of problem on what's left, is a common way to stretch two pointers from two numbers to three.",
+      "The input doesn't need to keep its original order. Here only the values matter, not their starting positions, so sorting doesn't lose any information the answer needs."
+    ],
+    "avoid_when": [
+      "You only need pairs, not triplets. Use Two Sum II directly instead of wrapping it in an extra loop.",
+      "The comparison against the target can't be reduced to a simple too big / too small check once one number is fixed. Two pointers depends on that direction being obvious from sorted order.",
+      "You must preserve or report the numbers' original positions. Sorting nums first throws the original order away, which is fine here since the problem only asks for values, but would be wrong if positions mattered.",
+      "You need four or more numbers combining to a target. Nesting two pointers another level still works but starts to cost real readability; for many numbers, other techniques scale better."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Sorting first makes two things possible at once: skipping repeated values cheaply, because equal values end up next to each other, and reusing the Two Sum II two-pointer technique on whatever's left after fixing one number.",
+      "Two separate skips are what keep duplicate groups out of the answer: one for i, so the same first number isn't tried twice, and one for l after a match, so the same second number isn't tried twice. Whatever r lands on is then automatically the third number, so it never needs its own skip.",
+      "threeSum > 0 / threeSum < 0 / else is exactly Two Sum II's curSum check, just comparing the three-way sum against 0 instead of comparing a two-way sum against a separate target.",
+      "The skip on line 7 only compares nums[i] to the number right before it, nums[i - 1], not to every number already tried. Because nums is sorted, that one comparison is enough to catch every repeat."
+    ],
+    "time": "O(n squared), where n is the length of nums. Sorting takes O(n log n). The outer for loop runs n times, and for each one the inner while loop's l and r pointers together visit at most n positions before meeting, an O(n) pass. n passes of O(n) work each is O(n squared), which dominates the O(n log n) sort.",
+    "space": "O(n), beyond the output itself. Python's sort uses O(n) space in the worst case, and res can hold up to O(n squared) groups in the worst case (though in practice usually far fewer), which isn't normally counted against the algorithm's own extra space.",
+    "edge_cases": [
+      "Fewer than three numbers, like nums = [1, 2]. The for loop still runs, but l, r = i + 1, len(nums) - 1 always leaves l >= r immediately, so the inner while loop never executes and res stays empty.",
+      "All the same value, like nums = [0, 0, 0, 0]. The outer skip on line 7 and the inner skip on line 21 together make sure [0, 0, 0] is found and added only once, even though there are several ways to pick three zeros.",
+      "No group sums to 0 at all, like nums = [1, 2, -2, -1]. Every combination gets tried through the sorted two-pointer sweep, none of them sum to 0, and res stays empty.",
+      "All positive (or all negative) numbers, like nums = [1, 2, 3]. Three positive numbers can never sum to 0, and the two-pointer sweep for each i reaches threeSum > 0 immediately and shrinks r until l meets r without ever finding a match.",
+      "A value that needs to pair with itself twice, like the -1 in [-4, -1, -1, 0, 1, 2]: when i points at the first -1, l and r still search the remainder for another -1 and a 2, which works because i, l and r are always three different positions."
+    ]
+  },
+  "code": "class Solution:\n    def threeSum(self, nums: List[int]) -> List[List[int]]:\n        res = []\n        nums.sort()\n\n        for i, a in enumerate(nums):\n            if i > 0 and a == nums[i - 1]:\n                continue\n\n            l, r = i + 1, len(nums) - 1\n            while l < r:\n                threeSum = a + nums[l] + nums[r]\n                if threeSum > 0:\n                    r -= 1\n                elif threeSum < 0:\n                    l += 1\n                else:\n                    res.append([a, nums[l], nums[r]])\n                    l += 1\n                    r -= 1\n                    while l < r and nums[l] == nums[l - 1]:\n                        l += 1\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().threeSum([-1, 0, 1, 2, -1, -4])",
+    "expected": [[-1, -1, 2], [-1, 0, 1]],
+    "describe": "nums = [-1, 0, 1, 2, -1, -4]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def threeSum would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named threeSum. It takes the list nums and promises to give back a list of lists: each inner list is one group of three numbers that adds up to 0.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "threeSum", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "nums: List[int])", "meaning": "The input list, hinted as a List of int (whole numbers)." },
+        { "token": "-> List[List[int]]", "meaning": "Return type hint: a list where every item is itself a list of whole numbers." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. A list of lists is the natural shape for \"a collection of groups, each with three numbers in it\".",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def threeSum(self, nums):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning a flat list of numbers instead of a list of three-number groups. The nested List[List[int]] hint is a reminder that each answer is itself a small list.",
+      "caption": "Python remembers the threeSum instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty list named res, short for \"results\". Every group of three numbers that's found will be appended to it.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for results." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "Unlike Two Sum or Two Sum II, this problem can have many answers, not just one, so the solution needs somewhere to collect all of them before returning.",
+      "if_removed": "Line 18's res.append(...) would crash with a NameError, since res wouldn't exist. Creating it inside the for loop instead would wipe it clean on every pass, losing everything found so far.",
+      "alternatives": [
+        { "code": "res = list()", "difference": "Calls the list function to make an empty list. Identical result; [] is shorter and slightly faster." }
+      ],
+      "mistake": "Creating res inside the for loop on line 6 instead of before it. That would reset the results on every outer pass, so the final return would only ever contain groups found during the very last value of i.",
+      "caption": "Make an empty list called res. It will collect every group of three that sums to 0."
+    },
+    "4": {
+      "explain": "This sorts nums from smallest to largest, in place, before anything else runs.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "nums.sort()", "meaning": "A list method that rearranges nums into ascending order and returns None. It changes nums directly rather than building a new, separate sorted list." }
+      ],
+      "why": "Sorting is what makes the rest of the solution work at all: it lets repeated values be skipped by comparing a number only to its immediate neighbor, and it lets the inner while loop use the same too big / too small two-pointer logic as Two Sum II.",
+      "if_removed": "Without sorting, the if on line 13 couldn't tell which pointer to move, since a too-big sum would no longer reliably mean \"the number at r is too large\"; the whole two-pointer approach would stop working.",
+      "alternatives": [
+        { "code": "nums = sorted(nums)", "difference": "Builds a new sorted list and reassigns nums to point at it, rather than sorting the original list in place. It gives the same order to work with, but uses O(n) extra memory for the copy, and leaves the caller's original list (if nums were passed in from outside) untouched." }
+      ],
+      "mistake": "Forgetting to sort nums at all. Every later step assumes ascending order; skipping this line breaks both the duplicate-skipping and the two-pointer direction logic.",
+      "caption": "Sort nums in place: [{', '.join(str(x) for x in nums)}]."
+    },
+    "6": {
+      "explain": "This starts the outer loop, trying each position in the now-sorted nums as the fixed first number of a group. i is the position, a is the value there.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method, at the same level as res and nums.sort()." },
+        { "token": "for", "meaning": "Starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i, a", "meaning": "Two loop variables. enumerate hands back (index, value) pairs each pass, and Python unpacks them into i and a." },
+        { "token": "in", "meaning": "Takes items one at a time from what follows." },
+        { "token": "enumerate(nums)", "meaning": "Walks nums and gives back (0, nums[0]), (1, nums[1]), and so on." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Fixing one number at a time, from smallest to largest, turns \"find three numbers that sum to 0\" into \"for each number, find two more that sum to its negation\", which is exactly what the inner while loop does.",
+      "if_removed": "Without this loop, no first number would ever be chosen, and the method would return an empty list no matter what nums contained.",
+      "alternatives": [
+        { "code": "for i in range(len(nums)):\n    a = nums[i]", "difference": "Gets the same i and a without enumerate, fetching the value manually instead. It works identically; enumerate is just shorter." }
+      ],
+      "mistake": "Looping only up to len(nums) - 2 by hand, assuming the last two positions can never be a valid i. That's unnecessary: when i is near the end, l, r = i + 1, len(nums) - 1 already leaves l >= r, so the inner while loop simply never runs for those positions.",
+      "caption": [
+        "Done with i = {i}. Move to the next position.",
+        "The outer loop starts at the first position in the sorted nums."
+      ]
+    },
+    "7": {
+      "explain": "This checks whether the current value a is the same as the value right before it. Since nums is sorted, that's enough to know a was already tried as a first number.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "i > 0", "meaning": "Makes sure there is a previous position to compare against; nums[-1] would otherwise wrap around to the last item instead of raising an error." },
+        { "token": "and", "meaning": "Both sides must be True for the whole condition to be True." },
+        { "token": "a == nums[i - 1]", "meaning": "True when the current value matches the one at the previous position." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Because nums is sorted, two equal values always sit next to each other. If a was just tried as i - 1's first number, trying it again as i's first number would search the exact same remaining numbers and find the exact same groups, just reported twice.",
+      "if_removed": "Repeated values, like the two -1s in [-4, -1, -1, 0, 1, 2], would each start their own full inner search, and any group built from that value would appear in res once per repeat.",
+      "alternatives": [
+        { "code": "if a in nums[:i]:", "difference": "Checks the whole prefix for a repeat, not just the immediately preceding value. On sorted input it finds the same repeats, but it's slower, an O(i) scan on every single pass, where nums[i - 1] is a single O(1) lookup." }
+      ],
+      "mistake": "Forgetting the i > 0 guard. Without it, when i is 0, nums[i - 1] would be nums[-1], Python's way of reading the LAST item, which could wrongly match and skip the very first position.",
+      "caption": [
+        { "when": "i > 0 and a == nums[i - 1]", "text": "a = {a} is the same as the previous number. Skip it to avoid a duplicate group." },
+        "a = {a} is new. Use it as this group's first number."
+      ]
+    },
+    "8": {
+      "explain": "Since a was a repeat, skip straight to the next pass of the outer loop without doing any more work for this i.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 7's condition was True." },
+        { "token": "continue", "meaning": "A keyword that immediately jumps back to the start of the nearest enclosing loop, skipping the rest of the current pass's body." }
+      ],
+      "why": "There's no need to run the inner while loop for a value that's already been tried; continue skips straight past it with no extra bookkeeping.",
+      "if_removed": "Without continue, lines 10 onward would still run for the repeated value, searching for groups that were already found and appended on the previous pass.",
+      "alternatives": [
+        { "code": "pass", "difference": "pass does nothing at all, which would let execution fall through to line 10 anyway, since there's no other code left in the if block to skip. continue is what actually jumps back to the loop, past the rest of this pass." }
+      ],
+      "mistake": "Using break instead of continue. break would stop the outer loop entirely, abandoning every remaining, still-untried value of i, not just this repeated one.",
+      "caption": "Skip the rest of this pass: move on to the next value of i."
+    },
+    "10": {
+      "explain": "This sets up the inner two pointers for the current i: l starts right after i, and r starts at the very last position.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop, after the duplicate check." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "i + 1", "meaning": "One position after i, so a is never reused as a second number too." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(nums) - 1", "meaning": "The last valid index of nums." }
+      ],
+      "why": "l and r search only the part of nums after i for the other two numbers, which is exactly the Two Sum II setup, just on a shrinking slice of the list instead of the whole thing.",
+      "if_removed": "The while loop on line 11 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = i + 1\nr = len(nums) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Starting l at i instead of i + 1. Then nums[l] could be the same position as a, letting one number be used twice in the same group.",
+      "caption": "For a = {a}: search positions {i + 1} to {len(nums) - 1} for two numbers that cancel it out."
+    },
+    "11": {
+      "explain": "This loop keeps going as long as l and r haven't met or crossed. Each pass checks one combination of l and r, exactly like Two Sum II.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "l < r", "meaning": "True while there's still at least one pair of distinct positions left to try." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Once l and r meet, every pair after i has already been tried for this particular a, so it's time to move on to the next value of i.",
+      "if_removed": "Without this loop, at most one pair would ever be checked per i, and most groups would never be found.",
+      "alternatives": [
+        { "code": "while l != r:", "difference": "Works the same here, since l only increases and r only decreases, one step at a time. l < r is still the clearer, safer way to write \"not finished yet\"." }
+      ],
+      "mistake": "Writing l <= r. When l equals r, that's one position being used for both the second and third number, which the problem's \"three different positions\" rule forbids.",
+      "caption": [
+        { "when": "l < r", "text": "l = {l} and r = {r} haven't met yet. Keep searching for this a." },
+        "l = {l} has met or passed r = {r}. Done searching for this a."
+      ]
+    },
+    "12": {
+      "explain": "This adds the fixed first number a to the two numbers currently pointed at, and stores the result in threeSum.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block." },
+        { "token": "threeSum", "meaning": "A new variable holding this pass's three-number sum. It happens to share its name with the method, which is fine: a local variable and a method live in different namespaces." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "a + nums[l] + nums[r]", "meaning": "The sum of the fixed first number and the two numbers at the current pointers." }
+      ],
+      "why": "Comparing this sum against 0 is what decides whether this exact group works, and if not, which pointer to move next. Storing it in a variable avoids recomputing it on every branch below.",
+      "if_removed": "Line 13 would fail with a NameError, since threeSum wouldn't exist.",
+      "alternatives": [
+        { "code": "if a + nums[l] + nums[r] > 0:", "difference": "Skips the variable and recomputes the sum inline wherever it's needed. Same answer, with the arithmetic repeated across the if, elif and else branches." }
+      ],
+      "mistake": "Writing nums[i] instead of a. They hold the same value here, so it happens to work, but a is clearer about which number is meant to stay fixed for this whole inner loop.",
+      "caption": "{a} + nums[{l}] + nums[{r}] = {a + nums[l] + nums[r]}."
+    },
+    "13": {
+      "explain": "This checks whether the three-number sum is too big. If it is, the largest of the two movable numbers, nums[r], must be reduced.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "threeSum", "meaning": "The sum computed on the line above." },
+        { "token": ">", "meaning": "\"Greater than\" comparison." },
+        { "token": "0", "meaning": "The target the three numbers need to add up to." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Because nums is sorted, nums[r] is the larger of the two movable numbers, and everything to its left is smaller or equal. If the sum is already too big, only shrinking r can bring it down; moving l the other way would make it bigger still.",
+      "if_removed": "Line 14 would never run, so a too-big sum would fall through to the elif on line 15, which also wouldn't match, and the else on line 17 would wrongly record the current group as if it summed to 0.",
+      "alternatives": [
+        { "code": "if 0 < threeSum:", "difference": "The same comparison written the other way round. Identical behaviour; pick whichever reads more naturally." }
+      ],
+      "mistake": "Moving l instead of r when the sum is too big. That moves toward larger numbers on the l side, making an already-too-big sum even bigger.",
+      "caption": [
+        { "when": "threeSum > 0", "text": "{threeSum} is bigger than 0: nums[r] = {nums[r]} is too large. Move r inward." },
+        "{threeSum} isn't bigger than 0."
+      ]
+    },
+    "14": {
+      "explain": "The sum was too big, so move r one step to the left, toward smaller numbers.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 13's condition was True." },
+        { "token": "r -= 1", "meaning": "Shorthand for r = r - 1: subtract 1 from r and store the result back in r." }
+      ],
+      "why": "Shrinking r is the only move that can lower the sum, since every number to r's left is smaller or equal to nums[r], and a and nums[l] haven't been ruled out.",
+      "if_removed": "r would never move, so threeSum would stay too big and the loop would compare the exact same group forever: an infinite loop.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing r += 1 by accident, which would move toward larger numbers instead of smaller ones, making the sum grow instead of shrink.",
+      "caption": "Move r inward: r becomes {r - 1}."
+    },
+    "15": {
+      "explain": "Otherwise, check whether the sum is too small. If so, the fix is the mirror image: grow the smaller movable number instead.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Lines up with the if on line 13, so this elif belongs to it." },
+        { "token": "elif", "meaning": "Short for \"else if\". Checked only if the if above it was False." },
+        { "token": "threeSum < 0", "meaning": "True when the three numbers don't yet add up to 0." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "If the sum is too small, nums[l] is the limiting side: every number to its right (other than those already past r) is at least as big, so moving l rightward is the only way to raise the sum. Using elif means this is only checked after line 13 already ruled out \"too big\".",
+      "if_removed": "A too-small sum would fall through to the else on line 17 and wrongly record the current group, since neither the if nor this check would have caught it.",
+      "alternatives": [
+        { "code": "if threeSum < 0:", "difference": "A separate if instead of elif. Both conditions can never be True at the same time here, so the behaviour happens to match, but elif makes the either/or relationship explicit and safe against future edits." }
+      ],
+      "mistake": "Moving r instead of l when the sum is too small. That moves toward smaller numbers on the r side, making an already-too-small sum even smaller.",
+      "caption": [
+        { "when": "threeSum < 0", "text": "{threeSum} is smaller than 0: nums[l] = {nums[l]} is too small. Move l inward." },
+        "{threeSum} isn't smaller than 0 either."
+      ]
+    },
+    "16": {
+      "explain": "The sum was too small, so move l one step to the right, toward bigger numbers.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the elif block, so it only runs when line 15's condition was True." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Growing l is the only move that can raise the sum, since every number to l's right is bigger or equal to nums[l], and a and nums[r] haven't been ruled out.",
+      "if_removed": "l would never move, so threeSum would stay too small and the loop would compare the exact same group forever: an infinite loop.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing l -= 1 by accident, which would move toward smaller numbers instead of bigger ones, making the sum shrink instead of grow.",
+      "caption": "Move l inward: l becomes {l + 1}."
+    },
+    "17": {
+      "explain": "else catches the only remaining case: threeSum is neither too big nor too small, so a, nums[l] and nums[r] add up to exactly 0. A matching group is found.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Lines up with the if and elif above. It's the last branch of the same chain." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when every condition above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Not bigger and not smaller than 0 means equal to 0, so there's no need to spell out an == check.",
+      "if_removed": "Without else, lines 18 onward would run on every pass regardless of whether threeSum actually equalled 0, recording wrong groups.",
+      "alternatives": [
+        { "code": "elif threeSum == 0:", "difference": "Spells out the equality. Clearer to some readers, but the condition can never be False here, so it's redundant." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if, which Python would catch as a SyntaxError since there'd be no matching if or elif directly above it.",
+      "caption": "{a} + nums[{l}] + nums[{r}] = 0. Found a matching group!"
+    },
+    "18": {
+      "explain": "Build the three-number group and append it to res.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the else block." },
+        { "token": "res.append(", "meaning": "append adds one item to the end of a list, changing it in place and returning None." },
+        { "token": "[a, nums[l], nums[r]]", "meaning": "A new three-item list: the fixed first number, then the two numbers found by the pointers." },
+        { "token": ")", "meaning": "Closes the append call." }
+      ],
+      "why": "res collects every group found across every value of i, so each one has to be added as it's discovered, rather than overwriting whatever was found before.",
+      "if_removed": "The group would be found but never recorded, and it would be missing from the final answer.",
+      "alternatives": [
+        { "code": "res += [[a, nums[l], nums[r]]]", "difference": "Also adds the new group to res in place, by concatenating a one-item list onto it. It behaves the same as append here; append is the more common, more direct way to add a single item." }
+      ],
+      "mistake": "Appending nums[l] and nums[r] without a, forgetting that the fixed first number is part of the group too.",
+      "caption": "Add [{a}, {nums[l]}, {nums[r]}] to res."
+    },
+    "19": {
+      "explain": "A group was just found, so move l one step inward to look for a different second number on the next pass.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the else block, right after the append." },
+        { "token": "l += 1", "meaning": "Add 1 to l and store the result back in l." }
+      ],
+      "why": "Leaving l where it is would just rediscover the exact same group again on the next pass. Moving it inward is what lets the search continue looking for other groups that share this same a.",
+      "if_removed": "The while loop's condition would never change for l, so the same group would be found and appended to res over and over, forever: an infinite loop.",
+      "alternatives": [
+        { "code": "l, r = l + 1, r - 1", "difference": "Moves both pointers inward in a single tuple-unpacking line instead of two separate lines. Identical result; purely a style choice." }
+      ],
+      "mistake": "Forgetting this line. Then only r would move after a match, and l would stay put, risking the same group (or an invalid one, if l ends up past r) being reconsidered.",
+      "caption": "Found a group. Move l inward to keep looking: l becomes {l + 1}."
+    },
+    "20": {
+      "explain": "And move r one step inward too, so the next pass considers a fresh pair of positions.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Same level as line 19: runs right after it, still inside the else block." },
+        { "token": "r -= 1", "meaning": "Subtract 1 from r and store the result back in r." }
+      ],
+      "why": "Both pointers need to move after a match, the same way Two Sum II moves both pointers inward once it's done examining a pair, so the next pass looks at genuinely new positions.",
+      "if_removed": "r would stay still while l moved, so the next pass could compare l against a stale r, potentially re-finding a group that's really just a rearrangement of one already added.",
+      "alternatives": [
+        { "code": "r = r - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Forgetting this line entirely, leaving r fixed for the rest of this i's search.",
+      "caption": "And move r inward too: r becomes {r - 1}."
+    },
+    "21": {
+      "explain": "After moving l inward, this inner while loop skips past any further repeats of the same value at l, so the next group found isn't a duplicate of the one just added.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Same level as lines 19 and 20, still inside the else block." },
+        { "token": "while", "meaning": "Starts another loop, nested inside the outer while on line 11." },
+        { "token": "l < r", "meaning": "Stop skipping once the pointers meet, even if nums[l] is still a repeat." },
+        { "token": "and", "meaning": "Both sides must be True for the loop to keep running." },
+        { "token": "nums[l] == nums[l - 1]", "meaning": "True when the number l now points at is the same as the one right before it, which was just used in the group that was added." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "The group just added already used nums[l - 1] as its second number. If nums[l] repeats that same value, using it would just rebuild the same group of values with r unchanged, or with r having to do extra work to reach the same answer again. Skipping it here is what keeps res free of duplicate groups for this a.",
+      "if_removed": "A repeated value right after a match, like the two -1s next to each other after sorting, could let the same group of values be appended to res more than once.",
+      "alternatives": [
+        { "code": "while l < r and nums[l] == nums[l + 1]:\n    l += 1", "difference": "Compares nums[l] to the number AHEAD of it instead of the one behind it. That checks the wrong neighbor: nums[l - 1] is the value that was just used in the group that was found; nums[l + 1] hasn't been tried yet at all." }
+      ],
+      "mistake": "Comparing against nums[l + 1] instead of nums[l - 1]. l - 1 is the number this group already used; skipping based on l + 1 would skip a number that hasn't been tried yet, possibly missing a real group.",
+      "caption": [
+        { "when": "l < r and nums[l] == nums[l - 1]", "text": "nums[l] = {nums[l]} repeats the number just used. Skip it to avoid a duplicate group." },
+        "nums[l] = {nums[l] if l < len(nums) else None} is new, or l has reached r. Stop skipping."
+      ]
+    },
+    "22": {
+      "explain": "Move l one more step to the right, past the repeated value just found.",
+      "syntax": [
+        { "token": "                        (24 spaces)", "meaning": "Inside the inner while block." },
+        { "token": "l += 1", "meaning": "Add 1 to l and store the result back in l." }
+      ],
+      "why": "Advancing l is what lets this inner loop eventually either find a genuinely new value or reach r.",
+      "if_removed": "The inner while loop's condition would never change, so it would run forever on the first repeated value it finds: an infinite loop.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r -= 1 by accident inside this block, which would move the wrong pointer and could let r cross past l unexpectedly.",
+      "caption": "Skip the repeat: l becomes {l + 1}."
+    },
+    "23": {
+      "explain": "Once the outer for loop has tried every position as a first number, return every group that was found.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the for loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the list of groups collected in res." }
+      ],
+      "why": "res has been built up incrementally across every value of i, so by the time the for loop finishes, it holds every group of three values that sums to 0, with no duplicates.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the list of groups, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return list(res)", "difference": "Makes a shallow copy of res before returning it. Since res isn't used again after this line, the copy is unnecessary; returning res directly gives the same result." }
+      ],
+      "mistake": "Putting this return statement inside the for loop. Then the method would stop and return after examining only the very first value of i, missing every group found with any later first number.",
+      "caption": "Every position has been tried as a first number. Return res: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def threeSum(self, nums: List[int]) -> List[List[int]]:\n        nums.sort()\n        n = len(nums)\n        found = set()\n        for i in range(n):\n            for j in range(i + 1, n):\n                for k in range(j + 1, n):\n                    if nums[i] + nums[j] + nums[k] == 0:\n                        found.add((nums[i], nums[j], nums[k]))\n        return [list(t) for t in found]",
+    "explain": "Try every possible group of three positions with three nested loops: i, then j after it, then k after that. Sorting first and collecting results in a set of tuples means equal groups of values, even found from different positions, land on the same tuple and are automatically deduplicated.",
+    "why_slow": "For n numbers, this checks roughly n x n x n / 6 groups, which is O(n cubed), cubic time. For a list of even a few thousand numbers, that's billions of checks, far too slow.",
+    "how_pattern_fixes": "Fixing one number at a time and running a linear two-pointer sweep over the rest, instead of two more fully nested loops, turns the innermost O(n squared) pair search into an O(n) pass. That drops the total from O(n cubed) to O(n squared), and sorting also replaces the dedup set with two simple neighbor comparisons.",
+    "time": "O(n cubed): cubic. Three nested loops, each running across roughly the whole list.",
+    "space": "O(n): the set used to remove duplicate groups, which in the worst case can hold as many entries as there are distinct matching groups."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B completely.",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower or more memory-hungry than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(nums).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if or elif above it was False.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. nums.sort() and append change a list in place.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [2, 7, 11], the 11 is at index 2.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return, continue.",
+    "len": "A built-in function that gives the number of items in something: len([2, 7, 11]) is 3.",
+    "list": "An ordered collection written with square brackets, like [2, 7, 11]. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely before the outer loop moves to its next pass.",
+    "None": "Python's value for \"nothing\". A function with no return statement, or one that only calls a method like sort() that returns None, gives back None.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "object": "A thing in memory that has a type and data, like a list, a set or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, > and < compare.",
+    "parameter": "A name in a function's definition that receives an input. nums is threeSum's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like hash map lookup or two pointers.",
+    "pointer": "A variable holding a position (index) in a list. Here i, l and r are pointers.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant membership checks, like a dictionary with keys but no values.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Python's sorted(\"cab\") gives ['a', 'b', 'c']. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "two pointers": "A pattern that uses two position variables, often one at each end of a sorted list, and moves them toward each other to find an answer without extra memory.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "i": "i",
+        "l": "l if __line__ not in (6, 7, 8, 10) else None",
+        "r": "r if __line__ not in (6, 7, 8, 10) else None"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (6, 7, 8, 10) else [i, l, r]",
+        "found": "[i, l, r] if __line__ == 18 else []",
+        "done": "list(range(i))"
+      }
+    }
+  ]
+}
