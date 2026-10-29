@@ -1,0 +1,464 @@
+{
+  "slug": "evaluate-reverse-polish-notation",
+  "title": "Evaluate Reverse Polish Notation",
+  "difficulty": "Medium",
+  "category": "Stack",
+  "leetcode": 150,
+  "statement": [
+    "You are given a list of strings called tokens that represents an arithmetic expression written in Reverse Polish Notation (postfix): every operator comes right after the two numbers it applies to, so no parentheses are ever needed.",
+    "Each token is either an integer written as a string (like \"13\" or \"-4\") or one of the four operators + - * /.",
+    "Evaluate the expression and return the result as an integer.",
+    "Division between two integers truncates toward zero. For example 13 / 5 is 2, and -7 / 2 is -3, not -4."
+  ],
+  "examples": [
+    {
+      "input": "tokens = [\"2\", \"1\", \"+\", \"3\", \"*\"]",
+      "output": "9",
+      "explain": "\"2\" \"1\" \"+\" means 2 + 1 = 3. Then \"3\" \"*\" means 3 * 3 = 9. This is the example the visualizer runs."
+    },
+    {
+      "input": "tokens = [\"4\", \"13\", \"5\", \"/\", \"+\"]",
+      "output": "6",
+      "explain": "13 / 5 truncates toward zero to 2 (not 2.6), then 4 + 2 = 6."
+    }
+  ],
+  "pattern": {
+    "name": "Stack (last in, first out)",
+    "summary": "Read the tokens left to right. Push every number onto a stack. When an operator arrives, pop the two most recently pushed numbers, apply the operator, and push the result back. Because the two operands are always the ones just pushed, a stack naturally keeps them in the right order without you tracking positions by hand.",
+    "recognize": [
+      "The expression is already in postfix (the operator comes AFTER its two operands), which is exactly what a stack is built to evaluate.",
+      "You need to combine the two MOST RECENT unfinished values, not the two oldest ones. \"Most recent first\" is what a stack gives you.",
+      "The result of one step feeds directly into a later step, like nesting dolls of operations: (2 + (1 * 3)).",
+      "There's no need to look ahead or backtrack. Each token says exactly what to do right now, using only what's on top of the stack."
+    ],
+    "avoid_when": [
+      "The expression is in the usual (infix) form, like \"2 + 1 * 3\", with operators between their operands. That needs operator precedence rules, usually handled by converting to postfix first or using two stacks (one for numbers, one for operators).",
+      "You need to evaluate the same expression many times with different numbers plugged in. Building a tree once and reusing it beats re-scanning tokens every time.",
+      "Only one operator ever appears, with no nesting. A couple of variables and no stack at all would be simpler.",
+      "The numbers could overflow a fixed-size integer and the language doesn't grow integers automatically. Python's ints grow on their own, so this isn't a concern here, but it matters in languages with fixed-size integers."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Postfix notation needs no parentheses and no precedence rules, because the order tokens arrive in already says what to do and when.",
+      "Pop order matters: the SECOND pop is the first operand (a), and the FIRST pop is the second operand (b), because the most recently pushed number comes off first.",
+      "After every operator, exactly one value (the result) goes back on the stack, so a valid expression always shrinks the stack by one net item per operator, and ends with exactly one value left.",
+      "Division truncates toward zero, not down. int(a / b) does this correctly in Python; a // b would round the wrong way whenever the true result is negative."
+    ],
+    "time": "O(n), linear time, where n is the number of tokens. Each token is looked at once, and each look does a fixed amount of work: one membership check, and one or two stack operations, all instant.",
+    "space": "O(n), linear memory in the worst case. If every token were a number, all n of them would sit on the stack before any operator ever ran.",
+    "edge_cases": [
+      "Negative numbers as tokens, like \"-3\". int(\"-3\") correctly becomes -3, and \"-3\" is never mistaken for the subtraction operator, because the whole token is compared against the operator set, not just its first character.",
+      "Division that truncates toward zero, like \"-7\" \"2\" \"/\": int(-7 / 2) is int(-3.5), which is -3, not -4. Python's // would give -4 (it rounds down, called flooring), which is wrong for this problem.",
+      "A single-number expression with no operators at all, like tokens = [\"5\"]. The loop pushes 5 once, and the stack already holds exactly one value.",
+      "The problem guarantees the expression is always valid, so the stack is never popped when it holds fewer than two items, and exactly one value remains once every token has been read."
+    ]
+  },
+  "code": "class Solution:\n    def evalRPN(self, tokens: List[str]) -> int:\n        stack = []\n        operators = {\"+\", \"-\", \"*\", \"/\"}\n\n        for t in tokens:\n            if t in operators:\n                b = stack.pop()\n                a = stack.pop()\n                if t == \"+\":\n                    stack.append(a + b)\n                elif t == \"-\":\n                    stack.append(a - b)\n                elif t == \"*\":\n                    stack.append(a * b)\n                else:\n                    stack.append(int(a / b))\n            else:\n                stack.append(int(t))\n\n        return stack[0]\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().evalRPN([\"2\", \"1\", \"+\", \"3\", \"*\"])",
+    "expected": 9,
+    "describe": "tokens = [\"2\", \"1\", \"+\", \"3\", \"*\"]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+      ],
+      "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method evalRPN. It takes the list of string tokens and promises to give back a single integer: the value of the expression.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "evalRPN", "meaning": "The method name LeetCode calls." },
+        { "token": "(self, tokens: List[str])", "meaning": "The parameters. self is the Solution object. tokens is the input list, hinted as a List of str." },
+        { "token": "-> int", "meaning": "Return type hint: a single whole number comes back." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints document that a list of strings goes in and one integer comes back.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def evalRPN(self, tokens):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Forgetting self, or misspelling the method name so LeetCode's tester can't find it.",
+      "caption": "Python remembers the evalRPN instructions for later."
+    },
+    "3": {
+      "explain": "This creates an empty list used as a stack. We only add to its end and remove from its end. It will hold the numbers we've seen so far, waiting to be combined by an operator.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "stack", "meaning": "A variable name. Calling it stack tells the reader how we'll use it." },
+        { "token": "=", "meaning": "Assignment: the name on the left now refers to the value on the right." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "A stack fits because an operator always combines the two MOST RECENTLY seen numbers, and a stack's top is exactly \"the most recently added item\". append and pop are both instant at the end of a Python list.",
+      "if_removed": "stack.append and stack.pop would crash with a NameError the first time either is used.",
+      "alternatives": [
+        { "code": "stack = list()", "difference": "Same empty list, made by calling list. [] is shorter." }
+      ],
+      "mistake": "Creating the stack inside the for loop instead of before it. That would wipe out every number seen so far on every token, so operators could never find their operands.",
+      "caption": "Make an empty stack. It will hold numbers waiting to be combined."
+    },
+    "4": {
+      "explain": "This creates a set of the four operator characters. We'll use it to quickly ask \"is this token an operator, or a number?\"",
+      "syntax": [
+        { "token": "operators", "meaning": "A variable name for the set of operator symbols." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{\"+\", \"-\", \"*\", \"/\"}", "meaning": "Curly braces with comma-separated values make a set: an unordered collection of unique items, here the four one-character strings." }
+      ],
+      "why": "Checking t in operators answers the question in constant time, however it's written. A set is the natural choice when all we need is a fast \"is this one of these?\" check, with no extra information attached.",
+      "if_removed": "Line 7's if t in operators: would crash with a NameError.",
+      "alternatives": [
+        { "code": "if t in \"+-*/\":", "difference": "Checks whether the token is a substring of the text \"+-*/\" instead. It happens to give the same answer for single-character operator tokens, but it reads as a stranger kind of question (\"is this text inside this text?\") than \"is this one of these symbols?\"." },
+        { "code": "operators = [\"+\", \"-\", \"*\", \"/\"]", "difference": "A list instead of a set. in still works, but checking membership in a list walks through it one item at a time, while a set jumps straight there. With only four items the difference is invisible, but the set is the right habit for larger collections." }
+      ],
+      "mistake": "Writing operators = \"+-*/\" (a string) and then checking t in operators. For a multi-character number token like \"13\", Python would check whether \"13\" appears anywhere inside the text \"+-*/\", which happens to still say False here, but it's answering a different, riskier question than real membership in a set of symbols.",
+      "caption": "Make a set of the four operator symbols, to quickly tell an operator from a number."
+    },
+    "6": {
+      "explain": "This loop visits each token from first to last. On every pass, t holds the current token: either a number written as a string, or an operator.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: part of evalRPN's body." },
+        { "token": "for", "meaning": "Starts a loop that repeats the indented block once per item." },
+        { "token": "t", "meaning": "The loop variable, short for token." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "tokens", "meaning": "The input list of strings." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "We need each token once, in order, and we never need its position in the list, so looping directly over tokens is the simplest choice.",
+      "if_removed": "Nothing would ever be pushed or combined, and line 21 would crash with an IndexError on an empty stack.",
+      "alternatives": [
+        { "code": "for i in range(len(tokens)):\n    t = tokens[i]", "difference": "Same t, more typing, useful only if you also needed the position i." }
+      ],
+      "mistake": "Assuming t is already a number. Every token, including the numbers, arrives as a string, so \"13\" must be converted with int(t) before it can be added or multiplied.",
+      "caption": [
+        { "when": "__visits__[6] > len(tokens)", "text": "Every token has been read, so the loop ends." },
+        { "when": "__visits__[6] > 1", "text": "Next token: {t}." },
+        "Start with the first token, {tokens[0]}."
+      ]
+    },
+    "7": {
+      "explain": "This asks: is the current token one of the four operators? If yes, Python runs the block that pops two numbers and combines them. If no, Python runs the else block instead, which treats t as a number.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "if", "meaning": "Starts a condition. The indented block below runs only if it's True." },
+        { "token": "t in operators", "meaning": "Membership check: is t one of the strings stored in the operators set?" },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Operators and numbers need completely different handling: an operator pops and combines, a number just gets pushed. Checking against the operators set is what tells them apart.",
+      "if_removed": "Every token would fall into the else branch, so operators like \"+\" would reach int(t) and crash with a ValueError.",
+      "alternatives": [
+        { "code": "if t not in (\"0123456789\"):", "difference": "Tries to guess \"is this a number\" by checking its first character instead of checking \"is this an operator\" directly. It breaks on negative numbers, whose first character is \"-\", the same character used for subtraction." }
+      ],
+      "mistake": "Checking t == \"+\" or t == \"-\" or ... one at a time instead of using the set. It works, but it's longer, and it's easy to forget one of the four symbols.",
+      "caption": [
+        { "when": "t in operators", "text": "{t} is an operator, so pop the two most recent numbers and combine them." },
+        "{t} is a number, so push it onto the stack."
+      ]
+    },
+    "8": {
+      "explain": "This pops the most recently pushed number and calls it b. Because a stack's top is the LAST thing added, b is the SECOND operand in the operation, the one that came right before the operator.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Indentation: inside the if block." },
+        { "token": "b", "meaning": "A variable name for the second operand." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "stack.pop()", "meaning": ".pop() is a list method that removes and returns the LAST item of the list, the top." }
+      ],
+      "why": "In postfix, the token right before the operator is always the SECOND number in the operation (think \"a b +\" meaning a + b), so it's the one sitting on top of the stack, and the first one we need to pop.",
+      "if_removed": "Line 9's a = stack.pop() would pop what should have been b, and every subtraction and division would use the two numbers in the wrong order.",
+      "alternatives": [
+        { "code": "a, b = stack.pop(), stack.pop()", "difference": "Tries to pop both in one line. Python evaluates the right side left to right, so a would actually get the FIRST pop (b's value) and b the SECOND (a's value): the names would end up swapped." }
+      ],
+      "mistake": "Assuming pop() removes from the FRONT of the list. It always removes from the END, the top of the stack.",
+      "caption": "Pop {stack[-1]}: it's the second number in this operation (b)."
+    },
+    "9": {
+      "explain": "This pops the next number down and calls it a. It's the FIRST operand in the operation, the one that was pushed before b.",
+      "syntax": [
+        { "token": "a", "meaning": "A variable name for the first operand." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "stack.pop()", "meaning": "Removes and returns the new top of the stack, now that b is gone." }
+      ],
+      "why": "After b comes off, the next item down is exactly the number that was waiting beneath it: the first operand of this operation.",
+      "if_removed": "Lines 11-17 would crash with a NameError, because a wouldn't exist.",
+      "alternatives": [
+        { "code": "a = stack[-1]\nstack.pop()", "difference": "Reads the top before removing it, two steps instead of one. Same result, more lines." }
+      ],
+      "mistake": "Writing stack.pop instead of stack.pop(). Without the parentheses, a would refer to the pop method itself, not a popped number.",
+      "caption": "Pop {stack[-1]}: it's the first number in this operation (a)."
+    },
+    "10": {
+      "explain": "This checks whether the current operator is addition. If so, the block below computes a + b.",
+      "syntax": [
+        { "token": "if", "meaning": "Starts a condition." },
+        { "token": "t == \"+\"", "meaning": "Compares the token to the text \"+\" using ==, the equality operator." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "t is still a string (\"+\", \"-\", \"*\" or \"/\"), so each operator needs its own comparison to decide which arithmetic to run.",
+      "if_removed": "Addition would fall through to the elif chain below, and since none of those match \"+\" either, nothing would ever be pushed for an addition, leaving the stack one item short.",
+      "alternatives": [
+        { "code": "import operator\nops = {\"+\": operator.add, ...}\nstack.append(ops[t](a, b))", "difference": "Looks up a ready-made function for the operator instead of branching. More compact, but it hides the arithmetic behind an extra layer that's harder for a beginner to read." }
+      ],
+      "mistake": "Comparing t == '+' with single quotes mixed with double-quoted strings elsewhere. Python treats 'x' and \"x\" as exactly the same string, so this isn't a bug, but mixing styles in one file is worth avoiding for readability.",
+      "caption": [
+        { "when": "t == '+'", "text": "{t} is addition: compute {a} + {b}." },
+        "Not addition; check the next operator."
+      ]
+    },
+    "11": {
+      "explain": "This computes a + b and pushes the sum onto the stack, where it can be used by a later operator (or returned if nothing else is left).",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Indentation: inside the if on line 10." },
+        { "token": "stack.append(a + b)", "meaning": "Adds the sum a + b to the end of the stack." }
+      ],
+      "why": "Every operator must leave exactly one new value on the stack, the result, so later tokens can keep combining it with whatever comes next.",
+      "if_removed": "The result of an addition would be thrown away, and the stack would end up one item short of what the rest of the expression expects.",
+      "alternatives": [
+        { "code": "result = a + b\nstack.append(result)", "difference": "Same thing in two lines using a named variable. Equally correct, just more lines for this simple case." }
+      ],
+      "mistake": "Writing stack.append(b + a). Addition doesn't care about order, so this happens to still work, but the same habit breaks subtraction and division.",
+      "caption": "Push the result: {a} + {b} = {a + b}."
+    },
+    "12": {
+      "explain": "elif pairs with the if on line 10. This checks whether the operator is subtraction, but only if it wasn't addition.",
+      "syntax": [
+        { "token": "elif", "meaning": "Short for \"else if\": checks another condition, but only when the if (or elif) above it was False." },
+        { "token": "t == \"-\"", "meaning": "Compares the token to the text \"-\"." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Each operator needs exactly one matching branch. elif keeps the branches mutually exclusive, so a token is never treated as two different operators.",
+      "if_removed": "Writing a second, separate if instead of elif would still work here, because the conditions can't overlap, but elif makes that guarantee clear to the reader.",
+      "alternatives": [
+        { "code": "if t == \"-\":", "difference": "A second independent if instead of elif. For this problem the conditions never overlap, so behavior is identical, but elif documents that intent." }
+      ],
+      "mistake": "Writing if instead of elif for every operator. It still works here since the conditions are mutually exclusive, but it's easy to accidentally introduce overlapping conditions elsewhere and get two branches running.",
+      "caption": [
+        { "when": "t == '-'", "text": "{t} is subtraction: compute {a} - {b}." },
+        "Not subtraction; check the next operator."
+      ]
+    },
+    "13": {
+      "explain": "This computes a - b and pushes the result onto the stack.",
+      "syntax": [
+        { "token": "stack.append(a - b)", "meaning": "Adds a - b to the end of the stack." }
+      ],
+      "why": "Order matters for subtraction: a is the number that was pushed first (the one that appears first in the expression), so a - b matches what the postfix expression means.",
+      "if_removed": "The result of a subtraction would be thrown away, leaving the stack one item short.",
+      "alternatives": [
+        { "code": "stack.append(b - a)", "difference": "Flips the order. Subtraction isn't commutative, so \"4\" \"1\" \"-\" (meaning 4 - 1 = 3) would wrongly compute 1 - 4 = -3." }
+      ],
+      "mistake": "Writing b - a instead of a - b. Since a was pushed (and read) first in the original expression, it must come first here too.",
+      "caption": "Push the result: {a} - {b} = {a - b}."
+    },
+    "14": {
+      "explain": "elif pairs with the branches above it. This checks whether the operator is multiplication, but only if it wasn't addition or subtraction.",
+      "syntax": [
+        { "token": "elif", "meaning": "Checks another condition, only reached if every earlier if/elif above it was False." },
+        { "token": "t == \"*\"", "meaning": "Compares the token to the text \"*\"." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Multiplication needs its own branch, since it's computed differently from addition or subtraction.",
+      "if_removed": "A \"*\" token would fall through to the else branch meant for division, and a * b would be computed with / instead of *, giving the wrong answer.",
+      "alternatives": [
+        { "code": "if t == \"*\":", "difference": "A separate if instead of elif. Identical behavior here, since the conditions never overlap." }
+      ],
+      "mistake": "Forgetting this branch entirely and letting \"*\" fall into the division branch below, silently computing the wrong operation.",
+      "caption": [
+        { "when": "t == '*'", "text": "{t} is multiplication: compute {a} * {b}." },
+        "Not multiplication; it must be division."
+      ]
+    },
+    "15": {
+      "explain": "This computes a * b and pushes the product onto the stack.",
+      "syntax": [
+        { "token": "stack.append(a * b)", "meaning": "Adds a * b to the end of the stack." }
+      ],
+      "why": "Multiplication is commutative (a * b equals b * a), so order doesn't matter here the way it does for subtraction and division, but keeping a * b consistent with the other branches is still good style.",
+      "if_removed": "The result of a multiplication would be thrown away, leaving the stack one item short.",
+      "alternatives": [
+        { "code": "stack.append(b * a)", "difference": "Also correct, since multiplication doesn't care about order. Written here for consistency with the other branches, not because it would otherwise break." }
+      ],
+      "mistake": "Using + instead of * by a typo. The result would be far too small and the mistake could easily go unnoticed on small test cases.",
+      "caption": "Push the result: {a} * {b} = {a * b}."
+    },
+    "16": {
+      "explain": "else pairs with the if and elifs above it. Since every other operator has already been ruled out, the only one left is division.",
+      "syntax": [
+        { "token": "else", "meaning": "\"Otherwise\": its block runs only when every if and elif above it was False." },
+        { "token": ":", "meaning": "Ends the line. The indented block follows." }
+      ],
+      "why": "operators only ever contains + - * /, and the first three already have their own branch, so reaching else guarantees t is \"/\".",
+      "if_removed": "Writing elif t == \"/\": instead would work exactly the same, since it's the last possible operator. else is slightly shorter and says \"there's nothing else it could be\".",
+      "alternatives": [
+        { "code": "elif t == \"/\":", "difference": "Spells out the condition instead of relying on it being the only one left. Behaves identically, since + - * / covers every member of operators." }
+      ],
+      "mistake": "Adding a fifth operator to the operators set (like \"%\") without adding a matching branch here. It would silently be treated as division.",
+      "caption": "The only operator left is division."
+    },
+    "17": {
+      "explain": "This divides a by b, truncates the result toward zero, and pushes the whole number onto the stack.",
+      "syntax": [
+        { "token": "stack.append(int(a / b))", "meaning": "a / b is true division, which can give a decimal. int(...) then cuts off everything after the decimal point, toward zero." }
+      ],
+      "why": "LeetCode requires division to truncate toward zero, not floor (round down). int() on a positive or negative float does exactly that, while Python's // operator floors instead, which gives the wrong answer for negative results.",
+      "if_removed": "stack.append(a / b) without int(...) would push a float like 2.6 instead of the whole number the problem expects, and the final return would be a float, not an int.",
+      "alternatives": [
+        { "code": "stack.append(a // b)", "difference": "Floor division rounds down, toward negative infinity. For -7 / 2, true division gives -3.5: int(...) truncates it to -3, but // floors it to -4. They disagree whenever the true result is negative and not a whole number." },
+        { "code": "from math import trunc\nstack.append(trunc(a / b))", "difference": "math.trunc does the exact same \"cut toward zero\" job as int() here. Either works; int() needs no extra import." }
+      ],
+      "mistake": "Using a // b, which looks like the natural \"integer division\" operator but rounds the wrong way for negative results.",
+      "caption": "Push the result: {a} / {b} truncated toward zero = {int(a / b)}."
+    },
+    "18": {
+      "explain": "else pairs with the if on line 7. Its block runs when t is NOT one of the four operators, which means it's a number.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Same indentation as the if on line 7, which is the if it belongs to." },
+        { "token": "else:", "meaning": "\"Otherwise\": runs when t in operators was False." }
+      ],
+      "why": "Numbers and operators need different handling: a number just needs to be converted and pushed, with nothing to pop or combine.",
+      "if_removed": "Line 19 would run for every token, including operators, and int(\"+\") would crash with a ValueError.",
+      "alternatives": [
+        { "code": "if t.lstrip(\"-\").isdigit():", "difference": "Explicitly checks that the token looks like a number (allowing a leading minus sign) instead of just assuming \"everything that's not an operator is a number\". Safer if the input could contain something unexpected, which this problem guarantees it won't." }
+      ],
+      "mistake": "Assuming every non-operator token is already the right type. It's still a string here, and must be converted with int(t) before it can be pushed as a usable number.",
+      "caption": "{t} is a number, not an operator."
+    },
+    "19": {
+      "explain": "This converts the token's text into a whole number and pushes it onto the stack.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "stack.append(int(t))", "meaning": "int(t) turns a string like \"13\" into the number 13. append adds it to the end of the stack." }
+      ],
+      "why": "t always arrives as a string, even for numbers, and we need an actual int to do arithmetic on it later.",
+      "if_removed": "stack.append(t) would push the string \"13\" instead of the number 13, and later arithmetic like a + b would crash with a TypeError (you can't add a string and a number) or silently glue strings together instead of adding.",
+      "alternatives": [
+        { "code": "stack.append(float(t))", "difference": "Converts to a decimal number instead of a whole number. The problem promises integer results, so int(t) is both correct and exact, with no rounding to worry about." }
+      ],
+      "mistake": "Forgetting int(...) entirely and pushing the raw string t.",
+      "caption": "Push the number {t} onto the stack."
+    },
+    "21": {
+      "explain": "Every token has been read. The problem guarantees exactly one value remains on the stack: the answer. Return it.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level: this runs once, after the loop." },
+        { "token": "return", "meaning": "Hand back the answer and end the method." },
+        { "token": "stack[0]", "meaning": "The one remaining item in the stack, at position 0." }
+      ],
+      "why": "A valid postfix expression always finishes with the whole stack collapsed down to exactly one value: the final result.",
+      "if_removed": "The method would return None instead of the computed value.",
+      "alternatives": [
+        { "code": "return stack.pop()", "difference": "Pops the last value instead of indexing it. Since exactly one item is left, stack[0] and stack.pop() refer to the same item here; pop() also empties the stack, which doesn't matter since nothing uses it afterward." }
+      ],
+      "mistake": "Returning stack instead of stack[0]. stack is a one-item list like [9], not the integer 9 the problem asks for.",
+      "caption": "Only one value is left on the stack: {stack[0]}. Return it."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def evalRPN(self, tokens: List[str]) -> int:\n        tokens = tokens[:]\n        while len(tokens) > 1:\n            for i, t in enumerate(tokens):\n                if t in \"+-*/\" and len(t) == 1:\n                    a, b = int(tokens[i - 2]), int(tokens[i - 1])\n                    if t == \"+\":\n                        result = a + b\n                    elif t == \"-\":\n                        result = a - b\n                    elif t == \"*\":\n                        result = a * b\n                    else:\n                        result = int(a / b)\n                    tokens[i - 2:i + 1] = [str(result)]\n                    break\n        return int(tokens[0])",
+    "explain": "Keep scanning the list from the start looking for the first operator. Once found, resolve it using the two numbers right before it, splice the three tokens into a single result, and start scanning again from the beginning. Repeat until only one token is left.",
+    "why_slow": "Each pass rescans the list from the start to find the next operator to resolve, about n steps, and resolving one operator shrinks the list by 2, so there are about n / 2 passes. That's roughly n × n / 2 steps in total: O(n²), quadratic time. Splicing tokens[i - 2:i + 1] = [...] also shifts every item after it, adding more work on top.",
+    "how_pattern_fixes": "The repeated rescanning happens because the brute force forgets where the most recent numbers are and has to search for the next operator every single time. A stack remembers exactly the two most recent numbers at its top, so when an operator arrives, no search is needed at all: pop, pop, push. Each token is handled once, in one pass, so the work drops to O(n).",
+    "time": "O(n²): quadratic. About n / 2 rescans, each up to n steps long.",
+    "space": "O(n): linear. A working copy of the tokens list that shrinks over time."
+  },
+  "glossary": {
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B completely (short-circuiting).",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In stack.append(i), i is the argument.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n²) quadruples when the input doubles. O(1) doesn't grow.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False.",
+    "break (keyword)": "A keyword that immediately leaves the loop it's in.",
+    "brute force": "Solving a problem in the most direct way, usually by trying or repeating everything. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by brackets, like stack.pop().",
+    "character": "A single letter, digit, space or symbol in a string. \"+\" is one character; \"13\" is two.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of if, elif, else, for, while, def or class lines, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Set and dictionary membership checks are constant time.",
+    "elif": "Short for \"else if\". It checks another condition when the earlier if (or elif) was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if or elif above it was False.",
+    "equality operator": "The == symbol, which checks whether two values are the same. It's different from =, which assigns.",
+    "expression": "Any piece of code that produces a value, like a + b or t in operators.",
+    "float": "Python's name for a decimal number, like 2.6 or -3.5.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to, and which if an else or elif pairs with.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like stack[0] on an empty list.",
+    "integer division": "Dividing and dropping any decimal part so the result is a whole number. Python's // floors toward negative infinity, which disagrees with truncating toward zero for negative results.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "keyword": "A word reserved by Python, like if, elif, else, for, while, return, def.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "loop": "Code that repeats. A for loop repeats once per item, a while loop repeats as long as a condition holds.",
+    "method": "A function that belongs to an object, called with a dot: stack.append(i), stack.pop().",
+    "mutually exclusive": "Two or more conditions where at most one can be True at the same time, like t == \"+\" and t == \"-\".",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data. Variables are names pointing at objects.",
+    "operand": "One of the values an operator works on. In a + b, a and b are the operands and + is the operator.",
+    "operator": "A symbol or word that does something with values: + adds, - subtracts, * multiplies, / divides, = assigns, == compares, in checks membership.",
+    "overflow": "When a number grows too large for the fixed amount of memory a language sets aside for it, wrapping around or erroring. Python's integers grow automatically and never overflow.",
+    "parameter": "A name in a function's definition that receives an input. tokens is evalRPN's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes and returns the LAST item of a list, the top of a stack.",
+    "postfix": "A way of writing an expression where the operator comes AFTER its operands, like \"2 1 +\" meaning 2 + 1. It needs no parentheses or precedence rules.",
+    "precedence": "The rules that decide which operator in an expression gets applied first, like multiplication before addition. Postfix expressions don't need precedence rules.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant membership checks, written with curly braces like {\"+\", \"-\"}. It has no order and stores no extra information per item, unlike a dictionary.",
+    "short-circuiting": "and and or stop as soon as the answer is known. False and X never evaluates X, which lets you guard risky checks.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "splice": "Replacing a slice of a list with new items in one step, as in tokens[i - 2:i + 1] = [str(result)].",
+    "stack": "A collection where you only add and remove at one end, the top. The last item in is the first out.",
+    "str": "Python's name for the string type.",
+    "string": "Text written in quotes, like \"13\" or \"+\". Each character has an index starting at 0.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, stack[-1].",
+    "true division": "Division with / that always gives a decimal result in Python 3, like 7 / 2 == 3.5, unlike // which rounds down to a whole number.",
+    "truncate": "Cutting off everything after the decimal point, toward zero. int(-3.5) is -3, not -4.",
+    "type hint": "A label like tokens: List[str] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number or a popped item. More generally, anything a variable can refer to or an expression can produce.",
+    "ValueError": "The error Python raises when a value has the right type but the wrong content, like int(\"+\"), which can't be parsed as a number.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "tokens",
+      "source": "tokens",
+      "pointers": {
+        "t": "__visits__.get(6, 0) - 1 if __visits__.get(6, 0) else None"
+      },
+      "marks": {
+        "compared": "[__visits__[6] - 1] if 7 <= __line__ <= 19 else []",
+        "done": "list(range(__visits__.get(6, 1) - 1)) if __line__ != 21 else list(range(len(tokens)))"
+      }
+    },
+    {
+      "type": "stack",
+      "title": "stack",
+      "source": "stack",
+      "marks": {
+        "compared": "[len(stack) - 1, len(stack) - 2] if __line__ in (8, 9) and len(stack) >= 2 else ([len(stack) - 1] if __line__ == 7 and stack else [])"
+      }
+    }
+  ]
+}
