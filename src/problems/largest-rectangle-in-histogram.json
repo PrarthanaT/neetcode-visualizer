@@ -1,0 +1,641 @@
+{
+  "slug": "largest-rectangle-in-histogram",
+  "title": "Largest Rectangle in Histogram",
+  "difficulty": "Hard",
+  "category": "Stack",
+  "leetcode": 84,
+  "statement": [
+    "You're given a list heights of bar heights for a histogram, where every bar has width 1 and the bars stand side by side with no gaps.",
+    "Return the area of the largest rectangle that can be drawn entirely inside the histogram's outline. The rectangle's sides must be flat (axis-aligned) and it can be as wide as several bars, but only as tall as the SHORTEST bar it covers."
+  ],
+  "examples": [
+    {
+      "input": "heights = [2, 1, 5, 6, 2, 3]",
+      "output": "10",
+      "explain": "The biggest rectangle uses the two middle bars, heights 5 and 6 at indexes 2 and 3: since the rectangle can only be as tall as the shorter of the two, its height is 5 and its width is 2, for an area of 10. No other span of bars multiplies out to more. This is the exact example the visualizer runs."
+    },
+    {
+      "input": "heights = [2, 4]",
+      "output": "4",
+      "explain": "Using both bars gives height 2 (the shorter one) and width 2, area 4. Using just the second bar alone gives height 4 and width 1, also area 4. Either way, the biggest rectangle has area 4."
+    }
+  ],
+  "pattern": {
+    "name": "Monotonic stack of indexes, kept increasing bottom to top",
+    "summary": "Walk the bars left to right, keeping a stack of indexes whose heights are increasing from bottom to top. The moment a bar shorter than the stack's top shows up, every taller bar still on the stack has just found its RIGHT boundary (this new, shorter bar) for the first time. Pop each one that's too tall, and its LEFT boundary is whatever's left on the stack underneath it (or the very start of the array, if nothing's left). That gap is exactly how wide a rectangle of that bar's height can be, so compute its area and keep the biggest one seen. Once every bar has been visited, whatever's still on the stack never found a shorter bar to its right, so drain it the same way, using the end of the array as that missing right boundary.",
+    "recognize": [
+      "The problem asks, in effect, how far a value of some height can stretch left and right before something shorter blocks it: the nearest shorter bar in both directions.",
+      "The moment a new, smaller item appears, it instantly settles the right boundary for every larger item still waiting, which can resolve several of them at once, not just the most recent one, a signal for a while loop nested inside the main loop.",
+      "The stack stays sorted the whole time (strictly increasing heights from bottom to top). Staying sorted like that is what \"monotonic\" means.",
+      "A nested loop that, for every bar, walks outward left and right by hand until it finds something shorter would work but is O(n\u00b2), and the problem's constraints point at needing something faster."
+    ],
+    "avoid_when": [
+      "The rectangle must span the ENTIRE array, not any contiguous span of it. Then the answer is just min(heights) * len(heights), with no stack needed at all.",
+      "You're working with a full 2D grid of 0s and 1s instead of one row of bar heights. That's a related but different problem (the largest rectangle in a binary matrix), which reuses this exact algorithm once per row on top of extra preprocessing, rather than being solved by this algorithm alone.",
+      "n is small enough that clarity matters more than speed. The O(n\u00b2) brute force of checking how far each bar extends by hand is easier to read and plenty fast for a small histogram.",
+      "You need the POSITION of the winning rectangle, not just its area. This version only ever keeps the best area found; finding where it sits would need extra bookkeeping alongside maxArea."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "stack holds INDEXES, not heights. Storing the index means both the bar's height (heights[top]) and its position (needed to measure width) are available at pop time; storing just the height would lose the position.",
+      "The comparison is heights[stack[-1]] > h, strictly greater, not >=. Bars of EQUAL height are allowed to pile up on the stack together without popping, since a whole plateau of equal-height bars can end up sharing one wide rectangle once a genuinely shorter bar finally appears.",
+      "The two width formulas, i - stack[-1] - 1 if stack else i (main loop) and len(heights) - stack[-1] - 1 if stack else len(heights) (the drain), are the same question asked with two different right edges: the newly-too-short bar at i, or simply the end of the array once every bar has been seen.",
+      "Even though the while loop sits inside the for loop, every index is pushed exactly once (line 11) and popped exactly once, either during the scan or during the drain. That caps the TOTAL number of pops across the whole run at n, not n per bar, which is what keeps the algorithm linear despite the nested loop."
+    ],
+    "time": "O(n), amortized linear time. The for loop runs n times, and the while loop nested inside it looks like it could make this O(n\u00b2), but every single index is pushed exactly once and popped at most once across the ENTIRE run (counting both the main loop and the drain), so all the pops together cost at most n extra steps total, not per bar.",
+    "space": "O(n), linear memory. In the worst case (strictly increasing heights, like [1, 2, 3, 4]), nothing ever gets popped during the scan and the stack grows to hold every index until the drain runs.",
+    "edge_cases": [
+      "A single bar, like [5]: the main loop never finds anything to pop (there's nothing shorter to compare against), and the drain computes one rectangle: height 5, width 1 (the whole array), area 5.",
+      "Strictly increasing heights, like [1, 2, 3, 4]: heights[stack[-1]] > h is never True during the scan (each new bar is taller, not shorter), so nothing is popped until the drain, where every bar gets resolved one at a time against the end of the array.",
+      "All bars the same height, like [3, 3, 3]: the strict > means ties never pop during the scan either, so the whole plateau survives to the drain. The LAST pop there (once stack is empty) uses the full array as its width, correctly finding the widest possible rectangle, 3 * 3 = 9.",
+      "Strictly decreasing heights, like [4, 3, 2, 1]: every new bar is immediately shorter than the one before it, so each triggers an immediate pop with width 1, since nothing survives underneath it on the stack to widen its span."
+    ]
+  },
+  "code": "class Solution:\n    def largestRectangleArea(self, heights: List[int]) -> int:\n        maxArea = 0\n        stack = []  # indexes, kept so heights at those indexes stay increasing from bottom to top\n\n        for i, h in enumerate(heights):\n            while stack and heights[stack[-1]] > h:\n                top = stack.pop()\n                width = i - stack[-1] - 1 if stack else i\n                maxArea = max(maxArea, heights[top] * width)\n            stack.append(i)\n\n        while stack:\n            top = stack.pop()\n            width = len(heights) - stack[-1] - 1 if stack else len(heights)\n            maxArea = max(maxArea, heights[top] * width)\n\n        return maxArea\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().largestRectangleArea([2, 1, 5, 6, 2, 3])",
+    "expected": 10,
+    "describe": "heights = [2, 1, 5, 6, 2, 3]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method largestRectangleArea. It takes heights, the bar heights, and promises to give back a single int: the area of the biggest rectangle that fits inside the histogram.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "largestRectangleArea",
+          "meaning": "The method name LeetCode calls."
+        },
+        {
+          "token": "(self, heights: List[int])",
+          "meaning": "The parameters. self is the Solution object. heights is the input list, hinted as a List of int."
+        },
+        {
+          "token": "-> int",
+          "meaning": "Return type hint: a single whole number comes back."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints document that heights is a list of whole numbers and the answer is a single area.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def largestRectangleArea(self, heights):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Forgetting self, or misspelling the method name so LeetCode's tester can't find it.",
+      "caption": "Python remembers the largestRectangleArea instructions for later."
+    },
+    "3": {
+      "explain": "This creates maxArea, starting at 0, which will track the biggest rectangle area found so far across the whole histogram.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "maxArea",
+          "meaning": "A variable name for the best area found so far."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: the name on the left now refers to the value on the right."
+        },
+        {
+          "token": "0",
+          "meaning": "The number zero, a safe starting point since every real rectangle has a non-negative area."
+        }
+      ],
+      "why": "Every rectangle's area found later gets compared against maxArea, keeping only the largest. Starting at 0 means even a histogram of all-zero bars correctly reports an area of 0.",
+      "if_removed": "max(maxArea, ...) on lines 10 and 16 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "maxArea = float(\"-inf\")",
+          "difference": "Also works as a starting point, since the first real area will always beat negative infinity. 0 is simpler here because areas can never be negative."
+        }
+      ],
+      "mistake": "Starting maxArea at a positive number like 1. That could make the method report an area bigger than any rectangle that actually exists, if every real area happened to be smaller than the starting value.",
+      "caption": "Start maxArea at 0: no rectangle found yet."
+    },
+    "4": {
+      "explain": "This creates an empty list used as a stack. It will hold the indexes of bars whose heights are increasing from bottom to top, each one still waiting to find a shorter bar to its right.",
+      "syntax": [
+        {
+          "token": "stack",
+          "meaning": "A variable name. Calling it stack tells the reader how we'll use it."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[]",
+          "meaning": "Square brackets with nothing inside make a new, empty list."
+        },
+        {
+          "token": "# indexes, kept so heights at those indexes stay increasing from bottom to top",
+          "meaning": "A comment. Everything from # to the end of the line is ignored by Python."
+        }
+      ],
+      "why": "Storing the INDEX (not just the height) means both the height (heights[top]) and the position needed to measure a width are available once a bar is popped. append and pop are both instant at the end of a Python list.",
+      "if_removed": "stack.append and stack.pop would crash with a NameError. Creating it inside the for loop instead would wipe it clean every bar, so a taller bar waiting from earlier could never be found.",
+      "alternatives": [
+        {
+          "code": "stack = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
+      ],
+      "mistake": "Storing heights on the stack instead of indexes. Computing a width needs a POSITION (how far apart two bars are), not just a height value.",
+      "caption": "Make an empty stack. It will hold the indexes of bars still waiting to find a shorter bar to their right."
+    },
+    "6": {
+      "explain": "This loop visits each bar from first to last. On every pass, i holds the bar's position and h holds that bar's height.",
+      "syntax": [
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats the indented block once per item."
+        },
+        {
+          "token": "i, h",
+          "meaning": "Two loop variables, unpacked from a pair each pass. This is tuple unpacking."
+        },
+        {
+          "token": "in",
+          "meaning": "\"Take items one at a time from\"."
+        },
+        {
+          "token": "enumerate(heights)",
+          "meaning": "Walks through heights and gives back (index, item) pairs: (0, 2), (1, 1), and so on."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "We need both the height (to compare) and its position (to measure width later), and enumerate gives both at once without extra bookkeeping.",
+      "if_removed": "Without the loop, nothing would ever run and stack would stay empty. Writing for h in heights: would lose the index i, and width couldn't be computed on line 9.",
+      "alternatives": [
+        {
+          "code": "for i in range(len(heights)):\n    h = heights[i]",
+          "difference": "Same i and h, more typing."
+        }
+      ],
+      "mistake": "Swapping the order to for h, i in enumerate(heights):. enumerate always gives the index first, so h would hold the position and i the height, and every comparison would be nonsense.",
+      "caption": [
+        {
+          "when": "__visits__[6] > len(heights)",
+          "text": "Every bar has been checked, so the loop ends."
+        },
+        {
+          "when": "__visits__[6] > 1",
+          "text": "Bar {i}: height {h}. Moving to the next bar."
+        },
+        "Start with bar 0: height {heights[0]}."
+      ]
+    },
+    "7": {
+      "explain": "This checks two things before popping: is the stack non-empty, and is the bar sitting on top of the stack TALLER than the current bar? If both are true, that taller bar just found its right boundary.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the for loop."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeats its block for as long as the condition stays True, unlike if which runs its block at most once."
+        },
+        {
+          "token": "stack",
+          "meaning": "Used alone as a condition, a list counts as True if it has items and False if it's empty. This is truthiness."
+        },
+        {
+          "token": "and",
+          "meaning": "True only if both sides are True. Python stops early (short-circuiting) if the left side is False, so the right side is never checked."
+        },
+        {
+          "token": "heights[stack[-1]]",
+          "meaning": "stack[-1] is the index on top of the stack; heights[...] looks up that bar's height."
+        },
+        {
+          "token": ">",
+          "meaning": "Strictly greater than."
+        },
+        {
+          "token": "h",
+          "meaning": "The current bar's height."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Checking stack first protects heights[stack[-1]] from crashing on an empty stack, since and stops at the first False. One short bar can resolve several taller waiting bars at once, which is why this is a while loop and not a plain if.",
+      "if_removed": "Drop the stack check and an empty stack crashes with an IndexError the first time this line runs. Replace while with if and only ONE waiting bar would be resolved per new bar, even when several taller ones should be.",
+      "alternatives": [
+        {
+          "code": "if len(stack) > 0 and heights[stack[-1]] > h:",
+          "difference": "Spells out the emptiness check. Same meaning, but as an if it would only resolve one waiting bar, so you'd still need a loop around it to resolve more than one."
+        }
+      ],
+      "mistake": "Using >= instead of >. Equal-height bars should be allowed to pile up together on the stack, since a whole plateau can end up sharing one wide rectangle; >= would pop them apart too early.",
+      "caption": [
+        {
+          "when": "stack and heights[stack[-1]] > h",
+          "text": "Bar {stack[-1]} (height {heights[stack[-1]]}) is taller than bar {i} (height {h}): it just found its right boundary. Pop it."
+        },
+        {
+          "when": "stack",
+          "text": "Bar {stack[-1]} (height {heights[stack[-1]]}) isn't taller than bar {i} (height {h}): stop popping."
+        },
+        "The stack is empty, so there's nothing left to compare bar {i} against."
+      ]
+    },
+    "8": {
+      "explain": "The bar on top of the stack finally found a shorter bar to its right. This removes it from the stack and saves its index in top so the next lines can use it.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "top",
+          "meaning": "A variable name holding the popped index."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "stack.pop()",
+          "meaning": ".pop() is a list method that removes and returns the LAST item of the list, the top."
+        }
+      ],
+      "why": "We need the popped index twice: once to look up its height, and once (indirectly, via what's left on stack) to measure its width. Saving it in a variable avoids calling pop() a second time, which would remove a different item.",
+      "if_removed": "Lines 9 and 10 would crash with a NameError, because top wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "maxArea = max(maxArea, heights[stack[-1]] * (i - stack[-2] - 1 if len(stack) > 1 else i))",
+          "difference": "Tries to read the popped bar's info without ever actually popping it. It's confusing to write correctly and still needs the pop to happen eventually; saving top first is far clearer."
+        }
+      ],
+      "mistake": "Writing stack.pop instead of stack.pop(). Without the parentheses, top would refer to the pop method itself, not a popped index.",
+      "caption": "Pop bar {stack[-1]}: it finally found a shorter bar to its right."
+    },
+    "9": {
+      "explain": "This works out how wide a rectangle of the popped bar's height can be: from just after whatever's still on the stack (its left boundary), up to but not including the current bar i (its right boundary).",
+      "syntax": [
+        {
+          "token": "width",
+          "meaning": "A variable name for the span this popped bar's rectangle covers."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "i - stack[-1] - 1",
+          "meaning": "The number of positions strictly between the current bar i and whatever's now on top of the stack."
+        },
+        {
+          "token": "if stack else i",
+          "meaning": "A conditional expression: use that gap when something's still on the stack, otherwise fall back to i, meaning the rectangle reaches all the way back to the start of the array."
+        }
+      ],
+      "why": "Everything still on the stack is shorter than nothing (it's empty) or at least as tall as the popped bar, by how the stack is kept increasing; whatever's left defines exactly where this bar's rectangle must stop on the left. i is the first bar known to be too short, so the rectangle stops just before it on the right.",
+      "if_removed": "max(maxArea, heights[top] * width) on line 10 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "width = i - stack[-1] - 1 if stack else i - 0",
+          "difference": "Writing i - 0 instead of plain i. Subtracting zero changes nothing; it's just a more roundabout way of saying the rectangle starts at the very beginning of the array."
+        }
+      ],
+      "mistake": "Writing i - stack[-1] (without the - 1). That would count the boundary bar itself as part of the width, one position too wide, since stack[-1] is a bar that's SHORTER than or equal to the popped one and can't be included.",
+      "caption": [
+        {
+          "when": "stack",
+          "text": "Bar {top}'s rectangle spans from just after bar {stack[-1]} to just before bar {i}: width {i - stack[-1] - 1}."
+        },
+        "Nothing's left on the stack: bar {top}'s rectangle spans all the way back to the start, width {i}."
+      ]
+    },
+    "10": {
+      "explain": "This computes the popped bar's rectangle area (its height times the width just found) and keeps it if it beats every rectangle found so far.",
+      "syntax": [
+        {
+          "token": "maxArea",
+          "meaning": "The variable being updated."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "max(maxArea, heights[top] * width)",
+          "meaning": "max returns the larger of its two arguments: whichever is bigger, the old maxArea or this new rectangle's area."
+        }
+      ],
+      "why": "heights[top] is the height every bar in this span is at LEAST as tall as (that's what made them survive on the stack together), so heights[top] * width is a real rectangle that fits inside the histogram.",
+      "if_removed": "This rectangle's area would never be considered, and maxArea could end up smaller than the true answer.",
+      "alternatives": [
+        {
+          "code": "if heights[top] * width > maxArea:\n    maxArea = heights[top] * width",
+          "difference": "An if statement doing the same comparison and update as max(). Same result, more lines."
+        }
+      ],
+      "mistake": "Writing heights[i] * width instead of heights[top] * width. i is the bar that just BLOCKED this rectangle (it's too short to be part of it); top is the bar whose height the rectangle actually uses.",
+      "caption": "Bar {top}'s rectangle: height {heights[top]} \u00d7 width {width} = {heights[top] * width}. maxArea is now {max(maxArea, heights[top] * width)}."
+    },
+    "11": {
+      "explain": "The current bar i goes on top of the stack, where it waits until a shorter bar resolves it (or the array ends and the drain resolves it instead).",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: back at the for-loop level, after the while loop ends."
+        },
+        {
+          "token": "stack.append(i)",
+          "meaning": "Adds i to the end of the list, the new top."
+        }
+      ],
+      "why": "Every bar needs a chance to find its own right boundary later, so every bar gets pushed, including one that just resolved several taller bars.",
+      "if_removed": "Nothing would ever go back onto the stack after the very first bar, so no later bar could ever be compared against it.",
+      "alternatives": [
+        {
+          "code": "stack += [i]",
+          "difference": "Adds a one-item list onto the end. Same result, a little more roundabout."
+        }
+      ],
+      "mistake": "Putting this line inside the while loop instead of after it. Then the current bar would get pushed once per pop, duplicating it on the stack.",
+      "caption": "Push bar {i} (height {h}) onto the stack. It waits there for a shorter bar to its right."
+    },
+    "13": {
+      "explain": "Every bar has been visited, but whatever's still on the stack never found a shorter bar to its right during the scan. This drains the rest of the stack the same way, one bar at a time.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: this runs once, after the for loop."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "stack",
+          "meaning": "True as long as any bars are still waiting on the stack."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Bars left on the stack are exactly the ones no shorter bar ever showed up for. Their right boundary is simply the end of the array, since nothing after them ever blocked them.",
+      "if_removed": "Any bars still on the stack after the for loop (which happens whenever the histogram doesn't end on its shortest bar) would never have their rectangles measured, and maxArea could miss the real answer.",
+      "alternatives": [
+        {
+          "code": "while len(stack) > 0:",
+          "difference": "Spells out the same emptiness check. Identical behavior to plain truthiness on a list."
+        }
+      ],
+      "mistake": "Forgetting this second loop entirely. Rectangles that extend all the way to the end of the histogram, including the single biggest rectangle in a strictly increasing histogram, would never get measured.",
+      "caption": [
+        {
+          "when": "stack",
+          "text": "{len(stack)} bar(s) still waiting: drain the stack, using the end of the array as their right boundary."
+        },
+        "The stack is empty: every bar's rectangle has been measured."
+      ]
+    },
+    "14": {
+      "explain": "This removes the top bar from the stack during the drain, the same way line 8 did during the scan.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the drain while loop."
+        },
+        {
+          "token": "top = stack.pop()",
+          "meaning": "Removes and returns the last item of stack, saving it in top."
+        }
+      ],
+      "why": "Just like during the scan, we need this bar's index twice: to look up its height, and to see what's left on the stack beneath it for its left boundary.",
+      "if_removed": "Line 15 and line 16 would crash with a NameError, because top wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "top = stack[-1]\nstack = stack[:-1]",
+          "difference": "Reads the last item and then builds a shorter list without it. pop() does both steps in one, in place."
+        }
+      ],
+      "mistake": "Forgetting to update top each time around this while loop, and reusing the one from the earlier for loop instead. Each pass needs the bar actually being drained right now.",
+      "caption": "Pop bar {stack[-1] if stack else top}: draining it now that every bar has been seen."
+    },
+    "15": {
+      "explain": "This works out how wide this bar's rectangle can be during the drain: from just after whatever's still on the stack, all the way to the very last bar in the array.",
+      "syntax": [
+        {
+          "token": "width = len(heights) - stack[-1] - 1",
+          "meaning": "The number of positions strictly between the end of the array and whatever's now on top of the stack."
+        },
+        {
+          "token": "if stack else len(heights)",
+          "meaning": "Falls back to the full array length when nothing's left on the stack, meaning this rectangle spans the whole histogram."
+        }
+      ],
+      "why": "There's no bar left to the right that's shorter than this one (the array simply ended), so the right boundary is the last index, len(heights) - 1, making the width len(heights) - stack[-1] - 1.",
+      "if_removed": "max(maxArea, heights[top] * width) on line 16 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "width = (len(heights) - 1) - (stack[-1] if stack else -1)",
+          "difference": "Writes the same gap as (last index) minus (left boundary minus one). Same result, computed from the other end."
+        }
+      ],
+      "mistake": "Writing len(heights) - stack[-1] (without the - 1), which would count the boundary bar itself as part of the width, one position too wide.",
+      "caption": [
+        {
+          "when": "stack",
+          "text": "Bar {top}'s rectangle spans from just after bar {stack[-1]} to the end of the array: width {len(heights) - stack[-1] - 1}."
+        },
+        "Nothing's left on the stack: bar {top}'s rectangle spans the entire array, width {len(heights)}."
+      ]
+    },
+    "16": {
+      "explain": "This computes this bar's rectangle area during the drain and keeps it if it beats every rectangle found so far, the same update as line 10.",
+      "syntax": [
+        {
+          "token": "maxArea = max(maxArea, heights[top] * width)",
+          "meaning": "Keeps the larger of the old maxArea and this bar's height times its width."
+        }
+      ],
+      "why": "This is the same rule as the main scan: heights[top] is a height every bar across this width is at least as tall as, so the product is a real rectangle that fits inside the histogram.",
+      "if_removed": "Rectangles that only get resolved during the drain (ones that extend all the way to the end of the histogram) would never be considered, and maxArea could miss the true answer.",
+      "alternatives": [
+        {
+          "code": "if heights[top] * width > maxArea:\n    maxArea = heights[top] * width",
+          "difference": "An if statement doing the same comparison and update as max(). Same result, more lines."
+        }
+      ],
+      "mistake": "Copy-pasting line 10's heights[top] * width but forgetting that width here uses line 15's drain formula, not line 9's scan formula. Mixing the two would measure the wrong span.",
+      "caption": "Bar {top}'s rectangle: height {heights[top]} \u00d7 width {width} = {heights[top] * width}. maxArea is now {max(maxArea, heights[top] * width)}."
+    },
+    "18": {
+      "explain": "Every bar's rectangle has been measured, either during the scan or the drain. Hand back maxArea: the single biggest one found.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: this runs once, after both loops."
+        },
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "maxArea",
+          "meaning": "The best area found."
+        }
+      ],
+      "why": "Every bar is pushed exactly once and popped exactly once, either in the scan or the drain, and every pop updates maxArea with that bar's own rectangle. By this point every possible rectangle anchored at a single bar's height has been considered.",
+      "if_removed": "The method would return None instead of the largest rectangle's area.",
+      "alternatives": [
+        {
+          "code": "return int(maxArea)",
+          "difference": "Wraps maxArea in int(). Unnecessary here, since every height and width involved is already a whole number, so maxArea is always an int already."
+        }
+      ],
+      "mistake": "Returning stack instead of maxArea. stack is always empty by this point (the drain loop only stops once it is); maxArea is what actually holds the answer.",
+      "caption": "Every bar has been measured. Return maxArea: {maxArea}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def largestRectangleArea(self, heights: List[int]) -> int:\n        maxArea = 0\n        n = len(heights)\n\n        for i in range(n):\n            left = i\n            while left > 0 and heights[left - 1] >= heights[i]:\n                left -= 1\n            right = i\n            while right < n - 1 and heights[right + 1] >= heights[i]:\n                right += 1\n            maxArea = max(maxArea, heights[i] * (right - left + 1))\n\n        return maxArea",
+    "explain": "For every bar i, walk left, one bar at a time, for as long as the neighbor is at least as tall as heights[i], then walk right the same way. That finds the widest span centered on bar i where a rectangle of height heights[i] would fit, and its area is heights[i] times that span's width.",
+    "why_slow": "In the worst case (every bar the same height, like n copies of 3), each bar's left and right walk goes almost all the way to the ends of the array, which is O(n) work, repeated for every one of the n bars: O(n\u00b2) total.",
+    "how_pattern_fixes": "The slow part is re-walking outward from scratch for every single bar, even though neighboring bars often share the same boundaries. The stack remembers which bars are still \"open\" (haven't found a shorter bar to their right yet), so when a shorter bar finally shows up, every bar it resolves gets its boundary in O(1), without walking anywhere. Each bar is still visited a bounded number of times overall, which is what drops the total from O(n\u00b2) to O(n).",
+    "time": "O(n\u00b2): quadratic in the worst case, since each of the n bars can require an O(n) walk in both directions.",
+    "space": "O(1) beyond the input itself: left, right and maxArea are single variables, not a growing structure. (The pattern solution trades this for O(n) stack space in exchange for linear time.)"
+  },
+  "glossary": {
+    "algorithm": "A step-by-step method for solving a problem.",
+    "amortized analysis": "Averaging the cost of an operation over a whole run instead of a single step. A while loop that sometimes does nothing and sometimes pops many items can still total O(n) work overall, even though a single pass can look expensive.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B completely (short-circuiting).",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In max(maxArea, heights[top] * width), both maxArea and heights[top] * width are arguments.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n\u00b2) quadruples when the input doubles. O(1) doesn't grow.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in while and if statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by trying or repeating everything. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by parentheses, like stack.pop() or max(a, b).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a for, while, if, def or class line, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "conditional expression": "A one-line choice: X if condition else Y gives X when the condition is True, otherwise Y.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like heights[stack[-1]] > h or i - stack[-1] - 1.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. append and pop change a list in place.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. Negative indexes count from the end: -1 is the last item.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like stack[-1] on an empty list.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like 0, 5 or 41.",
+    "keyword": "A word reserved by Python, like for, while, if, return, def.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "loop": "Code that repeats. A for loop repeats once per item, a while loop repeats as long as a condition holds.",
+    "max": "A built-in function that returns the larger of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot: stack.append(i), stack.pop().",
+    "min": "A built-in function that returns the smaller of its arguments: min(3, 7) is 3.",
+    "monotonic stack": "A stack kept in strictly increasing or decreasing order by popping anything that would break that order before pushing. It's used to find, for each item, the nearest other item that beats it in some way.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data. Solution() creates one object.",
+    "operator": "A symbol or word that does something with values: = assigns, == compares, > compares size, and / or combine conditions.",
+    "parameter": "A name in a function's definition that receives an input. heights is largestRectangleArea's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes and returns the LAST item of a list, the top of a stack.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "short-circuiting": "and and or stop as soon as the answer is known. False and X never evaluates X, which lets you guard risky checks.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "stack": "A collection where you only add and remove at one end, the top. The last item in is the first out.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, stack[-1].",
+    "truthiness": "Using a non-boolean value as a condition. Empty lists, empty strings, 0 and None count as False. Everything else counts as True.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 2).",
+    "tuple unpacking": "Splitting a pair (or a longer tuple) into separate variables in one step, as in i, h = (0, 2).",
+    "type hint": "A label like heights: List[int] or -> int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number or a popped item. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "bars",
+      "title": "heights",
+      "source": "heights",
+      "pointers": {
+        "i": "i if __line__ in (6, 7, 8, 9, 10, 11) else HIDE"
+      },
+      "marks": {
+        "compared": "[stack[-1], i] if __line__ == 7 and stack else []",
+        "found": "[top] if __line__ in (8, 9, 10, 14, 15, 16) else []"
+      },
+      "water": "[heights[top] if (stack[-1] + 1 if stack else 0) <= k <= ((i - 1) if __line__ in (8, 9, 10) else len(heights) - 1) else heights[k] for k in range(len(heights))]"
+    },
+    {
+      "type": "stack",
+      "title": "stack (indexes, heights increasing bottom to top)",
+      "source": "stack",
+      "marks": {
+        "compared": "[len(stack) - 1] if __line__ == 7 and stack else []",
+        "found": "[len(stack) - 1] if __line__ in (8, 14) and stack else []"
+      }
+    }
+  ]
+}
