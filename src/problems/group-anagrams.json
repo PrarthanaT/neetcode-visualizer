@@ -1,0 +1,292 @@
+{
+  "slug": "group-anagrams",
+  "title": "Group Anagrams",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 49,
+  "statement": [
+    "You are given a list of strings called strs.",
+    "Group every string together with every other string that is an anagram of it, and return the groups.",
+    "Two strings are anagrams of each other if they use exactly the same letters, each the same number of times, just maybe in a different order.",
+    "You can return the groups in any order, and the strings inside each group in any order too."
+  ],
+  "examples": [
+    {
+      "input": "strs = [\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"]",
+      "output": "[[\"eat\", \"tea\", \"ate\"], [\"tan\", \"nat\"], [\"bat\"]]",
+      "explain": "eat, tea, and ate all sort to \"aet\". tan and nat both sort to \"ant\". bat sorts to \"abt\" and has no partner, so it ends up alone in its own group. This is the example the visualizer runs."
+    },
+    {
+      "input": "strs = [\"\"]",
+      "output": "[[\"\"]]",
+      "explain": "A single empty string forms a group of one, since there's nothing else to compare it to."
+    }
+  ],
+  "pattern": {
+    "name": "Hashing by a canonical key (group by signature)",
+    "summary": "Walk through the list once. For every string, compute one fixed key that comes out identical for every anagram of that string \u2014 sorting its letters does exactly that. Store the strings in a dictionary keyed by that value, so every string that shares a key lands in the same group automatically, with no comparisons between strings at all.",
+    "recognize": [
+      "The question asks you to put items into groups, where \"belongs to the same group\" can be reduced to one simple test: same sorted letters, same remainder after dividing by something, same shape.",
+      "You could check every pair of items against that test, but the problem hints the list can be large, so a pairwise comparison would be too slow.",
+      "There's a way to compute a single value from each item (sorting its letters, here) such that two items belong together exactly when that value matches.",
+      "The grouping itself, not just a single yes-or-no answer or a single pair, is what the problem wants back."
+    ],
+    "avoid_when": [
+      "No single cheap key exists for the grouping rule; items might have to be compared to each other directly, with no shortcut.",
+      "There are very few possible groups, known in advance and small enough to use as fixed buckets (array indexes) instead of a dictionary.",
+      "You only need to know how many groups there are, not their members. Then a set of keys is enough, and you don't need to store the lists at all.",
+      "The grouping rule depends on more than the item's own contents, like its position in the list or how it relates to a separate target value."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "\"Belongs together\" can often be turned into \"produces the same key\". Once every item has a key, grouping becomes a dictionary lookup instead of a nested comparison.",
+      "sorted(s) puts a string's letters into one fixed order, so any two anagrams sort to the exact same sequence of characters.",
+      "A dictionary key has to be something Python can hash, like a string or a tuple. A list can't be a key, which is why the sorted letters are joined back into a string first.",
+      "res.get(key, []) is the same \"read something that might not exist yet, with a safe default\" habit used for counting letters: it lets one line handle both a brand-new group and a group that's already started."
+    ],
+    "time": "O(n \u00d7 k log k), where n is how many strings there are and k is the length of the longest one. Each string is sorted once, which costs O(k log k), and that happens n times. Building the groups (the dictionary lookups and inserts) adds only O(n) more besides that.",
+    "space": "O(n \u00d7 k), linear in the total number of characters across every string. Every string ends up stored exactly once, inside some group in res.",
+    "edge_cases": [
+      "An empty list of strings. The loop never runs, res stays empty, and the answer is an empty list of groups.",
+      "A string that is empty, \"\". sorted(\"\") is an empty list, and \"\".join([]) is \"\", so every empty string becomes its own group with the key \"\".",
+      "A string with no anagram partner, like \"bat\" in the example. It still gets its own one-item group, since .get hands it an empty list to start from.",
+      "Strings that are identical, like [\"abc\", \"abc\"]. They produce the same key and land in the same group, which is correct, since a string is trivially an anagram of itself.",
+      "Strings of different lengths can never be anagrams of each other, and sorting naturally keeps them apart: sorted(\"ab\") and sorted(\"abc\") can never come out equal."
+    ]
+  },
+  "code": "class Solution:\n    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:\n        res = {}\n\n        for i, s in enumerate(strs):\n            key = \"\".join(sorted(s))\n            res[key] = res.get(key, []) + [s]\n\n        return list(res.values())\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().groupAnagrams([\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"])",
+    "expected": [
+      ["eat", "tea", "ate"],
+      ["tan", "nat"],
+      ["bat"]
+    ],
+    "describe": "strs = [\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def groupAnagrams would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named groupAnagrams. It takes the list of strings (strs) and promises to give back a list of lists of strings: one inner list per group.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "groupAnagrams", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "strs: List[str]", "meaning": "The input, named strs, hinted to be a List of str (strings)." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> List[List[str]]", "meaning": "The return type hint: a list, where each item is itself a list of strings. The outer brackets are the outer list; the inner List[str] describes what each group looks like." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and input are fixed by LeetCode. The nested type hint matters more here than in a simple problem: it tells a reader at a glance that the answer isn't a flat list of strings, but a list of groups, each group itself a list.",
+      "if_removed": "Remove self and Python passes the Solution object into strs, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't affect how the code runs if removed.",
+      "alternatives": [
+        { "code": "def groupAnagrams(self, strs):", "difference": "No type hints. It runs identically; you just lose the documentation that the answer is a list of lists." }
+      ],
+      "mistake": "Forgetting the nested brackets and writing -> List[str]. That claims the method returns a flat list of strings, which no longer matches what list(res.values()) actually produces.",
+      "caption": "Python remembers the groupAnagrams instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty dictionary named res. Each key will be a signature built from a string's sorted letters, and each value will be the list of original strings that share that signature.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside groupAnagrams, which is inside Solution." },
+        { "token": "res", "meaning": "A variable name we chose, short for \"result\"." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "We need somewhere to collect the groups as we discover them, and a dictionary lets us jump straight to the right group for any string instead of searching through all the groups made so far.",
+      "if_removed": "Line 6 would crash with a NameError: name 'res' is not defined, because you can't look inside something that doesn't exist.",
+      "alternatives": [
+        { "code": "res = dict()", "difference": "Calls the dict function to make an empty dictionary. Exactly the same result; {} is shorter and slightly faster." }
+      ],
+      "mistake": "Creating res = {} inside the for loop below. That would wipe out every group found so far on every single pass, so the final answer would only ever contain the very last string.",
+      "caption": "Make an empty dictionary called res. It will map each sorted-letters key to the list of strings that share it."
+    },
+    "5": {
+      "explain": "This starts a for loop that visits each string in strs, from first to last. On every pass, i holds the current position and s holds the string at that position.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the same level as res = {}: this line is part of groupAnagrams's body." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i, s", "meaning": "Two loop variables. Each pass, enumerate hands back a pair (index, string), and Python unpacks it: i gets the index, s gets the string." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "enumerate(", "meaning": "A built-in function that walks through a collection and gives back (index, item) pairs: (0, \"eat\"), (1, \"tea\"), and so on." },
+        { "token": "strs", "meaning": "The list of strings we're walking through." },
+        { "token": ")", "meaning": "Closes the enumerate call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The algorithm itself only needs the string s to compute its key, not its position, but keeping the position lets a reader (and this visualizer) see exactly how far through the list we've gotten on each step.",
+      "if_removed": "Writing for s in strs: instead loses i. The algorithm would still group every string correctly, since i is never used in the grouping logic itself, you'd simply have no position to point at.",
+      "alternatives": [
+        { "code": "for s in strs:", "difference": "The simpler, more common way to write this exact solution, since the position is never used in the logic. Either form groups the strings the same way." }
+      ],
+      "mistake": "Swapping the order: for s, i in enumerate(strs):. enumerate always gives the index first, so s would hold a number and i would hold the string, and sorted(s) would crash with a TypeError.",
+      "caption": [
+        "Done with i = {i}. The loop moves to the next string in strs.",
+        "The for loop starts at the first string in strs."
+      ]
+    },
+    "6": {
+      "explain": "This builds a single string that comes out identical for every anagram of s, by sorting its letters alphabetically and gluing them back together. \"eat\", \"tea\", and \"ate\" all turn into \"aet\".",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for loop, inside groupAnagrams." },
+        { "token": "key", "meaning": "A new variable holding the signature we're about to compute for s." },
+        { "token": "=", "meaning": "Assignment: compute the right side first, then store the result in key." },
+        { "token": "sorted(", "meaning": "A built-in function that treats its argument as a sequence of items and returns a new list of them in ascending order. A string is a sequence of characters, so sorted(s) returns a list of s's characters, alphabetically." },
+        { "token": "s)", "meaning": "The string being sorted, and the closing bracket of sorted(...)." },
+        { "token": "\"\".join(", "meaning": "A string method, called on the empty string \"\", that glues every item of the given sequence together into one string, with a copy of \"\" inserted between each pair. Joining with the empty string means nothing extra is inserted at all." },
+        { "token": "sorted(s))", "meaning": "The sequence being joined: the sorted list of characters from s. The outer ) closes the .join call." }
+      ],
+      "why": "Two strings are anagrams exactly when they contain the same letters the same number of times, which is exactly when sorting their letters gives identical results. Turning each string into this one signature means a plain dictionary lookup can replace letter-by-letter comparisons between every pair of strings.",
+      "if_removed": "Without this line, key wouldn't exist, and line 7 would crash with a NameError. If you wrote key = sorted(s) and skipped the join, key would be a list instead of a string, and lists can't be used as dictionary keys.",
+      "alternatives": [
+        { "code": "key = tuple(sorted(s))", "difference": "A tuple of sorted characters instead of a joined string. Tuples, unlike lists, can be dictionary keys, so this works too and skips the join call, though it reads less naturally when printed." },
+        { "code": "count = [0] * 26\nfor c in s:\n    count[ord(c) - ord('a')] += 1\nkey = tuple(count)", "difference": "A frequency-count key: a fixed-size tally of how many of each letter s has, instead of its sorted letters. It avoids sorting (counting is O(k) instead of sorting's O(k log k)) but only works when the alphabet is small and known in advance, like lowercase English letters." }
+      ],
+      "mistake": "Using key = sorted(s) directly as a dictionary key without joining it into a string or converting it to a tuple. Python raises TypeError: unhashable type: 'list', because lists can change after they're created and so can't be hashed.",
+      "caption": "Sort s's letters and join them back together: {s} becomes the key \"{''.join(sorted(s))}\"."
+    },
+    "7": {
+      "explain": "This adds the current string s to the group for its key, creating that group's list the first time the key is seen, or growing it if the key has appeared before.",
+      "syntax": [
+        { "token": "res[key]", "meaning": "On the LEFT of =, this means \"the slot in res for this key\". The slot is created if it doesn't exist yet." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in that slot." },
+        { "token": "res.get(", "meaning": ".get is a dictionary method that looks up a key. Unlike square brackets, it doesn't crash when the key is missing." },
+        { "token": "key, [])", "meaning": "The first argument is the key to look up. The second, [], is the default: an empty list to use if this key hasn't been seen before." },
+        { "token": "+ [s]", "meaning": "List concatenation. [s] is a brand-new, one-item list holding the current string, and + builds a new list that is the left-hand list with [s]'s items added onto the end." }
+      ],
+      "why": "res.get(key, []) means \"give me the list already collected for this key, or an empty list if this is the first string with this key\". Adding [s] appends the current string onto the end of whichever list that was, and storing the result back in res[key] either starts a brand-new one-item group or grows an existing one.",
+      "if_removed": "res[key] alone, without .get, would raise a KeyError the moment a new key shows up, since nothing has been stored there yet to add to.",
+      "alternatives": [
+        { "code": "res.setdefault(key, []).append(s)", "difference": "setdefault inserts an empty list only if the key is missing, then returns it either way, and .append adds s onto it in place. Same result, and it grows the existing list instead of building a new one each time, which is a little faster for large groups." },
+        { "code": "from collections import defaultdict\nres = defaultdict(list)  # replaces line 3\n...\nres[key].append(s)", "difference": "defaultdict(list) automatically creates an empty list for any missing key the moment it's looked up, so you can .append directly with no .get or setdefault. This is how most real Python code solves this, but it needs an extra import." }
+      ],
+      "mistake": "Writing res[key] = res.get(key, []).append(s). .append always returns None, so this overwrites the group with None instead of the growing list.",
+      "caption": "Add {s} to the group for key \"{''.join(sorted(s))}\". That group now holds {res.get(''.join(sorted(s)), []) + [s]}."
+    },
+    "9": {
+      "explain": "The keys were only ever a tool for grouping; the answer just wants the groups themselves. res.values() gives every value stored in res, in the order their keys were first added, and list(...) turns that into an actual list the way the problem expects.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, after the loop finishes." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and hands the value after it back to the caller." },
+        { "token": "list(", "meaning": "A built-in function that builds a list out of anything iterable." },
+        { "token": "res.values()", "meaning": "A dictionary method that gives back every value stored in the dictionary, ignoring the keys. Here, each value is one group of anagram strings." },
+        { "token": ")", "meaning": "Closes the list(...) call." }
+      ],
+      "why": "res is a dictionary, but the problem asks for List[List[str]], not a dictionary. res.values() strips away the keys we only used internally, and wrapping it in list(...) gives back a genuine list rather than a view object tied to res.",
+      "if_removed": "Returning res directly would hand back a dictionary, not a list of lists, and LeetCode would reject the shape of the answer even though the grouping itself was correct. Returning res.values() alone, without list(...), gives a dict_values view: it behaves like a list in many situations, but some judges and comparisons would reject it as the wrong type.",
+      "alternatives": [
+        { "code": "return [group for group in res.values()]", "difference": "A list comprehension that copies the same values into a new list. It produces an identical result to list(res.values()); it's just more to type." }
+      ],
+      "mistake": "Writing return res.keys() instead of res.values(). That would return every sorted-letters signature string instead of the actual groups of original words.",
+      "caption": "Collect every group from res, in the order their keys first appeared, and return them as a list."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:\n        groups = []\n\n        for s in strs:\n            placed = False\n            for group in groups:\n                if sorted(s) == sorted(group[0]):\n                    group.append(s)\n                    placed = True\n                    break\n            if not placed:\n                groups.append([s])\n\n        return groups",
+    "explain": "For each string, compare it against one representative (the first string) of every group formed so far. If its sorted letters match a group's sorted letters, add it to that group. If no existing group matches, start a brand-new group with just this string.",
+    "why_slow": "In the worst case, no two strings are anagrams of each other, so n separate groups end up being created. The i-th string is compared against every group made before it, which adds up to about n \u00d7 n \u00f7 2 comparisons overall, and each comparison sorts two strings, costing O(k log k). That's roughly O(n\u00b2 \u00d7 k log k) overall: for 1,000 strings, that's about 500,000 comparisons, each doing its own sorting work.",
+    "how_pattern_fixes": "The slow part is searching through every existing group to find a match. Computing each string's sorted-letters key once and using it as a dictionary key removes the search completely: placing a string into its group becomes a single dictionary lookup instead of a scan through every group made so far, dropping the work from about n\u00b2 comparisons to about n.",
+    "time": "O(n\u00b2 \u00d7 k log k): quadratic in the number of strings, with an extra sorting cost added in.",
+    "space": "O(n \u00d7 k): the groups list ends up holding every string exactly once, same as the final answer."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "anagram": "A word made by rearranging all the letters of another word, using each letter exactly as many times. \"eat\" and \"ate\" are anagrams.",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In sorted(s), s is the argument.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n\u00b2) means doubling the input quadruples the work. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "boolean": "A value that is either True or False. Conditions in if statements produce booleans.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like enumerate(strs).",
+    "character": "A single letter, digit, space or symbol in a string. \"cat\" has three characters.",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "defaultdict": "A dictionary from the collections module that makes up a starting value for missing keys, so d[key].append(x) works even the first time.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key \u2192 value pairs and finds any key instantly.",
+    "edge case": "An unusual input that might break code: an empty list, an empty string, duplicates, and so on.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like sorted(s) or res.get(key, []).",
+    "frequency": "How many times something appears. A frequency count is a tally.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or None if key is missing (or a default you choose, d.get(key, [])), without crashing.",
+    "hash map": "A structure that stores key \u2192 value pairs and finds a key almost instantly by turning the key into a storage location (hashing). Python's dictionary is a hash map.",
+    "hashing": "Turning a value into a number that says where to store it. That lets a hash map jump straight to the right spot instead of searching.",
+    "in place": "Changing an object directly instead of making a new one. append and .join build new values rather than changing a string, since strings in Python can't be changed in place.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "index": "A position in a list, counting from 0. In [\"eat\", \"tea\"], \"tea\" is at index 1.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "join": "A string method that glues every item of a list together into one string, with the string it's called on placed between each pair: \"\".join([\"a\", \"b\"]) makes \"ab\".",
+    "key": "The part of a dictionary entry you look things up by. In {\"aet\": [\"eat\"]}, the key is \"aet\".",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there with d[key].",
+    "keyword": "A word Python reserves for itself, like def, for, if, return, class, in. You can't use these as variable names.",
+    "list": "An ordered collection written with square brackets, like [\"eat\", \"tea\"]. You reach items by their index.",
+    "list comprehension": "A compact way to build a list in one line: [expr for item in collection] runs expr once per item and collects the results.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection.",
+    "method": "A function that lives inside a class, or a function built into an object like a string, list or dictionary. It's called with a dot, like res.get(...) or \"\".join(...).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds (or concatenates), - subtracts, = assigns, == compares, in checks membership.",
+    "parameter": "A name in a function's definition that will hold an input. strs is groupAnagrams's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like hashing by a canonical key or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a list, used to point at one item.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Python's sorted() function returns a new sorted list.",
+    "sorting": "Putting items in order. Python's sorted(\"cab\") gives ['a', 'b', 'c']. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
+    "str": "Python's name for the string type.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "tally": "A running count of how many times each thing has been seen.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1), and unlike a list, it can be used as a dictionary key.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "type hint": "A label like strs: List[str] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "The part of a dictionary entry you get back. In {\"aet\": [\"eat\"]}, the value is [\"eat\"]. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "strs",
+      "source": "strs",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (6, 7) else []",
+        "done": "list(range(i))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "res  (sorted letters \u2192 list of anagrams)",
+      "source": "res",
+      "lookup": "key if __line__ == 7 else None"
+    }
+  ]
+}

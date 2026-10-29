@@ -53,6 +53,7 @@ This checks that every section is filled in, that every line of code has a match
 - Contains Duplicate
 - Two Sum
 - Valid Anagram
+- Group Anagrams
 
 ### Two Pointers
 - Valid Palindrome
