@@ -1,0 +1,611 @@
+{
+  "slug": "generate-parentheses",
+  "title": "Generate Parentheses",
+  "difficulty": "Medium",
+  "category": "Stack",
+  "leetcode": 22,
+  "statement": [
+    "Given an integer n, return every possible combination of n pairs of parentheses that is balanced, in any order.",
+    "A combination is balanced if every opening parenthesis has a matching closing parenthesis somewhere after it, and no closing parenthesis ever appears before the opener it matches."
+  ],
+  "examples": [
+    {
+      "input": "n = 3",
+      "output": "[\"((()))\", \"(()())\", \"(())()\", \"()(())\", \"()()()\"]",
+      "explain": "There are 3 pairs (6 characters total), and exactly 5 ways to arrange them so every closer matches an earlier opener. This is the example the visualizer runs, in this exact order."
+    },
+    {
+      "input": "n = 1",
+      "output": "[\"()\"]",
+      "explain": "With only one pair, there's only one balanced arrangement: open then close."
+    }
+  ],
+  "pattern": {
+    "name": "Backtracking: recursion with a stack that undoes each choice",
+    "summary": "Build the string one character at a time with a recursive helper, always choosing between adding \"(\" or \")\" next. Track how many of each have been placed so far (openN, closedN). A choice is only tried if it can still lead to a balanced result: \"(\" is only added while openN < n, and \")\" is only added while closedN < openN, so the string on the stack is never allowed to become unbalanced even partway through. After trying a choice all the way down (and back), pop it off the stack before trying the next choice, so every other branch starts from the same clean state.",
+    "recognize": [
+      "The problem asks for every valid arrangement that satisfies some rule, not just one arrangement or a count of them.",
+      "Each position has a small number of choices (here, two: add an opener or add a closer), and some choices can be rejected immediately as impossible to ever fix, without exploring them at all.",
+      "A partial answer being built up (the stack) needs to be undone, one step, after exploring everything that choice could lead to, so the next choice starts from the same state the previous one did.",
+      "The input size (n pairs, so 2n characters) is small enough that the problem explicitly expects you to generate every valid result, not just compute a count or a single best one."
+    ],
+    "avoid_when": [
+      "You only need to COUNT how many balanced combinations exist, not list them. That count is the nth Catalan number, computable directly with a formula instead of generating every string.",
+      "The choices at each step don't depend on how many were made before in a way that can reject bad branches early. Then backtracking just becomes a slow way of trying everything, with no pruning benefit.",
+      "You need the combinations built from smaller ones that overlap (the same sub-combination reused many times). Then dynamic programming avoids repeating identical work; backtracking here never revisits the same partial string twice, so there's nothing to reuse.",
+      "n is large enough that even the valid combinations alone (the nth Catalan number of them) are too many to generate, and only a count or a sample is actually needed."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "The two guard conditions, openN < n and closedN < openN, are what keep every branch valid: they stop \"(\" from being added once there are already n of them, and stop \")\" from ever outnumbering \"(\" so far. Nothing unbalanced is ever even attempted, let alone generated and thrown away.",
+      "stack is reused for the entire recursion instead of each call building its own string. Every call that adds a character removes that exact character again (stack.pop()) once it's tried every combination that could follow, which is what leaves stack back in the state the call that's still waiting on line 12 or line 17 expects to find it in.",
+      "The two if blocks on lines 11 and 16 are not an if/elif pair. Both are tried, one after the other, from the exact same partial string, because both \"(\" and \")\" can be valid next characters from the same point: they're two separate branches of the same decision, not two alternative ways of making one decision.",
+      "The call stack's depth while backtrack is running is exactly how many characters are currently on stack, since each call adds at most one character before calling itself again. Watching the call stack panel grow and shrink is watching the string on stack grow and shrink."
+    ],
+    "time": "O(4^n / sqrt(n)): the number of balanced combinations of n pairs is the nth Catalan number, which grows roughly like 4^n / (n * sqrt(n)). Building each one by joining the characters on stack takes O(n), so the total work is bounded by (number of combinations) * n, which simplifies to O(4^n / sqrt(n)).",
+    "space": "O(n) for the recursion: the call stack and the stack list both only ever hold at most n open plus n close characters at once, so both are proportional to n, not to how many combinations exist. The res list holding every combination is the required output, not extra working memory.",
+    "edge_cases": [
+      "n = 0: backtrack(0, 0) immediately satisfies openN == closedN == n (0 == 0 == 0), so res ends up as [\"\"], a single empty combination, without ever adding a character.",
+      "n = 1: only \"(\" can be added first (closedN < openN is False while stack is empty), then only \")\" can follow, giving the single result [\"()\"].",
+      "The very first character of any result is always \"(\". closedN < openN can never be True before anything has been pushed, since both start at 0, so \")\" is never a legal first move.",
+      "A result is only recorded once stack holds exactly n of each character (openN == closedN == n). A partially built string, even one that's balanced SO FAR, is never added to res on its own."
+    ]
+  },
+  "code": "class Solution:\n    def generateParenthesis(self, n: int) -> List[str]:\n        stack = []\n        res = []\n\n        def backtrack(openN, closedN):\n            if openN == closedN == n:\n                res.append(\"\".join(stack))\n                return\n\n            if openN < n:\n                stack.append(\"(\")\n                backtrack(openN + 1, closedN)\n                stack.pop()\n\n            if closedN < openN:\n                stack.append(\")\")\n                backtrack(openN, closedN + 1)\n                stack.pop()\n\n        backtrack(0, 0)\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().generateParenthesis(3)",
+    "expected": [
+      "((()))",
+      "(()())",
+      "(())()",
+      "()(())",
+      "()()()"
+    ],
+    "describe": "n = 3"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method generateParenthesis. It takes n, how many pairs of parentheses to use, and promises to give back a list of strings: every balanced way to arrange them.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "generateParenthesis",
+          "meaning": "The method name LeetCode calls."
+        },
+        {
+          "token": "(self, n: int)",
+          "meaning": "The parameters. self is the Solution object. n is the number of pairs, hinted as an int."
+        },
+        {
+          "token": "-> List[str]",
+          "meaning": "Return type hint: a list of strings comes back."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints document that n is a whole number and the answer is a list of strings, one per balanced combination.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def generateParenthesis(self, n):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Forgetting self, or misspelling the method name so LeetCode's tester can't find it.",
+      "caption": "Python remembers the generateParenthesis instructions for later."
+    },
+    "3": {
+      "explain": "This creates an empty list used as a stack: the characters placed so far, in order, for whichever combination is currently being built.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "stack",
+          "meaning": "A variable name. Calling it stack tells the reader how we'll use it."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: the name on the left now refers to the value on the right."
+        },
+        {
+          "token": "[]",
+          "meaning": "Square brackets with nothing inside make a new, empty list."
+        }
+      ],
+      "why": "backtrack builds and unbuilds one shared string character by character. A stack is exactly right for that: the most recent character is also the next one to remove when that branch is done.",
+      "if_removed": "stack.append and stack.pop inside backtrack would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "stack = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
+      ],
+      "mistake": "Creating a new stack = [] inside backtrack instead of here. That would give every recursive call its own empty stack instead of one shared, growing string, and \"\".join(stack) on line 8 would only ever see the last character added.",
+      "caption": "Make an empty stack. It will hold the characters of whichever combination is currently being built."
+    },
+    "4": {
+      "explain": "This creates an empty list, res, that will collect every finished, balanced combination as a string.",
+      "syntax": [
+        {
+          "token": "res",
+          "meaning": "A variable name for the list of answers we'll return."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[]",
+          "meaning": "An empty list."
+        }
+      ],
+      "why": "Every time backtrack finishes a balanced combination, it needs somewhere to record it before moving on to try other combinations. res is created once, outside backtrack, so every call adds to the same list instead of a fresh one.",
+      "if_removed": "res.append(...) on line 8 would crash with a NameError, and line 22 would have nothing to return.",
+      "alternatives": [
+        {
+          "code": "res = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
+      ],
+      "mistake": "Returning stack instead of res, or appending to res inside the wrong branch. res should only ever grow on line 8, when a combination is actually complete.",
+      "caption": "Make an empty results list. Every finished, balanced combination will be added here."
+    },
+    "6": {
+      "explain": "This defines backtrack, a helper function that lives inside generateParenthesis. It takes openN and closedN, how many \"(\" and how many \")\" have been placed on stack so far, and decides what can legally come next.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "backtrack",
+          "meaning": "The name of this helper function, chosen to describe what it does: try a choice, then undo it (\"track back\") before trying the next one."
+        },
+        {
+          "token": "(openN, closedN)",
+          "meaning": "Two parameters: the running counts of \"(\" and \")\" placed so far."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Defining backtrack inside generateParenthesis lets it read and change stack and res directly, without passing them in as parameters on every single call.",
+      "if_removed": "Without a helper function to call itself, there'd be no way to try one choice, explore everything it leads to, and then try the next choice from the same starting point. recursion needs a function that can call itself by name.",
+      "alternatives": [
+        {
+          "code": "def backtrack(stack, res, openN, closedN):",
+          "difference": "Passes stack and res in explicitly instead of reading them from the surrounding method. It would work, but every one of the many recursive calls would need to repeat both arguments for no benefit, since they never change identity, only contents."
+        }
+      ],
+      "mistake": "Defining backtrack outside generateParenthesis, as its own top-level function. Then it couldn't see stack and res at all, and would need them passed in on every call.",
+      "caption": "Python remembers the backtrack instructions for later. It isn't called yet."
+    },
+    "7": {
+      "explain": "This checks whether the combination on stack is finished: exactly n opens and n closes have been placed, so there's nothing left to add.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside backtrack."
+        },
+        {
+          "token": "if",
+          "meaning": "Runs the indented block below only when the condition is True."
+        },
+        {
+          "token": "openN == closedN == n",
+          "meaning": "A chained comparison: True only when openN equals closedN AND closedN equals n, i.e. both counts equal n at once."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Once n opens and n closes are both placed, stack already holds a complete, balanced combination (2n characters total), and there's nothing left for backtrack to try adding.",
+      "if_removed": "backtrack would never recognize a finished combination, so res would stay empty and the recursion would try to keep adding characters past n of each, which line 11 and line 16's conditions would eventually block on their own, but no result would ever be recorded.",
+      "alternatives": [
+        {
+          "code": "if openN == n and closedN == n:",
+          "difference": "Spells out the same check as two separate comparisons joined with and. Exactly the same result as the chained comparison, just longer to read."
+        }
+      ],
+      "mistake": "Checking only len(stack) == 2 * n. That confirms the LENGTH is right, which is also true here, but checking openN and closedN directly is what actually guarantees the combination is balanced and not just the right size.",
+      "caption": [
+        {
+          "when": "openN == closedN == n",
+          "text": "openN and closedN both equal {n}: this combination is complete."
+        },
+        "openN is {openN} and closedN is {closedN}: not finished yet, since n is {n}."
+      ]
+    },
+    "8": {
+      "explain": "This joins every character currently on stack into one string and adds it to res: a newly finished, balanced combination.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block."
+        },
+        {
+          "token": "res.append(...)",
+          "meaning": "Adds one item to the end of the res list."
+        },
+        {
+          "token": "\"\".join(stack)",
+          "meaning": "join glues every item in stack together into one string, with \"\" (nothing) between them."
+        }
+      ],
+      "why": "stack holds the combination as separate characters (\"(\", \"(\", \")\", ...); join turns that into the single string the problem expects, like \"(()\" + \")\" joined into \"(())\".",
+      "if_removed": "res would stay empty forever, since this is the only line that ever adds anything to it.",
+      "alternatives": [
+        {
+          "code": "res.append(\"\".join(stack[:]))",
+          "difference": "Joins a copy of stack instead of stack itself. join doesn't change stack either way, so the copy is unnecessary extra work."
+        }
+      ],
+      "mistake": "Writing \", \".join(stack) instead of \"\".join(stack). That would glue in a comma and a space between every character, giving \"(, (, ), )\" instead of \"(())\".",
+      "caption": "Join stack into one string: {''.join(stack) if stack else '(empty)'}. Add it to res."
+    },
+    "9": {
+      "explain": "This ends backtrack immediately once a finished combination has been recorded, so the two if blocks below never run for a completed combination.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Ends the function right away. With nothing after it, the function gives back None, but backtrack's return value is never used, only its side effects (what it added to res and how it left stack)."
+        }
+      ],
+      "why": "Once openN == closedN == n, there's nowhere left to go: openN < n is False (line 11) and, as it happens, so is closedN < openN once both equal n. The return just makes that explicit and stops immediately, instead of relying on both ifs happening to fail.",
+      "if_removed": "Both conditions on lines 11 and 16 would still end up False here, since openN and closedN both already equal n, so the behavior would be the same. But relying on that instead of returning explicitly makes it easy to break by accident if either condition is ever changed.",
+      "alternatives": [
+        {
+          "code": "else:",
+          "difference": "Wrapping lines 11-19 in an else attached to this if would skip them for a finished combination too, without needing a separate return. It works, but adds a layer of indentation to everything below for the same effect."
+        }
+      ],
+      "mistake": "Forgetting this return (or an equivalent guard). It happens to still work here because of how the two conditions below fall out, but a function that doesn't explicitly stop at its base case is fragile and easy to break with a small change elsewhere.",
+      "caption": "Stop here: this combination is finished and already recorded."
+    },
+    "11": {
+      "explain": "This checks whether another \"(\" is still allowed: only while fewer than n opens have been placed so far.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: back at the top of backtrack's body, a sibling of the if on line 7, not nested inside it."
+        },
+        {
+          "token": "openN < n",
+          "meaning": "True while fewer than n \"(\" characters have been placed."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Every balanced combination uses exactly n opens. Once openN reaches n, adding another \"(\" would make it impossible to ever close them all within 2n characters, so this guard rejects that branch before it's ever tried.",
+      "if_removed": "stack would keep growing past n opens with no limit, and backtrack would recurse forever, since nothing would ever reach openN == closedN == n to stop it.",
+      "alternatives": [
+        {
+          "code": "if openN <= n - 1:",
+          "difference": "Exactly the same comparison, written with a different (and less direct) boundary."
+        }
+      ],
+      "mistake": "Writing elif instead of if here to pair with line 7's if. This block and the one on line 16 both need a chance to run from the same call, trying both \"(\" and \")\" as separate next steps, not choosing only one of them.",
+      "caption": [
+        {
+          "when": "openN < n",
+          "text": "Only {n - openN} more \"(\" allowed: try adding one."
+        },
+        "openN already equals n: no more \"(\" can be added."
+      ]
+    },
+    "12": {
+      "explain": "This adds \"(\" to the top of stack, extending the combination being built by one character.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block on line 11."
+        },
+        {
+          "token": "stack.append(\"(\")",
+          "meaning": "Adds the string \"(\" to the end of the stack list."
+        }
+      ],
+      "why": "This is the choice being tried: what if the next character is \"(\"? Everything backtrack explores next (on line 13) explores combinations that start with whatever was already on stack, plus this new \"(\".",
+      "if_removed": "backtrack(openN + 1, closedN) on line 13 would be called as if \"(\" had been added, but stack itself wouldn't actually hold it, so line 8's join would build the wrong string.",
+      "alternatives": [
+        {
+          "code": "stack += [\"(\"]",
+          "difference": "Adds a one-item list onto the end. Same result, a little more roundabout."
+        }
+      ],
+      "mistake": "Appending \")\" here by mistake instead of \"(\". That would let a close be added even when openN hasn't been incremented to match, breaking the counts that keep every branch balanced.",
+      "caption": "Push \"(\" onto stack: {''.join(stack) if stack else '(empty)'} + \"(\"."
+    },
+    "13": {
+      "explain": "This calls backtrack again, now with one more \"(\" counted, to explore every combination that can follow from here.",
+      "syntax": [
+        {
+          "token": "backtrack(openN + 1, closedN)",
+          "meaning": "Calls backtrack with openN increased by one (one more \"(\" placed) and closedN unchanged."
+        }
+      ],
+      "why": "The new call needs to know an extra \"(\" is now on stack, so ITS copy of openN < n and closedN < openN checks are correct for the new, longer combination, not the old, shorter one.",
+      "if_removed": "The recursive call would use the OLD openN, undercounting how many \"(\" are really on stack, and would wrongly allow pushing even more \"(\" than n.",
+      "alternatives": [
+        {
+          "code": "backtrack(len(stack), closedN)",
+          "difference": "Recomputes openN from scratch instead of adding 1 to the value already known. It happens to give the same answer right after line 12's append, but it's indirect: openN + 1 says exactly what changed."
+        }
+      ],
+      "mistake": "Calling backtrack(openN, closedN) without the + 1. The new call would think stack still has one fewer \"(\" than it actually does, breaking the guard on line 11.",
+      "caption": "Call backtrack with openN = {openN + 1}, closedN = {closedN}: explore everything that can follow."
+    },
+    "14": {
+      "explain": "Once every combination that could follow this \"(\" has been fully explored (that whole recursive call has returned), this removes it from stack again.",
+      "syntax": [
+        {
+          "token": "stack.pop()",
+          "meaning": ".pop() removes and returns the LAST item of the list, the top. The returned value isn't used here."
+        }
+      ],
+      "why": "Trying \"(\" is done. Before this same call tries \")\" instead on line 16-19, stack needs to go back to exactly what it held before line 12's push, so the next branch starts from the same clean state this one did.",
+      "if_removed": "stack would keep the \"(\" from this branch sitting on it. The next branch (line 17's \")\") would then be appended ON TOP of a leftover \"(\" that doesn't belong to the combination actually being tried at this call, corrupting every combination explored afterward.",
+      "alternatives": [
+        {
+          "code": "stack = stack[:-1]",
+          "difference": "Builds a new, shorter list instead of removing the last item in place. Same result, but slower and less direct than pop(), and reassigning stack here would also break the shared reference backtrack's other calls rely on."
+        }
+      ],
+      "mistake": "Forgetting this pop(). It's easy to think the recursive call \"cleans up after itself\", but nothing automatically undoes line 12's append; this explicit pop is what makes that happen.",
+      "caption": "Pop \"(\" off stack: back to {''.join(stack) if stack else '(empty)'}, about to try \")\" instead."
+    },
+    "16": {
+      "explain": "This checks whether a \")\" can legally come next: only while fewer closes than opens have been placed so far.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: a sibling of the if on line 11, run from the same call regardless of what line 11's block did."
+        },
+        {
+          "token": "closedN < openN",
+          "meaning": "True while fewer \")\" have been placed than \"(\", meaning there's at least one open \"(\" still waiting for its match."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "A \")\" is only valid if some earlier \"(\" hasn't been closed yet. If closedN ever caught up to openN, adding another \")\" would have nothing left to match, making the combination unbalanced.",
+      "if_removed": "\")\" could be added even when every \"(\" so far is already matched, producing combinations like \"())\" that are never actually balanced.",
+      "alternatives": [
+        {
+          "code": "if closedN != openN:",
+          "difference": "closedN can never exceed openN in any combination this function reaches, so != ends up meaning the same thing as < here. < states the real guarantee directly; != only happens to work because of that guarantee."
+        }
+      ],
+      "mistake": "Writing closedN <= openN instead of closedN < openN. That would allow closedN to become EQUAL to openN by adding one more \")\", one character too many, with nothing left for it to match.",
+      "caption": [
+        {
+          "when": "closedN < openN",
+          "text": "{openN - closedN} \"(\" still unmatched: try adding \")\"."
+        },
+        "closedN already equals openN: no \"(\" left unmatched, so \")\" can't be added."
+      ]
+    },
+    "17": {
+      "explain": "This adds \")\" to the top of stack, trying it as the next character after whatever's already there.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block on line 16."
+        },
+        {
+          "token": "stack.append(\")\")",
+          "meaning": "Adds the string \")\" to the end of the stack list."
+        }
+      ],
+      "why": "This is the other choice at this point: what if the next character is \")\" instead of \"(\"? It's only reached when line 16 confirms an unmatched \"(\" exists for it to close.",
+      "if_removed": "backtrack(openN, closedN + 1) on line 18 would be called as if \")\" had been added, but stack itself wouldn't hold it, so line 8's join would build the wrong string.",
+      "alternatives": [
+        {
+          "code": "stack += [\")\"]",
+          "difference": "Adds a one-item list onto the end. Same result, a little more roundabout."
+        }
+      ],
+      "mistake": "Appending \"(\" here by mistake instead of \")\". That would try the same choice twice (once from line 12, once from here) and never actually try closing anything.",
+      "caption": "Push \")\" onto stack: {''.join(stack) if stack else '(empty)'} + \")\"."
+    },
+    "18": {
+      "explain": "This calls backtrack again, now with one more \")\" counted, to explore every combination that can follow from here.",
+      "syntax": [
+        {
+          "token": "backtrack(openN, closedN + 1)",
+          "meaning": "Calls backtrack with closedN increased by one (one more \")\" placed) and openN unchanged."
+        }
+      ],
+      "why": "The new call needs to know an extra \")\" is now on stack, so its own openN < n and closedN < openN checks reflect the real, longer combination on stack, not the shorter one from before this push.",
+      "if_removed": "The recursive call would use the OLD closedN, undercounting how many \")\" are really on stack, and could let closedN appear to stay below openN for longer than it actually should.",
+      "alternatives": [
+        {
+          "code": "backtrack(openN, stack.count(\")\"))",
+          "difference": "Recomputes closedN by scanning stack for \")\" characters instead of adding 1 to the value already known. It would give the same answer right after line 17's append, but scans the whole stack for something a single + 1 already tracks."
+        }
+      ],
+      "mistake": "Calling backtrack(openN, closedN) without the + 1. The new call would think stack still has one fewer \")\" than it actually does, breaking the guard on line 16.",
+      "caption": "Call backtrack with openN = {openN}, closedN = {closedN + 1}: explore everything that can follow."
+    },
+    "19": {
+      "explain": "Once every combination that could follow this \")\" has been fully explored, this removes it from stack again, undoing line 17's push.",
+      "syntax": [
+        {
+          "token": "stack.pop()",
+          "meaning": "Removes and returns the last item of stack. The returned value isn't used here."
+        }
+      ],
+      "why": "This call has now tried everything it can from this point (both \"(\" on line 11-14, if it was legal, and \")\" here). Popping leaves stack exactly as it was found when this call started, so whichever call made this one (by calling backtrack on line 13 or line 18) can correctly continue from there.",
+      "if_removed": "stack would keep a leftover \")\" on it, corrupting whatever combination the calling frame goes on to build next.",
+      "alternatives": [
+        {
+          "code": "stack = stack[:-1]",
+          "difference": "Builds a new, shorter list instead of removing the last item in place. Reassigning stack here would also disconnect this name from the shared list every other call still refers to."
+        }
+      ],
+      "mistake": "Forgetting this pop(), the mirror image of the same mistake on line 14. Without it, every \")\" ever pushed stays on stack forever, and stack stops matching the single combination actually being explored.",
+      "caption": "Pop \")\" off stack: back to {''.join(stack) if stack else '(empty)'}. This call is done; control returns to whichever call made it."
+    },
+    "21": {
+      "explain": "This starts the whole process: call backtrack with zero of each character placed so far, so it can try adding the very first character.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after backtrack's definition (lines 6-19) is complete."
+        },
+        {
+          "token": "backtrack(0, 0)",
+          "meaning": "Calls backtrack with openN = 0 and closedN = 0: nothing placed yet."
+        }
+      ],
+      "why": "Before this call, backtrack has only been DEFINED, not run. This is what actually kicks off the recursion, starting from an empty stack and zero of each character.",
+      "if_removed": "backtrack would never run at all, res would stay empty, and line 22 would return an empty list.",
+      "alternatives": [
+        {
+          "code": "backtrack(openN=0, closedN=0)",
+          "difference": "Names the arguments explicitly. Same call, just more to read for two parameters whose order is already clear."
+        }
+      ],
+      "mistake": "Calling backtrack(1, 0) or some other non-zero starting point, which would skip straight past combinations that should start from an empty stack.",
+      "caption": "Start the recursion: backtrack(0, 0), with nothing placed yet."
+    },
+    "22": {
+      "explain": "Every balanced combination has been found and recorded. Hand back res: the list of every one of them.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "res",
+          "meaning": "The finished results list."
+        }
+      ],
+      "why": "By the time backtrack(0, 0) on line 21 returns, every branch it could explore has been explored (and undone on stack), and every combination that finished along the way is already sitting in res.",
+      "if_removed": "The method would return None instead of the list of balanced combinations.",
+      "alternatives": [
+        {
+          "code": "return res[:]",
+          "difference": "Returns a copy of res instead of res itself. Harmless here since nothing else uses res afterward, just extra, unnecessary work."
+        }
+      ],
+      "mistake": "Writing return stack instead of return res. stack is always empty again by the time backtrack(0, 0) finishes, since every push on lines 12 and 17 is undone by a matching pop; res is what actually holds the answers.",
+      "caption": "backtrack is done exploring every branch. Return res: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def generateParenthesis(self, n: int) -> List[str]:\n        def isValid(comb: str) -> bool:\n            openCount = 0\n            for c in comb:\n                if c == \"(\":\n                    openCount += 1\n                else:\n                    openCount -= 1\n                if openCount < 0:\n                    return False\n            return openCount == 0\n\n        res = []\n        def generateAll(comb: list) -> None:\n            if len(comb) == 2 * n:\n                if isValid(comb):\n                    res.append(\"\".join(comb))\n                return\n            comb.append(\"(\")\n            generateAll(comb)\n            comb.pop()\n            comb.append(\")\")\n            generateAll(comb)\n            comb.pop()\n\n        generateAll([])\n        return res",
+    "explain": "Generate every possible string of length 2n made of \"(\" and \")\" (trying both characters at every position, with no restriction on which one), and only afterward check each finished string with isValid to see whether it happens to be balanced.",
+    "why_slow": "There are 2^(2n) possible strings of \"(\" and \")\", and only a much smaller Catalan-number's-worth of them are actually balanced. This tries every single one, including huge numbers of strings that go unbalanced after the very first few characters, and only notices after building the whole thing and scanning it with isValid.",
+    "how_pattern_fixes": "The slow part is building strings that are already doomed and not noticing until the end. Checking openN < n and closedN < openN BEFORE adding a character rejects a bad branch the moment it would go wrong, instead of after 2n characters and a full scan. That prunes the search down from all 2^(2n) strings to just the ones that stay valid the whole way.",
+    "time": "O(2^(2n) * n): 2^(2n) strings are generated, and each one costs O(n) to build and O(n) to validate.",
+    "space": "O(n) for the recursion depth and the in-progress comb list, same order as the pattern solution; res still holds every valid result either way."
+  },
+  "glossary": {
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In backtrack(openN + 1, closedN), openN + 1 is an argument.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "backtracking": "Trying a choice, fully exploring everything it could lead to by recursing, and then undoing it (popping it back off) before trying the next choice from the same starting point.",
+    "base case": "The condition inside a recursive function that stops it from calling itself again, usually by handling the simplest version of the problem directly.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by trying or generating everything, then checking afterward which ones are actually valid. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by parentheses, like backtrack(0, 0) or stack.pop().",
+    "call stack": "The chain of functions currently waiting on each other: the one that called, the one it called, and so on. Each recursive call adds one more link; returning removes the most recent one.",
+    "chained comparison": "Writing two comparisons back to back, like a == b == c, which Python treats as (a == b) and (b == c), both at once.",
+    "character": "A single letter, digit, space or symbol in a string. \"()\" has two characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a for, while, if, def or class line, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "elif": "Short for \"else if\": checks another condition, but only if every condition above it in the same if/elif chain was False.",
+    "expression": "Any piece of code that produces a value, like openN < n or \"\".join(stack).",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "in place": "Changing an object directly instead of making a new one. append and pop change a list in place.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like 0, 1 or 3. Python calls the type int.",
+    "join": "A string method that glues every item of a list together into one string, with the string it's called on placed between each pair: \"\".join([\"a\", \"b\"]) makes \"ab\".",
+    "keyword": "A word reserved by Python, like def, class, if, return.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "method": "A function that belongs to a class or an object, called with a dot: stack.append(c), stack.pop().",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a function inside a function, an if inside an if, or brackets inside brackets.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data, created from a class. Solution() creates one object.",
+    "parameter": "A name in a function's definition that receives an input. openN and closedN are backtrack's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes and returns the LAST item of a list, the top of a stack.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "recursion": "A function calling itself, usually on a smaller or simpler version of the problem, until it reaches a base case that stops it.",
+    "reference": "What a variable actually holds: a way to reach an object, not a copy of it. Every recursive call that reads stack reaches the one shared list, not its own copy.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "side effect": "A change a function makes beyond just returning a value, like modifying a list it was given, or one from the method around it. backtrack changes stack and res instead of returning anything useful.",
+    "stack": "A collection where you only add and remove from one end, the top. Python lists work as stacks using append and pop.",
+    "string": "Text, written between quotes, like \"(\" or \"()\". Python strings can be joined, sliced, and looped over character by character.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, at index -1.",
+    "type hint": "A label like n: int or -> List[str] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number or a popped item. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =."
+  },
+  "visualizer": [
+    {
+      "type": "stack",
+      "title": "stack (the string being built)",
+      "source": "stack",
+      "marks": {
+        "compared": "[len(stack) - 1] if __line__ in (12, 14, 17, 19) and stack else []",
+        "found": "list(range(len(stack))) if __line__ == 8 else []"
+      }
+    }
+  ]
+}
