@@ -1,0 +1,372 @@
+{
+  "slug": "min-stack",
+  "title": "Min Stack",
+  "difficulty": "Medium",
+  "category": "Stack",
+  "leetcode": 155,
+  "statement": [
+    "Design a stack that supports push, pop, top, and retrieving the minimum element, all in constant time.",
+    "Implement the MinStack class: MinStack() creates the object with an empty stack. push(val) pushes val onto the stack. pop() removes the value on top of the stack. top() gets the top value of the stack. getMin() retrieves the minimum value currently on the stack.",
+    "Every call to pop, top and getMin is guaranteed to be valid, meaning the stack is never empty when they're called."
+  ],
+  "examples": [
+    {
+      "input": "push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()",
+      "output": "null, null, null, -3, null, 0, -2",
+      "explain": "After pushing -2, 0, -3, the minimum is -3. Popping removes -3, leaving [-2, 0], whose top is 0 and whose minimum is back to -2. This is the sequence the visualizer runs."
+    },
+    {
+      "input": "push(5), push(5), pop(), getMin()",
+      "output": "null, null, null, 5",
+      "explain": "Duplicates work the same way: pushing 5 twice keeps 5 as the minimum, and popping one 5 still leaves a 5 behind, so getMin still returns 5."
+    }
+  ],
+  "pattern": {
+    "name": "Stack (last in, first out), with a second stack carried alongside",
+    "summary": "Keep a normal stack for the actual values. Alongside it, keep a second stack that always holds, on top, the smallest value seen so far among what's still on the first stack. Every push records a new running minimum (comparing the new value to the old one); every pop removes one entry from each stack together, so the two always stay perfectly in sync.",
+    "recognize": [
+      "The problem asks for several operations (here push, pop, top, getMin) that all need to run instantly, not just one function computed from a fixed input.",
+      "One of those operations (getMin) would normally need to scan the whole structure to answer, unless some extra bookkeeping is kept up to date as things change.",
+      "The extra piece of information you need (the minimum) only ever changes at the same two moments the main structure changes (push and pop), so it can be maintained one step at a time instead of recomputed from scratch.",
+      "The problem is described as \"design a data structure\", often phrased as a class with several methods that share state, rather than a single function with one answer."
+    ],
+    "avoid_when": [
+      "You only need the minimum once, for a single snapshot of the data, not repeatedly as things change. Then a single min() call is simpler and uses no extra memory.",
+      "You need the minimum of a SLIDING WINDOW over an array rather than a stack that only grows and shrinks from one end. That's a different pattern, usually a monotonic deque.",
+      "Memory is extremely tight and doubling the storage (one running minimum recorded per value) isn't acceptable. A slower getMin that rescans the stack would trade time for space.",
+      "You need the minimum AND the ability to remove values from the middle, not just the top. A stack only ever gives cheap access to one end."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "When an operation needs to answer instantly and would otherwise require scanning everything, look for a piece of state that can be updated one step at a time alongside the main operation, instead of recomputed from scratch.",
+      "minStack isn't a sorted copy of everything ever pushed. minStack[i] is always the minimum of stack[0..i], a parallel running history. That's why popping stack and popping minStack together keeps both correct.",
+      "Ties are handled automatically. Pushing a value equal to the current minimum still records it as the (tied) new minimum, so popping one copy correctly leaves the other behind as the minimum.",
+      "__init__ sets up self.stack and self.minStack once, when the object is created. Every later push, pop, top and getMin call reads and updates those same two lists, which is how the object remembers its state between calls."
+    ],
+    "time": "O(1), constant time, for every operation: push, pop, top and getMin. Each one does a fixed number of list operations (append, pop, or reading [-1]), none of which depend on how many values are already stored.",
+    "space": "O(n), linear memory, where n is the number of values pushed and not yet popped. minStack is kept the same length as stack, so this solution deliberately uses about twice the memory of a plain stack in exchange for making getMin instant.",
+    "edge_cases": [
+      "Pushing the same value as the current minimum, like push(5) right after push(5). Both 5s get recorded on minStack, so popping one still correctly leaves 5 as the minimum, not something larger.",
+      "Pushing values in already-increasing order, like 1, 2, 3. Every new value is bigger than the current minimum, so minStack ends up holding that same minimum, 1, repeated at every position.",
+      "A single push followed immediately by getMin: the \"if self.minStack else val\" fallback on line 8 makes sure the very first push doesn't crash trying to read an empty minStack.",
+      "The problem guarantees pop, top and getMin are never called while the stack is empty, so neither method needs to handle that case."
+    ]
+  },
+  "code": "class MinStack:\n    def __init__(self):\n        self.stack = []\n        self.minStack = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        newMin = min(val, self.minStack[-1]) if self.minStack else val\n        self.minStack.append(newMin)\n\n    def pop(self) -> None:\n        self.stack.pop()\n        self.minStack.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.minStack[-1]\n",
+  "run": {
+    "prelude": "def run_min_stack_demo():\n    ms = MinStack()\n    ms.push(-2)\n    ms.push(0)\n    ms.push(-3)\n    minVal1 = ms.getMin()\n    ms.pop()\n    topVal = ms.top()\n    minVal2 = ms.getMin()\n    return [minVal1, topVal, minVal2]\n",
+    "call": "run_min_stack_demo()",
+    "expected": [-3, 0, -2],
+    "describe": "push(-2), push(0), push(-3), getMin(), pop(), top(), getMin()"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named MinStack. Unlike a one-off Solution class, a class you design yourself can hold its own data (here, two stacks) that lives for as long as the object does, across many separate method calls.",
+      "syntax": [
+        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
+        { "token": "MinStack", "meaning": "The class name LeetCode's tester creates and calls methods on." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode creates one MinStack object and then calls push, pop, top and getMin on it in some order, so the object needs to remember its stacks between calls. A class bundles that memory (the data) together with the operations (the methods) that use it.",
+      "if_removed": "Without a class, there'd be nowhere to keep the two stacks between separate calls to push, pop, top and getMin.",
+      "alternatives": [
+        { "code": "class MinStack(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+      ],
+      "mistake": "Naming it Solution out of habit. LeetCode calls this class MinStack directly, with MinStack() and then obj.push(...), not through a Solution wrapper.",
+      "caption": "Python reads the MinStack blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines __init__, the method Python runs automatically every time someone writes MinStack(). It sets up a brand new object before anything else can use it.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "__init__", "meaning": "A special method name. Python calls it automatically right after creating a new object, to set it up." },
+        { "token": "(self)", "meaning": "The only parameter is self, the new object being built. No other inputs are needed to create an empty MinStack." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "Every later push, pop, top and getMin call will read and change self.stack and self.minStack, so those need to exist, as empty lists, before the very first call ever happens.",
+      "if_removed": "MinStack() would use Python's default object creation, with no stack or minStack attributes at all, and line 7's self.stack.append(val) would crash with an AttributeError.",
+      "alternatives": [
+        { "code": "def __init__(self) -> None:", "difference": "Adds a return type hint saying __init__ gives back nothing. __init__ never returns a value in Python, so this changes nothing but the documentation." }
+      ],
+      "mistake": "Naming it init instead of __init__ (missing the double underscores on each side). Python only treats the exact name __init__ as automatic setup; anything else is just an ordinary method that's never called on its own.",
+      "caption": "Python remembers the __init__ instructions for later."
+    },
+    "3": {
+      "explain": "This gives the new object its own empty list, stored as self.stack. It will hold every value that's been pushed, in the order they arrived.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "self.stack", "meaning": "Creates an attribute named stack on this object. Writing to self.something always stores it ON the object, not as a local variable that disappears when the method ends." },
+        { "token": "=", "meaning": "Assignment: the name on the left now refers to the value on the right." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "Local variables inside a method vanish once the method returns. An attribute on self survives between calls, which is exactly what push, pop, top and getMin all need to share.",
+      "if_removed": "Any later self.stack.append(...) would crash with an AttributeError, because the object wouldn't have a stack attribute yet.",
+      "alternatives": [
+        { "code": "self.stack = list()", "difference": "Same empty list, made by calling list. [] is shorter." }
+      ],
+      "mistake": "Writing stack = [] without self.. That creates a local variable that disappears the moment __init__ returns, leaving the object with no memory of it at all.",
+      "caption": "Give this MinStack its own empty stack, for every value that gets pushed."
+    },
+    "4": {
+      "explain": "This gives the object a second empty list, self.minStack. At every point, its top will hold the smallest value currently on self.stack.",
+      "syntax": [
+        { "token": "self.minStack", "meaning": "Creates a second attribute, minStack, alongside stack." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "[]", "meaning": "An empty list, same as self.stack starts with." }
+      ],
+      "why": "Looking up the minimum of self.stack directly would take O(n) time, scanning the whole thing. Keeping a running minimum on its own stack means getMin can just look at the top, in O(1).",
+      "if_removed": "getMin's self.minStack[-1] would crash with an AttributeError, and push would have nowhere to record each new running minimum.",
+      "alternatives": [
+        { "code": "self.minStack = [float(\"inf\")]", "difference": "Starts minStack with one placeholder value, so push never has to check whether it's empty. It works, but it adds a value that was never actually pushed, which can be confusing to read." }
+      ],
+      "mistake": "Trying to track the minimum in a single variable instead of a second stack. A single self.min would forget the PREVIOUS minimum once something smaller is popped back off, with no way to recover it.",
+      "caption": "Give this MinStack a second stack, minStack, to track the smallest value seen so far."
+    },
+    "6": {
+      "explain": "This defines push, which adds a new value to the stack and updates the running minimum to match.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "push", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self, val: int)", "meaning": "The parameters: self, the object, and val, the number to push, hinted as an int." },
+        { "token": "-> None", "meaning": "Return type hint: push doesn't hand anything back, it just changes the object." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "LeetCode calls obj.push(val) whenever a new value needs to go on the stack. -> None documents that push is only ever used for its side effect, not its return value.",
+      "if_removed": "Without self, Python would complain about the wrong number of arguments the moment push is called on an object.",
+      "alternatives": [
+        { "code": "def push(self, val):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Forgetting self as the first parameter. Every method needs it, even ones that don't look like they use it directly in their own header.",
+      "caption": "Python remembers the push instructions for later."
+    },
+    "7": {
+      "explain": "This adds val to the end of self.stack, the top. It's an ordinary push onto an ordinary stack, with no minimum-tracking involved yet.",
+      "syntax": [
+        { "token": "self.stack.append(val)", "meaning": "Adds val to the end of the stack attribute." }
+      ],
+      "why": "self.stack always mirrors exactly what was pushed, in order, so top() can simply return its last item with no extra bookkeeping.",
+      "if_removed": "self.stack would never grow, and top() and pop() would always act as if the stack were empty.",
+      "alternatives": [
+        { "code": "self.stack += [val]", "difference": "Adds a one-item list onto the end. Same result, a little more roundabout." }
+      ],
+      "mistake": "Appending to self.minStack here by mistake instead of self.stack. Keeping the two lists straight matters, since each is updated by its own rule.",
+      "caption": "Push {val} onto the main stack."
+    },
+    "8": {
+      "explain": "This works out the new running minimum. If minStack already has something on it, compare val against the current minimum and keep the smaller one. If minStack is still empty, val IS the minimum so far, since it's the only value that exists.",
+      "syntax": [
+        { "token": "newMin", "meaning": "A variable name for the new running minimum." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "min(val, self.minStack[-1])", "meaning": "min is a built-in function that returns the smaller of its arguments." },
+        { "token": "if self.minStack else val", "meaning": "A conditional expression: use the min(...) result when minStack is non-empty, otherwise fall back to val." }
+      ],
+      "why": "Checking self.minStack first avoids self.minStack[-1] crashing with an IndexError on the very first push, when minStack is still empty.",
+      "if_removed": "self.minStack[-1] would crash with an IndexError on the first ever call to push, since minStack starts empty.",
+      "alternatives": [
+        { "code": "newMin = min(val, self.minStack[-1] if self.minStack else val)", "difference": "Moves the empty check inside the min() call instead of around it. Same result, since min(val, val) is just val, but it reads a little less directly." },
+        { "code": "newMin = min(val, self.getMin()) if self.minStack else val", "difference": "Calls another method instead of reading minStack's top directly. Correct, but an extra method call to do exactly what self.minStack[-1] already does in one step." }
+      ],
+      "mistake": "Writing self.minStack[-1] without the \"if self.minStack else val\" fallback, which crashes with an IndexError on the very first push.",
+      "caption": [
+        { "when": "self.minStack", "text": "Compare {val} with the current minimum {self.minStack[-1]}: the new minimum is {min(val, self.minStack[-1])}." },
+        "minStack is empty, so {val} is the only candidate: the new minimum is {val}."
+      ]
+    },
+    "9": {
+      "explain": "This pushes the new running minimum onto minStack, keeping it the same length as stack: one minimum recorded per value pushed.",
+      "syntax": [
+        { "token": "self.minStack.append(newMin)", "meaning": "Adds newMin to the end of the minStack attribute." }
+      ],
+      "why": "Because minStack grows and shrinks in lockstep with stack, popping later can simply pop both, and the running minimum for whatever's left is already sitting on top of minStack.",
+      "if_removed": "minStack would fall one entry behind stack, and getMin would return a stale minimum from before this push.",
+      "alternatives": [
+        { "code": "self.minStack.append(min(newMin, val))", "difference": "Redundant: newMin is already the smaller of val and the old minimum, so wrapping it in another min() with the same values changes nothing." }
+      ],
+      "mistake": "Appending val instead of newMin, which would turn minStack into just a copy of stack and lose the running minimum entirely.",
+      "caption": "Push {newMin} onto minStack: the smallest value seen so far, including this push."
+    },
+    "11": {
+      "explain": "This defines pop, which removes the most recently pushed value from both stacks at once.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "pop", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self)", "meaning": "The only parameter is self; pop needs no other input to know what to remove." },
+        { "token": "-> None", "meaning": "Return type hint: pop doesn't hand anything back." },
+        { "token": ":", "meaning": "Ends the header." }
+      ],
+      "why": "Whatever gets removed from stack must also be removed from minStack, so the two stay the same length and minStack's top stays correct for whatever's left.",
+      "if_removed": "Calling obj.pop() would fail with an AttributeError, since the object would have no pop method.",
+      "alternatives": [
+        { "code": "def pop(self):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Returning the popped value from pop(), the way a plain list's pop() does. LeetCode's MinStack.pop() isn't expected to return anything.",
+      "caption": "Python remembers the pop instructions for later."
+    },
+    "12": {
+      "explain": "This removes the top value from the main stack.",
+      "syntax": [
+        { "token": "self.stack.pop()", "meaning": ".pop() removes and returns the LAST item of the list, the top. The returned value isn't used here." }
+      ],
+      "why": "This is the value the problem asks us to remove: whatever was pushed most recently.",
+      "if_removed": "self.stack would never shrink, and the two stacks would fall out of sync with how many times pop was actually called.",
+      "alternatives": [
+        { "code": "val = self.stack.pop()", "difference": "Saves the popped value in a variable. Not needed here, since MinStack.pop() doesn't return anything, but handy if you wanted to log or check what was removed." }
+      ],
+      "mistake": "Popping from minStack here and forgetting stack, or the other way around. Both need to shrink together, one call each.",
+      "caption": "Pop {self.stack[-1]} off the main stack."
+    },
+    "13": {
+      "explain": "This removes the top value from minStack too, keeping both stacks the same length.",
+      "syntax": [
+        { "token": "self.minStack.pop()", "meaning": "Removes and returns the last item of minStack. The returned value isn't used here." }
+      ],
+      "why": "Once the top value is gone from stack, the minimum that counted it is no longer valid. Popping minStack uncovers the minimum for whatever's left.",
+      "if_removed": "minStack would stay one entry longer than stack, and getMin would keep returning the minimum from BEFORE this pop, ignoring that a value was just removed.",
+      "alternatives": [
+        { "code": "self.minStack = self.minStack[:-1]", "difference": "Builds a new, shorter list instead of removing the last item in place. Same result, but slower and less direct than pop()." }
+      ],
+      "mistake": "Popping minStack before stack, or skipping it entirely. The order between lines 12 and 13 doesn't matter, since neither reads the other, but both must happen.",
+      "caption": "Pop {self.minStack[-1]} off minStack: the running minimum from before this pop."
+    },
+    "15": {
+      "explain": "This defines top, which reports the most recently pushed value without removing it.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "top", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self)", "meaning": "The only parameter is self." },
+        { "token": "-> int", "meaning": "Return type hint: top always hands back a number." },
+        { "token": ":", "meaning": "Ends the header." }
+      ],
+      "why": "-> int documents that top always hands back the current top of the stack, unlike push and pop, which don't return anything.",
+      "if_removed": "Calling obj.top() would fail with an AttributeError.",
+      "alternatives": [
+        { "code": "def top(self):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Implementing top() so it pops the value instead of just reading it. top must leave the stack unchanged.",
+      "caption": "Python remembers the top instructions for later."
+    },
+    "16": {
+      "explain": "This reads, without removing, the last item of self.stack, the most recently pushed value, and hands it back.",
+      "syntax": [
+        { "token": "return", "meaning": "Hand back the answer and end the method." },
+        { "token": "self.stack[-1]", "meaning": "Index -1 means the LAST item, the top of the stack." }
+      ],
+      "why": "self.stack[-1] looks at the top without changing the list at all, which is exactly what \"top\" is supposed to do.",
+      "if_removed": "The method would return None instead of the actual top value.",
+      "alternatives": [
+        { "code": "return self.stack[len(self.stack) - 1]", "difference": "Spells out the same position using len() instead of a negative index. Same result, more to read." }
+      ],
+      "mistake": "Writing self.stack.pop() here by mistake. That would remove the value as a side effect, when top() is only supposed to look at it.",
+      "caption": "Look at the top of the main stack without removing it: {self.stack[-1]}."
+    },
+    "18": {
+      "explain": "This defines getMin, which reports the smallest value currently on the stack.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "getMin", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self)", "meaning": "The only parameter is self." },
+        { "token": "-> int", "meaning": "Return type hint: getMin always hands back a number." },
+        { "token": ":", "meaning": "Ends the header." }
+      ],
+      "why": "-> int documents that getMin always hands back a number: the current minimum.",
+      "if_removed": "Calling obj.getMin() would fail with an AttributeError.",
+      "alternatives": [
+        { "code": "def getMin(self):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Computing the minimum by scanning with min(self.stack) instead of reading minStack. That gives the right answer, but takes O(n) time instead of the O(1) that reading minStack's top gives for free.",
+      "caption": "Python remembers the getMin instructions for later."
+    },
+    "19": {
+      "explain": "This reads the top of minStack, which by construction is always the smallest value currently on the main stack, and hands it back.",
+      "syntax": [
+        { "token": "return", "meaning": "Hand back the answer and end the method." },
+        { "token": "self.minStack[-1]", "meaning": "The last item of minStack, the current running minimum." }
+      ],
+      "why": "Every push kept minStack's top equal to the smallest value seen so far among what's still on the stack, and every pop uncovered the next-correct minimum. So the top of minStack is already the right answer, with no searching required.",
+      "if_removed": "The method would return None instead of the current minimum.",
+      "alternatives": [
+        { "code": "return min(self.stack)", "difference": "Recomputes the minimum by scanning the whole stack every time. It gives the same answer, but takes O(n) time instead of the O(1) that reading minStack's top gives." }
+      ],
+      "mistake": "Returning self.stack[-1] instead of self.minStack[-1]. That reports the most recently pushed value, not the smallest one.",
+      "caption": "Look at the top of minStack: the smallest value currently on the stack is {self.minStack[-1]}."
+    }
+  },
+  "brute_force": {
+    "code": "class MinStack:\n    def __init__(self):\n        self.stack = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n\n    def pop(self) -> None:\n        self.stack.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return min(self.stack)",
+    "explain": "Keep only the ordinary stack. push, pop and top work exactly as before, but getMin scans every value currently on the stack with Python's built-in min() to find the smallest one, instead of reading it from anywhere pre-computed.",
+    "why_slow": "min(self.stack) has to look at every one of the n values currently on the stack to find the smallest, every single time getMin is called. If getMin is called many times on a large stack, that's O(n) work per call, when the problem expects O(1).",
+    "how_pattern_fixes": "The slow part is recomputing the minimum from scratch every time, even though most of the stack hasn't changed since the last call. Keeping a second stack that already has the running minimum on top means getMin just reads one value, with no scanning, dropping it from O(n) to O(1).",
+    "time": "O(n) per getMin call, where n is how many values are currently on the stack. push, pop and top stay O(1).",
+    "space": "O(n): linear. Only the one stack, half the memory of the pattern solution, which is the whole trade-off."
+  },
+  "glossary": {
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In self.stack.append(val), val is the argument.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "attribute": "A named piece of data stored on an object, read or written with a dot, as in self.stack.",
+    "AttributeError": "The error Python raises when you ask an object for an attribute or method it doesn't have.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(1) doesn't grow at all. O(n) grows in step with the input.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "call": "Running a function or method by writing its name followed by brackets, like stack.pop().",
+    "class": "A blueprint that groups related functions (methods) and data (attributes) together.",
+    "colon": "The : character. At the end of a def or class line, it means an indented block follows.",
+    "conditional expression": "A one-line choice: X if condition else Y gives X when the condition is True, otherwise Y.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Reading or writing the end of a Python list is constant time.",
+    "deque": "A double-ended queue from the collections module: a list-like structure that's instant to add to or remove from at both ends.",
+    "expression": "Any piece of code that produces a value, like val == self.minStack[-1] or min(val, self.minStack[-1]).",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. append and pop change a list in place.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like [-1] on an empty list.",
+    "index": "A position in a list, counting from 0. Negative indexes count from the end: -1 is the last item.",
+    "int": "Python's name for whole numbers (integers).",
+    "keyword": "A word reserved by Python, like def, class, return, if, else.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "method": "A function that belongs to a class or an object, called with a dot: stack.append(i), stack.pop().",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data, created from a class. MinStack() creates one object.",
+    "parameter": "A name in a function's definition that receives an input. val is push's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes and returns the LAST item of a list, the top of a stack.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "running minimum": "The smallest value seen so far at any given point, updated as new values arrive, rather than recomputed from scratch each time.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "side effect": "A change a function makes beyond just returning a value, like modifying an attribute. push changes self.stack and self.minStack instead of returning anything.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "stack": "A collection where you only add and remove at one end, the top. The last item in is the first out.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, stack[-1].",
+    "type hint": "A label like val: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "A piece of data, like a number or a popped item. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "A contiguous stretch of a list or string that slides as you move through it, used in the sliding window pattern.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in MinStack(). It sets up the object's attributes."
+  },
+  "visualizer": [
+    {
+      "type": "stack",
+      "title": "stack (values)",
+      "source": "self.stack",
+      "marks": {
+        "compared": "[len(self.stack) - 1] if __line__ == 12 and self.stack else []",
+        "found": "[len(self.stack) - 1] if __line__ in (8, 9, 16) and self.stack else []"
+      }
+    },
+    {
+      "type": "stack",
+      "title": "minStack (running minimum)",
+      "source": "self.minStack",
+      "marks": {
+        "compared": "[len(self.minStack) - 1] if __line__ == 8 and self.minStack else []",
+        "found": "[len(self.minStack) - 1] if __line__ == 19 and self.minStack else []"
+      }
+    }
+  ]
+}
