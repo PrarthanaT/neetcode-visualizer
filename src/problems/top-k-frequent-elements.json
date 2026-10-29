@@ -1,0 +1,451 @@
+{
+  "slug": "top-k-frequent-elements",
+  "title": "Top K Frequent Elements",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 347,
+  "statement": [
+    "You are given a list of integers called nums and an integer k.",
+    "Return the k numbers that appear most often in nums.",
+    "You can return the answer in any order.",
+    "It is guaranteed that the answer is well-defined: there's no tie sitting right at the cutoff between the kth and the (k+1)th most frequent number."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 1, 1, 2, 2, 3], k = 2",
+      "output": "[1, 2]",
+      "explain": "1 appears 3 times and 2 appears 2 times, more often than any other number, so they are the two most frequent. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [1], k = 1",
+      "output": "[1]",
+      "explain": "There's only one distinct number, so it's automatically the most frequent."
+    }
+  ],
+  "pattern": {
+    "name": "Bucket sort by frequency (counting + direct placement)",
+    "summary": "First tally how often each number appears, the same frequency count used in many hashing problems. Then, instead of sorting those tallies, place each number straight into a bucket named after its exact count. Walking the buckets from the highest count down, and stopping once k numbers have been collected, hands back the most frequent numbers with no comparisons needed at all.",
+    "recognize": [
+      "The question asks for the most frequent, least frequent, or top k items by some count, not just a single frequency.",
+      "Sorting everything by frequency would answer the question, but the problem hints at wanting something faster than a full sort, especially when k is much smaller than the number of distinct items.",
+      "Frequencies are bounded by something small and known, like \"at most n\". That's exactly what makes direct placement cheap: there are only n possible frequency values, from 1 to n, no matter how many distinct items there are.",
+      "You already know how to count occurrences with a dictionary; this pattern is about what to do with those counts once you have them."
+    ],
+    "avoid_when": [
+      "k is close to the total number of distinct items, so you'd end up visiting almost every bucket anyway, and a plain sort by frequency is just as fast and much simpler to write.",
+      "You need the exact frequency of every item reported back, not just the top k items themselves. A plain frequency count already gives you that, with no bucket step needed.",
+      "The counts aren't naturally bounded by the size of the input, so you can't size the buckets in advance.",
+      "Only one item's frequency matters, like the single most common item, or whether anything repeats at all. A single pass tracking a running maximum is simpler than building buckets."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Counting \"how often\" is only half the problem. What you do with the counts next is its own decision: sorting them is O(n log n), but placing them into buckets by count is O(n).",
+      "A frequency can never be larger than the length of the list, so \"bucket index = frequency\" is always a safe, bounded way to organize numbers by how often they occur.",
+      "Walking buckets from the highest frequency down, and stopping the moment k numbers have been collected, means the loop never does more work than it has to.",
+      "buckets.get(c, []) is the same safe-default habit used for counting itself: it lets one line handle both a frequency that's never been seen before and one that already has numbers in it."
+    ],
+    "time": "O(n), linear time. n is how many numbers are in nums. Counting frequencies is one pass over nums. Building the buckets is one pass over the distinct numbers, which is at most n. Reading the buckets back out visits every possible frequency from 1 to n once, and every number across all buckets exactly once, so the three passes together still add up to O(n).",
+    "space": "O(n), linear extra memory. count can hold up to n distinct numbers, buckets holds every one of those numbers again grouped by frequency, and res holds the k numbers being returned.",
+    "edge_cases": [
+      "k equals the number of distinct numbers in nums. Every bucket eventually gets emptied into res, and the loop still stops exactly when len(res) == k, just on the very last possible number.",
+      "Every number in nums is the same, like [5, 5, 5]. count is {5: 3}, buckets is {3: [5]}, and the single number 5 is returned however small k is.",
+      "A list with one number and k = 1, like nums = [1], k = 1. There's only one bucket and one number to return.",
+      "Frequencies that skip values. If no number appears exactly twice, buckets simply has no key for 2, and buckets.get(2, []) safely gives an empty list instead of crashing.",
+      "nums can contain negative numbers and zero. They behave as dictionary keys exactly like positive numbers, so counting and bucketing both work unchanged."
+    ]
+  },
+  "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        count = {}\n        for i, n in enumerate(nums):\n            count[n] = 1 + count.get(n, 0)\n\n        buckets = {}\n        for n, c in count.items():\n            buckets[c] = buckets.get(c, []) + [n]\n\n        res = []\n        for c in range(len(nums), 0, -1):\n            for n in buckets.get(c, []):\n                res.append(n)\n                if len(res) == k:\n                    return res\n\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().topKFrequent([1, 1, 1, 2, 2, 3], 2)",
+    "expected": [1, 2],
+    "describe": "nums = [1, 1, 1, 2, 2, 3], k = 2"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def topKFrequent would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named topKFrequent. It takes the list of numbers (nums) and how many to return (k), and promises to give back a list of whole numbers: the k most frequent ones.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "topKFrequent", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "nums: List[int]", "meaning": "The first input, named nums, hinted to be a List of int (whole numbers)." },
+        { "token": "k: int", "meaning": "The second input, named k, hinted to be an int: how many of the most frequent numbers to return." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> List[int]", "meaning": "The return type hint: the method promises to give back a list of whole numbers." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and inputs are fixed by LeetCode. The type hints are notes for readers: nums is a list of whole numbers, k is a single whole number, and the answer is a list of whole numbers too.",
+      "if_removed": "Remove self and Python passes the Solution object into nums, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't change how the code runs if removed.",
+      "alternatives": [
+        { "code": "def topKFrequent(self, nums, k):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Swapping the parameter order in the call, like Solution().topKFrequent(2, [1, 1, 2]). Python has no way to know that's backwards; it would try to treat 2 as the list and crash inside the first loop.",
+      "caption": "Python remembers the topKFrequent instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty dictionary named count. Each key will be a number from nums, and each value will be how many times that number has appeared so far.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside topKFrequent, which is inside Solution." },
+        { "token": "count", "meaning": "A variable name we chose, holding the tally of each number." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "Before we can find the most frequent numbers, we need to know how frequent each one is. A dictionary lets us look up and update any number's count instantly, and it starts empty because before the loop nothing has been counted yet.",
+      "if_removed": "Line 5 would crash with a NameError: name 'count' is not defined, because you can't look inside something that doesn't exist.",
+      "alternatives": [
+        { "code": "count = dict()", "difference": "Calls the dict function to make an empty dictionary. Exactly the same result; {} is shorter and slightly faster." }
+      ],
+      "mistake": "Writing count = {} inside the for loop below. That would wipe out every tally gathered so far on every single pass, so no number's count could ever rise above 1.",
+      "caption": "Make an empty dictionary called count. It will tally how many times each number in nums appears."
+    },
+    "4": {
+      "explain": "This starts a for loop that visits each number in nums, from first to last. On every pass, i holds the current position and n holds the number at that position.",
+      "syntax": [
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i, n", "meaning": "Two loop variables. Each pass, enumerate hands back a pair (index, number), and Python unpacks it: i gets the index, n gets the number." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "enumerate(", "meaning": "A built-in function that walks through a collection and gives back (index, item) pairs: (0, 1), (1, 1), (2, 1), and so on." },
+        { "token": "nums", "meaning": "The list of numbers we're walking through." },
+        { "token": ")", "meaning": "Closes the enumerate call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The counting itself only needs the value n, not its position, but keeping the position lets a reader (and this visualizer) see exactly how far through nums we've gotten on each step.",
+      "if_removed": "Writing for n in nums: instead loses i. The counting would still work exactly the same, since i is never used in the tally, you'd simply have no position to point at.",
+      "alternatives": [
+        { "code": "for n in nums:", "difference": "The simpler, more common way to write this exact counting step, since the position is never used in the logic. Either form produces the same tally." }
+      ],
+      "mistake": "Swapping the order: for n, i in enumerate(nums):. enumerate always gives the index first, so n would hold a position and i the number, and the tally on line 5 would count positions instead of values.",
+      "caption": [
+        "Done with i = {i}. The loop moves to the next number in nums.",
+        "The for loop starts at the first number in nums."
+      ]
+    },
+    "5": {
+      "explain": "This adds one to the tally for the current number. It reads the number's current count (or 0 if it hasn't been seen yet), adds 1, and stores the new count back.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the loop, so this runs once per number." },
+        { "token": "count[n]", "meaning": "On the LEFT of =, this means \"the slot in count for this number\". The slot is created if it doesn't exist yet." },
+        { "token": "=", "meaning": "Assignment: compute the right side first, then store it in that slot." },
+        { "token": "1 +", "meaning": "Add one to whatever comes next." },
+        { "token": "count.get(", "meaning": ".get is a dictionary method that looks up a key. Unlike square brackets, it doesn't crash when the key is missing." },
+        { "token": "n, 0)", "meaning": "The first argument is the key to look up. The second, 0, is the default: the count to use if n hasn't been seen before." }
+      ],
+      "why": "The first time a number appears, it has no entry yet, so count[n] alone on the right side would raise a KeyError. .get(n, 0) treats a brand-new number as starting at count 0, so one line handles both the first sighting of a number and every later one.",
+      "if_removed": "Without this line, count stays empty and buckets never gets built correctly. If you write count[n] += 1 instead, the first time any number appears it raises a KeyError, since there's nothing to add 1 to yet.",
+      "alternatives": [
+        { "code": "count[n] = count.get(n, 0) + 1", "difference": "The same addition written the other way around. 1 + x and x + 1 give the same result; this is purely a style choice." },
+        { "code": "from collections import Counter\ncount = Counter(nums)  # replaces lines 3-5", "difference": "Counter builds the exact same tally in one call. In real code this is the cleanest way to count; writing the loop yourself is what interviews usually ask for." }
+      ],
+      "mistake": "Writing count.get(n) + 1 without the default. When n is missing, .get returns None, and None + 1 raises a TypeError.",
+      "caption": [
+        { "when": "n in count", "text": "n is {n}. count already has {n} seen {count.get(n, 0)} time(s), so it becomes {count.get(n, 0) + 1}." },
+        "n is {n}. That's new for count, so .get gives 0 and the tally becomes 1."
+      ]
+    },
+    "7": {
+      "explain": "This creates another empty dictionary named buckets. Each key will be a frequency (how many times a number appeared), and each value will be the list of every number that appeared exactly that many times.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: back at the method's main level, after the first loop has finished." },
+        { "token": "buckets", "meaning": "A variable name we chose for the frequency-to-numbers map." },
+        { "token": "=", "meaning": "Assignment: make the name on the left refer to the value on the right." },
+        { "token": "{}", "meaning": "An empty dictionary." }
+      ],
+      "why": "Once every number's frequency is known, the next step is to group numbers by that frequency, so the most frequent ones can be read off directly instead of being found by sorting.",
+      "if_removed": "Line 9 would crash with a NameError: name 'buckets' is not defined.",
+      "alternatives": [
+        { "code": "buckets = [[] for _ in range(len(nums) + 1)]", "difference": "A list of empty lists, one slot per possible frequency from 0 to len(nums), used instead of a dictionary. It's the more common way to write this exact bucket-sort solution, and it avoids a .get call later, but it always allocates len(nums) + 1 slots even when most frequencies never occur." }
+      ],
+      "mistake": "Reusing count as the buckets dictionary instead of creating a new one. That would overwrite every tally gathered in the first loop before the second loop even starts.",
+      "caption": "Make an empty dictionary called buckets. It will map each frequency to the numbers that appeared that many times."
+    },
+    "8": {
+      "explain": "This starts a loop over every entry already counted: n is a distinct number from nums, and c is how many times it appeared.",
+      "syntax": [
+        { "token": "for", "meaning": "Starts a loop that repeats the indented block once per item." },
+        { "token": "n, c", "meaning": "Two loop variables. Each pass, count.items() hands back a pair (key, value), and Python unpacks it: n gets the key (the number), c gets the value (its count)." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "count.items()", "meaning": "A dictionary method that gives back every (key, value) pair stored in count, one at a time." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "We've already done the counting; now every distinct number needs to be filed into the bucket for its own frequency. Looping over count.items() visits each distinct number exactly once, however many times it originally repeated in nums.",
+      "if_removed": "Without this loop, buckets would stay empty, and the final loop would never find anything to return.",
+      "alternatives": [
+        { "code": "for n in count:", "difference": "Loops over just the keys of count, giving only the numbers. You'd then need count[n] separately to get the frequency, which is extra typing for the same result." }
+      ],
+      "mistake": "Writing for c, n in count.items():. .items() always gives the key first, so this would swap the number and its count, putting numbers in the wrong buckets entirely.",
+      "caption": [
+        "Done placing {n} (seen {c} time(s)) into its bucket. Move to the next entry in count.",
+        "Start filing every counted number into the bucket for its frequency."
+      ]
+    },
+    "9": {
+      "explain": "This adds the number n into the bucket for its frequency c, creating that bucket's list the first time the frequency is seen, or growing it if the frequency has come up before.",
+      "syntax": [
+        { "token": "buckets[c]", "meaning": "On the LEFT of =, this means \"the slot in buckets for this frequency\". The slot is created if it doesn't exist yet." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in that slot." },
+        { "token": "buckets.get(", "meaning": ".get is a dictionary method that looks up a key, without crashing when the key is missing." },
+        { "token": "c, [])", "meaning": "The first argument is the frequency to look up. The second, [], is the default: an empty list to use if no number has had this exact frequency yet." },
+        { "token": "+ [n]", "meaning": "List concatenation. [n] is a brand-new, one-item list holding the current number, and + builds a new list that is the left-hand list with [n]'s item added onto the end." }
+      ],
+      "why": "buckets.get(c, []) means \"give me the list of numbers already filed under this frequency, or an empty list if this is the first number with this exact frequency\". Adding [n] appends the current number onto the end of whichever list that was.",
+      "if_removed": "buckets[c] alone, without .get, would raise a KeyError the first time a new frequency is seen, since nothing has been stored there yet to add to.",
+      "alternatives": [
+        { "code": "buckets.setdefault(c, []).append(n)", "difference": "setdefault inserts an empty list only if c is missing, then returns it either way, and .append adds n onto it in place. Same result, and it grows the existing list instead of building a new one each time." },
+        { "code": "buckets = [[] for _ in range(len(nums) + 1)]  # replaces line 7\n...\nbuckets[c].append(n)", "difference": "With buckets as a plain list indexed by frequency, every slot already exists, so you can .append directly with no .get needed at all." }
+      ],
+      "mistake": "Writing buckets[c] = buckets.get(c, []).append(n). .append always returns None, so this would overwrite the bucket with None instead of the growing list.",
+      "caption": "File {n} into the bucket for frequency {c}. That bucket now holds {buckets.get(c, []) + [n]}."
+    },
+    "11": {
+      "explain": "This creates an empty list named res, short for \"result\". It will collect the k most frequent numbers as they're found.",
+      "syntax": [
+        { "token": "res", "meaning": "A variable name we chose for the answer being built." },
+        { "token": "=", "meaning": "Assignment: make the name on the left refer to the value on the right." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "The answer is built up gradually, a number at a time, as the buckets are read from highest frequency to lowest. It starts empty because nothing has been collected yet.",
+      "if_removed": "Line 14 would crash with a NameError: name 'res' is not defined.",
+      "alternatives": [
+        { "code": "res = list()", "difference": "Calls the list function to make an empty list. Exactly the same result; [] is shorter and slightly faster." }
+      ],
+      "mistake": "Creating res = [] inside the loop below instead of before it. That would reset the answer back to empty every time the outer loop moves to a new frequency, losing everything collected so far.",
+      "caption": "Make an empty list called res. It will collect the k most frequent numbers."
+    },
+    "12": {
+      "explain": "This starts a loop over every possible frequency, from the highest a number could possibly have (len(nums), if every number in the list were the same) down to 1. c holds the frequency currently being checked.",
+      "syntax": [
+        { "token": "for", "meaning": "Starts a loop that repeats the indented block once per item." },
+        { "token": "c", "meaning": "The loop variable: the frequency being examined on this pass." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "range(", "meaning": "A built-in function that produces whole numbers." },
+        { "token": "len(nums), 0, -1", "meaning": "Three arguments to range: start at len(nums), stop before reaching 0, and step by -1 each time, so it counts downward: len(nums), len(nums) - 1, ..., 1." },
+        { "token": ")", "meaning": "Closes the range call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The most frequent numbers are the ones to return first, so the buckets need to be visited starting from the highest frequency and working down, which is exactly what counting backward with range does. Starting at len(nums) is always safe, since no number can appear more times than the list is long.",
+      "if_removed": "Without this loop, nothing would ever read the buckets back out, and res would stay empty forever.",
+      "alternatives": [
+        { "code": "for c in range(len(nums), 0, -1):", "difference": "This is the line itself; written here only to note that the stop value, 0, is never actually reached. range(5, 0, -1) stops after yielding 1, since the stop bound isn't included, which is exactly what's wanted: frequency 0 would be meaningless." },
+        { "code": "for c in sorted(buckets, reverse=True):", "difference": "Walks only the frequencies that actually occur, in descending order, instead of every possible frequency from len(nums) down to 1. It skips empty buckets automatically, at the cost of a sort over however many distinct frequencies exist." }
+      ],
+      "mistake": "Writing range(len(nums), 0) without the -1 step. range's default step is 1, which counts upward, not downward, so this would try to count from len(nums) up to (but not reaching) 0 and immediately produce nothing at all.",
+      "caption": [
+        "Checked frequency {c}. Step down to the next lower frequency.",
+        "Start from the highest possible frequency, {c}, and work downward."
+      ]
+    },
+    "13": {
+      "explain": "This loops over every number that was filed under the current frequency c, if any. buckets.get(c, []) safely gives an empty list when no number had that exact frequency, so the loop simply does nothing on that pass.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the outer for loop, so this line runs once per frequency being checked." },
+        { "token": "for", "meaning": "Starts a loop that repeats the indented block once per item." },
+        { "token": "n", "meaning": "The loop variable: a number that appeared exactly c times." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "buckets.get(", "meaning": ".get looks up a key without crashing if it's missing." },
+        { "token": "c, [])", "meaning": "Look up the bucket for frequency c, or use an empty list if no number had that frequency." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Several different numbers can share the exact same frequency (two numbers can both appear, say, 3 times each), so each bucket needs its own inner loop to hand back every number in it, not just the first.",
+      "if_removed": "Writing buckets[c] instead of buckets.get(c, []) would crash with a KeyError the moment a frequency with no matching number was reached, which happens on almost every pass for a typical input.",
+      "alternatives": [
+        { "code": "if c in buckets:\n    for n in buckets[c]:", "difference": "Checks membership first, then loops only when the key exists. It avoids building a throwaway empty list on the lines where nothing is found, at the cost of an extra line." }
+      ],
+      "mistake": "Writing buckets[c] directly. Most frequencies from 1 to len(nums) have no number at all, since most numbers don't appear exactly that many times, and each of those would crash the loop with a KeyError.",
+      "caption": [
+        { "when": "buckets.get(c, [])", "text": "Frequency {c} has {buckets.get(c, [])} waiting in its bucket." },
+        "No number was seen exactly {c} time(s), so this bucket is empty and the inner loop does nothing."
+      ]
+    },
+    "14": {
+      "explain": "This adds the current number n onto the end of res, the growing answer.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Indentation: inside both loops, so this runs once per number inside the current bucket." },
+        { "token": "res", "meaning": "The list we're building up." },
+        { "token": ".append(", "meaning": "A list method that adds a single item onto the end of the list, changing it in place." },
+        { "token": "n)", "meaning": "The number being added, and the closing bracket of .append." }
+      ],
+      "why": "Every number read out of a bucket, from the highest frequency down, belongs in the answer, since it's at least as frequent as everything that hasn't been looked at yet.",
+      "if_removed": "res would stay empty forever, and the function would eventually fall through to the final return res with nothing in it.",
+      "alternatives": [
+        { "code": "res = res + [n]", "difference": "Builds a brand-new list instead of growing res in place. It gives the same final contents, just by copying the whole list every time instead of appending onto the end, which is slower for a list that grows this many times." }
+      ],
+      "mistake": "Writing res.append([n]) with extra brackets. That would add the whole one-item list [n] as a single element of res, instead of adding the number n itself, so res would end up looking like [[1], [2]] instead of [1, 2].",
+      "caption": "Add {n} to res. res is now {res + [n]}."
+    },
+    "15": {
+      "explain": "This checks whether res has reached k numbers yet. If it has, the next line returns immediately; if not, the loop keeps going to collect more.",
+      "syntax": [
+        { "token": "if", "meaning": "A keyword that starts a condition check. The indented block below runs only when the condition is True." },
+        { "token": "len(res)", "meaning": "len is a built-in function that counts the items in something. For a list, that's how many items it holds right now." },
+        { "token": "==", "meaning": "The equality comparison operator. a == b is True when a and b are equal. (A single = is assignment, not comparison.)" },
+        { "token": "k", "meaning": "The number of most-frequent elements we were asked for." },
+        { "token": ":", "meaning": "Ends the condition. The indented line below runs only when it's True." }
+      ],
+      "why": "The question only asks for the k most frequent numbers, not every number sorted by frequency. The moment res holds exactly k of them, there's no reason to keep scanning lower frequencies.",
+      "if_removed": "Without this check, the loop would keep collecting every number in every bucket, all the way down to frequency 1, and res would end up holding every distinct number in nums instead of just the top k.",
+      "alternatives": [
+        { "code": "if len(res) >= k:", "difference": ">= instead of ==. Since res never grows by more than one item at a time, it can never skip past k, so == and >= behave identically here. >= is a slightly more defensive habit in code that might grow a list in bigger jumps." }
+      ],
+      "mistake": "Checking len(res) == k before line 14 has run instead of after. Checking too early would let the function return one number short of what was asked for.",
+      "caption": [
+        { "when": "len(res) == k", "text": "res now holds {len(res)} number(s), which is exactly k = {k}. Time to return." },
+        "res holds {len(res)} number(s) so far, still fewer than k = {k}. Keep collecting."
+      ]
+    },
+    "16": {
+      "explain": "res has exactly k numbers in it now, so this hands it back to the caller and ends the method immediately, stopping both loops at once.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Indentation: this line belongs to the if block, so it only runs when the condition on line 15 was True." },
+        { "token": "return", "meaning": "A keyword that ends the method right now, no matter how deeply nested inside loops it is, and hands the value after it back to the caller." },
+        { "token": "res", "meaning": "The list of the k most frequent numbers found so far." }
+      ],
+      "why": "Once k numbers have been collected, starting from the most frequent and working down, they are exactly the answer. return exits both the inner and outer loop in one step, since it ends the whole method, not just the loop it's written inside.",
+      "if_removed": "Without this return, the loops would keep running all the way down to frequency 1, and res would grow past k numbers, which is a difference the final return res on line 18 would mistakenly hand back as the answer.",
+      "alternatives": [
+        { "code": "break", "difference": "break would only stop the innermost for n in ... loop, not the outer one over frequencies. The outer loop would keep running and could start collecting even more numbers from lower frequencies, overshooting k." }
+      ],
+      "mistake": "Indenting this return one level too far out, outside the if, so it would return after collecting just the very first number found, almost always far fewer than k.",
+      "caption": "res has reached k = {k} numbers: {res}. Return it."
+    },
+    "18": {
+      "explain": "If the loops finish without ever returning on line 16, this returns whatever res ended up holding.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line only runs after both loops finish completely." },
+        { "token": "return", "meaning": "Ends the method and hands the following value back to the caller." },
+        { "token": "res", "meaning": "The list built up so far." }
+      ],
+      "why": "The problem guarantees an answer exists, so this line is never actually reached by a valid input where k is at most the number of distinct numbers in nums. It's still needed because Python requires every path through the method to end in a return (or fall through to None), and leaving it out would mean a path exists with no explicit answer.",
+      "if_removed": "For every input that satisfies the problem's own guarantee, nothing changes, since line 16 always fires first. But without this line, a path through the method falls off the end and returns None instead, which would only show up as a bug if k ever exceeded the number of distinct numbers.",
+      "alternatives": [
+        { "code": "return res[:k]", "difference": "A defensive slice that trims res down to k items even if it somehow grew larger. It's unnecessary here, since the inner return always fires at exactly k items, but it would guard against a difference introduced by future edits." }
+      ],
+      "mistake": "Deleting this line entirely because \"the loop always returns anyway\". That's true for valid inputs, but Python still requires a function to handle every path, so skipping it is a correctness risk even if it rarely triggers.",
+      "caption": "Both loops finished. Return whatever res ended up holding."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        count = {}\n        for n in nums:\n            count[n] = 1 + count.get(n, 0)\n\n        pairs = sorted(count.items(), key=lambda p: p[1], reverse=True)\n        return [n for n, c in pairs[:k]]",
+    "explain": "Count frequencies the same way as the main solution, then sort every distinct number by its frequency, highest first, using a lambda that looks at the count (p[1]) of each (number, count) pair. Take the first k entries from that sorted order and keep just the numbers.",
+    "why_slow": "sorted() compares pairs against each other to put them in order, which costs O(m log m) where m is how many distinct numbers there are, up to n. Even though only the top k numbers are needed, the entire list of distinct numbers gets fully sorted first.",
+    "how_pattern_fixes": "Frequencies are bounded: no number can appear more than n times. That bound turns \"sort everything\" into \"place each number directly into the bucket named after its exact frequency\", which costs O(1) per number instead of O(log m) per comparison. Reading the top k back out then only has to walk down from the highest frequency until k numbers are found, often stopping long before reaching every bucket.",
+    "time": "O(m log m), where m is the number of distinct numbers in nums (m \u2264 n). In the worst case, where every number is different, that's O(n log n).",
+    "space": "O(n): the count dictionary and the pairs list both grow with the number of distinct values, up to n."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In range(len(nums), 0, -1), len(nums), 0, and -1 are the arguments.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n log n) grows a little faster than that. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "brute force": "Solving a problem by trying every possibility, or by using a more general tool like sorting instead of a specialized trick. It is usually simple and correct, but slower than necessary.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like enumerate(nums).",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: == (equal), != (not equal), <, >, <=, >=.",
+    "condition": "An expression that is either True or False, used to decide whether code runs, as in if len(res) == k.",
+    "Counter": "A ready-made dictionary from Python's collections module that counts things for you: Counter([1, 1, 2]) gives {1: 2, 2: 1}.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key \u2192 value pairs and finds any key instantly.",
+    "edge case": "An unusual input that might break code: k equal to the number of distinct values, every number identical, and so on.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like len(res) == k or count.get(n, 0).",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "frequency": "How many times something appears. A frequency count is a tally.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or None if key is missing (or a default you choose, d.get(key, [])), without crashing.",
+    "hash map": "A structure that stores key \u2192 value pairs and finds a key almost instantly by turning the key into a storage location (hashing). Python's dictionary is a hash map.",
+    "hashing": "Turning a value into a number that says where to store it. That lets a hash map jump straight to the right spot instead of searching.",
+    "in place": "Changing an object directly instead of making a new one. res.append(n) grows res in place, while res = res + [n] builds a brand-new list instead.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "index": "A position in a list, counting from 0. In [1, 1, 1, 2, 2, 3], the 3 is at index 5.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "key": "The part of a dictionary entry you look things up by. In {1: 3}, the key is 1.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there with d[key].",
+    "keyword": "A word Python reserves for itself, like def, for, if, return, class, in. You can't use these as variable names.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. You reach items by their index.",
+    "list comprehension": "A compact way to build a list in one line: [expr for item in collection] runs expr once per item and collects the results.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection.",
+    "method": "A function that lives inside a class, or a function built into an object like a list or dictionary. It's called with a dot, like res.append(n) or count.items().",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds (or concatenates), - subtracts, = assigns, == compares, in checks membership.",
+    "parameter": "A name in a function's definition that will hold an input. nums and k are topKFrequent's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like bucket sort by frequency or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a list, used to point at one item.",
+    "range": "A built-in function that produces whole numbers. range(5, 0, -1) gives 5, 4, 3, 2, 1: it starts at 5 and steps down by 1, stopping before it reaches 0.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Python's sorted() function returns a new sorted list.",
+    "sorting": "Putting items in order. Python's sorted() rearranges items by comparing them to each other, which takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "tally": "A running count of how many times each thing has been seen.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "top": "The highest-ranked end of something. \"Top k\" means the k items with the largest value of whatever is being measured, here frequency; for a stack, \"top\" instead means the end where items are added and removed.",
+    "tuple": "Like a list, but it can't be changed after it's made. A (key, value) pair from .items() comes back as a tuple.",
+    "tuple unpacking": "Splitting a pair (or a longer tuple) into separate variables in one step, as in i, n = (0, 1).",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "The part of a dictionary entry you get back. In {1: 3}, the value is 3. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (4, 5) else []",
+        "done": "list(range(i)) if __line__ in (4, 5) else list(range(len(nums)))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "count  (number \u2192 frequency)",
+      "source": "count",
+      "lookup": "n if __line__ in (4, 5) else None"
+    },
+    {
+      "type": "hashmap",
+      "title": "buckets  (frequency \u2192 list of numbers)",
+      "source": "buckets",
+      "lookup": "c if __line__ in (8, 9, 12, 13, 14, 15, 16) else None"
+    },
+    {
+      "type": "array",
+      "title": "res",
+      "source": "res",
+      "marks": {
+        "compared": "[len(res) - 1] if __line__ == 14 else []",
+        "found": "list(range(len(res))) if __line__ == 16 else []"
+      }
+    }
+  ]
+}

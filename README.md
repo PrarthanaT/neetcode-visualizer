@@ -54,6 +54,7 @@ This checks that every section is filled in, that every line of code has a match
 - Two Sum
 - Valid Anagram
 - Group Anagrams
+- Top K Frequent Elements
 
 ### Two Pointers
 - Valid Palindrome
