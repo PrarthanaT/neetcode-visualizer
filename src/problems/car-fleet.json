@@ -1,0 +1,476 @@
+{
+  "slug": "car-fleet",
+  "title": "Car Fleet",
+  "difficulty": "Medium",
+  "category": "Stack",
+  "leetcode": 853,
+  "statement": [
+    "There are n cars heading to the same destination on a one-lane road. You're given target, the destination's position, and two lists position and speed, where position[i] and speed[i] are the starting position and speed of the i-th car. Every car starts at the same time.",
+    "A car can never pass the car ahead of it, but it CAN catch up to it and then drive right behind it at that car's speed. Any group of cars that ends up driving together like this, at the same speed, all the way to the destination, is one car fleet.",
+    "A car that never catches up to anyone, and that no one ever catches up to, is its own fleet of one. Return the number of distinct car fleets that will have formed by the time every car reaches the destination."
+  ],
+  "examples": [
+    {
+      "input": "target = 12, position = [10, 8, 0, 5, 3], speed = [2, 4, 1, 1, 3]",
+      "output": "3",
+      "explain": "Solo arrival times are: position 10 at 1, position 8 at 1, position 5 at 7, position 3 at 3, position 0 at 12. The car at 8 catches the car at 10 right at the destination (both at time 1), forming one fleet. The car at 3 catches up to the car at 5 before the destination (3 is faster but starts behind, and 5's fleet is only going at a pace that reaches the destination at time 7, which is later than 3 would take alone) and merges with it, so that's a second fleet, arriving at time 7. The car at 0 never catches anyone and reaches the destination alone at time 12, a third fleet. This is the exact example the visualizer runs."
+    },
+    {
+      "input": "target = 10, position = [3], speed = [3]",
+      "output": "1",
+      "explain": "With only one car, there's nothing for it to catch or be caught by. It's a fleet of one."
+    }
+  ],
+  "pattern": {
+    "name": "Monotonic stack, walked from the car closest to the destination backward",
+    "summary": "Pair each car with its speed, and sort those pairs by starting position, closest to the destination first. Walk through them in that order, and for each one compute how long it would take to reach the destination driving alone. Keep a stack of these arrival times, one per fleet confirmed SO FAR. A car that would arrive no later than the fleet directly in front of it (the stack's current top) can never actually get there first, since passing isn't allowed, so it must be catching up to that fleet instead: pop its own just-pushed time back off, since it joins the fleet already on the stack rather than starting a new one. A car that would arrive strictly later than the fleet ahead of it gets to keep its own entry: a new, trailing fleet.",
+    "recognize": [
+      "There's a rule that items can never \"pass\" each other, only catch up to and merge with the one directly ahead, which is exactly the setup a stack of \"things still trailing\" is built for.",
+      "Sorting first (here, by starting position) turns a problem where any car could seemingly interact with any other into one where each item only ever needs to be compared against the single most recent thing still ahead of it.",
+      "The quantity that decides a merge (arrival time) only ever needs the TOP of the stack to check against, never anything deeper, because whatever's deeper was already confirmed to be a stricter barrier by an earlier comparison.",
+      "The answer is a count of how many groups survive some elimination process, which maps directly onto \"how many items are left on the stack once everything's been processed.\""
+    ],
+    "avoid_when": [
+      "Cars could pass each other freely. Then there's no fleet to merge into and the stack's merge rule doesn't apply at all; you'd just want each car's own arrival time.",
+      "You need to know WHICH cars ended up in which fleet, not just how many fleets there are. The stack as written only keeps the surviving times, not which original cars are in each group.",
+      "The input isn't naturally orderable along one line (one lane, one direction). The whole \"closest to the destination first\" ordering depends on everyone moving toward the same point along the same path.",
+      "You need to answer this same question repeatedly as cars are added or removed one at a time. Re-sorting and re-walking the whole stack from scratch for every change would be wasteful; a different data structure would track that more incrementally."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Sorting by position, closest to the destination first, means every car gets compared to fleets that are strictly easier to reach first: a fleet's arrival time is only ever decided by cars at least as close to the destination, which have already been processed by the time a farther car looks at the stack's top.",
+      "The check is stack[-1] <= stack[-2], not <. Arriving at exactly the same moment as the fleet ahead still counts as catching it: there's no room on a one-lane road to arrive side by side as two separate fleets.",
+      "Only ONE pop ever happens per car, never a loop of pops. Once a fleet's time makes it onto the stack and survives a comparison, every car processed before it already confirmed it's a real barrier; a car further behind merging into it doesn't change that, so there's nothing deeper that could also need popping.",
+      "Because of that, the entries left on the stack read as a strictly increasing sequence of times from the bottom (closest to the destination) to the top (farthest away): each surviving fleet takes meaningfully longer than every fleet ahead of it, which is what makes it a separate fleet in the first place."
+    ],
+    "time": "O(n log n), dominated by pair.sort(). The for loop that follows does O(1) work per car (one append, and at most one comparison and pop), so it's O(n) on its own; sorting is the slower part.",
+    "space": "O(n): pair holds one tuple per car, and stack holds at most one entry per car (before any merges happen).",
+    "edge_cases": [
+      "A single car (n = 1): the for loop runs once, nothing is ever compared against (len(stack) is 1, never >= 2), and the answer is 1.",
+      "Every car already moving at the exact same speed: whichever one starts closest to the destination defines every later car's barrier, since catching up exactly keeps happening at the same gap, so the answer is always 1 fleet.",
+      "A car exactly as fast as the one ahead of it, arriving at exactly the same time: stack[-1] <= stack[-2] is True on a tie, so they still merge into one fleet, matching the problem's own definition of catching up.",
+      "Two cars that start at very different positions but happen to compute the exact same solo arrival time: they still merge, since <= doesn't care how close together they started, only when they'd each arrive alone."
+    ]
+  },
+  "code": "class Solution:\n    def carFleet(self, target: int, position: List[int], speed: List[int]) -> int:\n        pair = [(p, s) for p, s in zip(position, speed)]\n        pair.sort(reverse=True)\n        stack = []\n\n        for p, s in pair:\n            stack.append((target - p) / s)\n            if len(stack) >= 2 and stack[-1] <= stack[-2]:\n                stack.pop()\n\n        return len(stack)\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().carFleet(12, [10, 8, 0, 5, 3], [2, 4, 1, 1, 3])",
+    "expected": 3,
+    "describe": "target = 12, position = [10, 8, 0, 5, 3], speed = [2, 4, 1, 1, 3]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method carFleet. It takes target (the destination) and the two lists position and speed, and promises to give back a single int: how many car fleets reach the destination.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "carFleet",
+          "meaning": "The method name LeetCode calls."
+        },
+        {
+          "token": "(self, target: int, position: List[int], speed: List[int])",
+          "meaning": "The parameters: self, the object; target, an int; position and speed, each a List of int."
+        },
+        {
+          "token": "-> int",
+          "meaning": "Return type hint: a single whole number comes back."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. The type hints document that position and speed are lists of whole numbers, one entry per car, and the answer is a single count.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def carFleet(self, target, position, speed):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Forgetting self, or misspelling the method name so LeetCode's tester can't find it.",
+      "caption": "Python remembers the carFleet instructions for later."
+    },
+    "3": {
+      "explain": "This pairs every car's starting position with its own speed, so the two stay matched together as one item per car instead of two separate lists that could drift apart once sorted.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "pair",
+          "meaning": "A variable name for the list of (position, speed) tuples being built."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[(p, s) for p, s in zip(position, speed)]",
+          "meaning": "A list comprehension: for every (p, s) pair that zip hands back, build a tuple (p, s) and collect them all into a new list."
+        },
+        {
+          "token": "zip(position, speed)",
+          "meaning": "zip walks position and speed side by side, handing back (position[0], speed[0]), (position[1], speed[1]), and so on."
+        }
+      ],
+      "why": "Line 4 is about to sort by position. If position and speed stayed as two separate lists, sorting one wouldn't move the matching entry in the other, and every car's speed would end up paired with the wrong car's position.",
+      "if_removed": "pair.sort(...) on line 4 would crash with a NameError, since pair wouldn't exist yet.",
+      "alternatives": [
+        {
+          "code": "pair = list(zip(position, speed))",
+          "difference": "zip already produces tuples, so wrapping it directly in list() skips rebuilding each one with (p, s). Same result, written more directly."
+        }
+      ],
+      "mistake": "Writing (s, p) instead of (p, s), swapping the order. Every later line that unpacks p, s from pair would then read the speed as the position and the position as the speed.",
+      "caption": [
+        {
+          "when": "'position' in dir()",
+          "text": "Pair up every car's position with its own speed: {[(p, s) for p, s in zip(position, speed)]}."
+        },
+        {
+          "when": "'p' in dir()",
+          "text": "Pairing up the car at position {p} with its speed, {s}."
+        },
+        "Start building the list of (position, speed) pairs."
+      ]
+    },
+    "4": {
+      "explain": "This sorts pair in place by position, from LARGEST to smallest, so the car closest to the destination comes first.",
+      "syntax": [
+        {
+          "token": "pair.sort(reverse=True)",
+          "meaning": "sort rearranges a list's own items instead of building a new one. reverse=True sorts from largest to smallest instead of the default smallest to largest."
+        }
+      ],
+      "why": "Tuples sort by their first item first (position here), so this puts the car nearest the destination at index 0. Later, walking pair front to back visits cars in exactly the order they could catch up to one another.",
+      "if_removed": "pair would stay in whatever order position and speed were originally given, and the stack's merge logic on line 9 would compare cars that aren't necessarily adjacent along the road, giving the wrong fleet count.",
+      "alternatives": [
+        {
+          "code": "pair.sort(key=lambda x: -x[0])",
+          "difference": "Sorts by the negative of the position instead of using reverse=True. Gives the same descending order, with an extra lambda to read."
+        }
+      ],
+      "mistake": "Leaving out reverse=True (or writing reverse=False). pair would then be sorted closest-to-zero first instead of closest-to-target first, which is backward for this problem's whole approach.",
+      "caption": "Sort pair by position, largest first: {pair}."
+    },
+    "5": {
+      "explain": "This creates an empty list used as a stack. It will hold one arrival time per fleet that's been confirmed so far.",
+      "syntax": [
+        {
+          "token": "stack",
+          "meaning": "A variable name. Calling it stack tells the reader how we'll use it."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[]",
+          "meaning": "Square brackets with nothing inside make a new, empty list."
+        }
+      ],
+      "why": "Each car's arrival time either joins an existing fleet (and gets popped right back off) or survives as a new fleet's time. A stack is exactly right, since only the MOST RECENT surviving entry (the one for the nearest fleet still ahead) is ever compared against.",
+      "if_removed": "stack.append and stack.pop inside the for loop would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "stack = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
+      ],
+      "mistake": "Creating stack inside the for loop instead of here. That would wipe it clean on every car, so no car could ever be compared against the fleet ahead of it.",
+      "caption": "Make an empty stack. It will hold the arrival time of each fleet confirmed so far."
+    },
+    "7": {
+      "explain": "This loop visits each (position, speed) pair, closest to the destination first, since that's the order line 4 just sorted them into. Each pass, p and s hold the current car's position and speed.",
+      "syntax": [
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats the indented block once per item."
+        },
+        {
+          "token": "p, s",
+          "meaning": "Two loop variables, unpacked from a tuple each pass. This is tuple unpacking."
+        },
+        {
+          "token": "in",
+          "meaning": "\"Take items one at a time from\"."
+        },
+        {
+          "token": "pair",
+          "meaning": "The sorted list of (position, speed) tuples."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Every car needs its arrival time computed and compared against the stack, in the specific order that makes the single-top-of-stack comparison on line 9 correct: closest to the destination first.",
+      "if_removed": "Nothing would ever run, and stack would stay empty, giving an answer of 0 fleets instead of the real count.",
+      "alternatives": [
+        {
+          "code": "for p, s in sorted(pair, reverse=True):",
+          "difference": "Sorts again right here instead of using the already-sorted pair from line 4. It would give the same order, but re-sorts work that's already done."
+        }
+      ],
+      "mistake": "Looping over position and speed separately with two for loops, instead of over the already-paired and sorted pair. That would process cars in their ORIGINAL order, not sorted by position, breaking the whole approach.",
+      "caption": [
+        {
+          "when": "__visits__[7] > len(pair)",
+          "text": "Every car has been processed, so the loop ends."
+        },
+        {
+          "when": "__visits__[7] > 1",
+          "text": "Next car: position {p}, speed {s}."
+        },
+        "Start with the car closest to the destination: position {pair[0][0]}, speed {pair[0][1]}."
+      ]
+    },
+    "8": {
+      "explain": "This computes how long this car would take to reach the destination driving alone, and pushes that time onto stack.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the for loop."
+        },
+        {
+          "token": "stack.append(...)",
+          "meaning": "Adds one item to the end of the stack list."
+        },
+        {
+          "token": "(target - p) / s",
+          "meaning": "target - p is the remaining distance to the destination; dividing by speed s gives the time to cover it. / always gives a decimal result (true division)."
+        }
+      ],
+      "why": "Every car gets its own solo arrival time pushed first, unconditionally. Line 9 then decides whether this time survives as a new fleet or gets popped because it belongs to a fleet that's already on the stack.",
+      "if_removed": "stack would never grow, len(stack) would stay 0, and the method would always return 0.",
+      "alternatives": [
+        {
+          "code": "stack.append((target - p) * 1.0 / s)",
+          "difference": "Multiplying by 1.0 first to force a decimal result. Unnecessary in Python 3, where / already always gives a float."
+        }
+      ],
+      "mistake": "Writing (target - p) // s (integer division) instead of /. Rounding the time down could make two cars that actually arrive at slightly different moments look like an exact tie, merging fleets that shouldn't merge.",
+      "caption": "Car at position {p}, speed {s}: alone, it would take {(target - p) / s} to reach the destination. Push that onto stack."
+    },
+    "9": {
+      "explain": "This checks whether the car just pushed actually forms its own new fleet, or whether it catches up to (and so merges into) the fleet directly ahead of it, which is the previous entry on the stack.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Runs the indented block below only when the condition is True."
+        },
+        {
+          "token": "len(stack) >= 2",
+          "meaning": "True once at least two entries are on stack: this car's just-pushed time, and the fleet ahead of it. Protects stack[-2] from crashing when this is the very first car."
+        },
+        {
+          "token": "and",
+          "meaning": "True only if both sides are True. Python stops early (short-circuiting) if the left side is False."
+        },
+        {
+          "token": "stack[-1] <= stack[-2]",
+          "meaning": "stack[-1] is the time just pushed (this car's own); stack[-2] is the fleet ahead of it. <= means this car would arrive no later than that fleet."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "A car can't pass the one ahead of it. If its own solo time would put it there no later than the fleet already in front, it must actually be catching up to that fleet instead, not overtaking it, so the two are really one fleet.",
+      "if_removed": "stack[-2] would crash with an IndexError the first time this runs with only one entry on stack. Removing just the comparison (keeping only the length check) would make EVERY car after the first merge, since nothing would ever confirm a new fleet.",
+      "alternatives": [
+        {
+          "code": "if len(stack) > 1 and stack[-1] <= stack[-2]:",
+          "difference": "len(stack) > 1 means the same thing as len(stack) >= 2 for a length, which is always a whole number. Identical behavior, just a different way to write the same boundary."
+        }
+      ],
+      "mistake": "Using < instead of <=. Arriving at exactly the same time as the fleet ahead still means catching it on a one-lane road, with nowhere to be side by side as two separate fleets; < would wrongly count that as two.",
+      "caption": [
+        {
+          "when": "len(stack) >= 2 and stack[-1] <= stack[-2]",
+          "text": "This car's time, {stack[-1]}, is no later than the fleet ahead's, {stack[-2]}: it catches up and merges."
+        },
+        {
+          "when": "len(stack) >= 2",
+          "text": "This car's time, {stack[-1]}, is later than the fleet ahead's, {stack[-2]}: it trails behind as its own new fleet."
+        },
+        "This is the first car: there's no fleet ahead yet to compare against."
+      ]
+    },
+    "10": {
+      "explain": "This removes the time just pushed on line 8, since this car doesn't form a new fleet after all: it merges into the one directly ahead of it, which stays on the stack representing that fleet.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block."
+        },
+        {
+          "token": "stack.pop()",
+          "meaning": ".pop() removes and returns the LAST item of the list, the top. The returned value isn't used here."
+        }
+      ],
+      "why": "The fleet ahead already has its own (earlier, confirmed) arrival time on the stack. This car joining it doesn't change that time, so there's nothing new to keep; popping just undoes the push from line 8 for this one car.",
+      "if_removed": "Every car, even ones that merge, would stay on the stack as if it were its own fleet, and len(stack) at the end would count merged cars as extra fleets they don't actually form.",
+      "alternatives": [
+        {
+          "code": "stack = stack[:-1]",
+          "difference": "Builds a new, shorter list instead of removing the last item in place. Same result, but slower and less direct than pop()."
+        }
+      ],
+      "mistake": "Popping twice, or popping stack[-2] instead of stack[-1]. Only the just-pushed entry (this car's own, now-redundant time) should go; the fleet ahead's time is the one that needs to stay.",
+      "caption": "Pop {stack[-1]}: this car merges into the fleet ahead instead of forming its own."
+    },
+    "12": {
+      "explain": "Every car has been processed. Hand back len(stack): one entry survives per distinct fleet, so its length is the fleet count.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: this runs once, after the loop."
+        },
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "len(stack)",
+          "meaning": "The number of items currently in stack."
+        }
+      ],
+      "why": "Every car that ever merged into an earlier fleet was popped back off by line 10. What's left on stack is exactly one entry per fleet that's actually distinct from every fleet ahead of it.",
+      "if_removed": "The method would return None instead of the fleet count.",
+      "alternatives": [
+        {
+          "code": "return len(pair) - sum(1 for p, s in pair) + len(stack)",
+          "difference": "A needlessly roundabout way of writing len(stack): the subtracted and added terms cancel out to nothing."
+        }
+      ],
+      "mistake": "Returning len(pair) instead of len(stack). pair still holds every car; stack is what's left after merging, which is the actual fleet count.",
+      "caption": "Every car has been processed. Return len(stack): {len(stack)} fleet(s)."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def carFleet(self, target: int, position: List[int], speed: List[int]) -> int:\n        pair = [(p, s) for p, s in zip(position, speed)]\n        pair.sort(reverse=True)\n        times = [(target - p) / s for p, s in pair]\n\n        isNewFleet = [False] * len(times)\n        for i in range(len(times)):\n            isNewFleet[i] = True\n            for j in range(i):\n                if isNewFleet[j] and times[j] >= times[i]:\n                    isNewFleet[i] = False\n                    break\n\n        return sum(isNewFleet)",
+    "explain": "Sort and compute every car's solo arrival time, same as before. But instead of trusting that only the MOST RECENT surviving fleet ahead matters, re-check every single earlier car that formed its own fleet, one by one, to see if any of them blocks this one.",
+    "why_slow": "For the i-th car (counting from the one closest to the destination), the inner loop can scan all i cars that came before it looking for a blocker. Summed over every car, that's roughly n\u00b2/2 comparisons in the worst case: O(n\u00b2), on top of the sort.",
+    "how_pattern_fixes": "The slow part is re-checking every earlier fleet instead of trusting that the nearest one is always the deciding one. Because cars are processed closest-to-destination first, any fleet further back is only ever as restrictive as the nearest unmerged fleet ahead of it: if a car doesn't merge with that one, it can't merge with an even farther, already-resolved one either. Keeping just that single most recent surviving time (the stack's top) replaces the whole inner loop with one comparison.",
+    "time": "O(n\u00b2), from the nested loop, in addition to the O(n log n) sort.",
+    "space": "O(n): pair, times, and isNewFleet are each sized n, the same order as the pattern solution."
+  },
+  "glossary": {
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B completely (short-circuiting).",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In zip(position, speed), position and speed are arguments.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n log n) grows a little faster than that. O(n\u00b2) quadruples when the input doubles.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by trying or repeating everything, even work a smarter approach could skip. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by parentheses, like pair.sort() or stack.pop().",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a for, if, def or class line, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "expression": "Any piece of code that produces a value, like (target - p) / s or stack[-1] <= stack[-2].",
+    "float": "Python's name for a decimal number, like 1.0 or 7.5. Dividing with / always gives a float.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. pair.sort() reorders pair in place, and append and pop change a list in place too.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. After sorting, the car closest to the destination sits at index 0.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like stack[-2] on a list with fewer than two items.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like 0, 3 or 12. Python calls the type int.",
+    "integer division": "Dividing and dropping any decimal part so the result is a whole number, written // in Python. 7 // 2 is 3.",
+    "join": "A string method that glues every item of a list together into one string, with the string it's called on placed between each pair. Used loosely in English here too: a car \"joins\" a fleet, meaning it merges into it.",
+    "keyword": "A word reserved by Python, like def, class, if, for, return.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "list comprehension": "A compact way to build a list in one line: [expr for item in collection] runs expr once per item and collects the results.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection.",
+    "method": "A function that belongs to a class or an object, called with a dot: pair.sort(), stack.append(x).",
+    "monotonic stack": "A stack kept in increasing or decreasing order by only ever pushing or popping at the top, used here so each new item only needs to be compared against the single most recent surviving entry.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data, created from a class. Solution() creates one object.",
+    "parameter": "A name in a function's definition that receives an input. target, position and speed are carFleet's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pop": "A list method that removes and returns the LAST item of a list, the top of a stack.",
+    "push": "Adding an item to the top of a stack. In Python that's list.append.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "short-circuiting": "and and or stop as soon as the answer is known. False and X never evaluates X, which lets you guard risky checks.",
+    "sorted": "Arranged in order. This problem sorts from largest to smallest (descending) instead of the usual smallest to largest.",
+    "sorting": "Putting items in order. Python's list.sort() rearranges a list in place. Sorting takes about O(n log n) time.",
+    "stack": "A collection where you only add and remove from one end, the top. Python lists work as stacks using append and pop.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "top": "The end of a stack where items are added and removed. For a Python list, that's the last item, at index -1.",
+    "true division": "Division with / that always gives a decimal result in Python 3, like 7 / 2 == 3.5, unlike // which rounds down to a whole number.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (10, 2).",
+    "tuple unpacking": "Splitting a tuple into separate variables in one step, as in p, s = (10, 2).",
+    "type hint": "A label like target: int or -> int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number or a popped item. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "zip": "A built-in function that walks several collections side by side: zip([1, 2], [3, 4]) gives (1, 3) and then (2, 4)."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "pair (position, speed), closest to the destination first",
+      "source": "[p for p, s in pair]",
+      "pointers": {
+        "car": "pair.index((p, s))"
+      },
+      "marks": {
+        "compared": "[pair.index((p, s))] if __line__ in (8, 9) else []"
+      }
+    },
+    {
+      "type": "stack",
+      "title": "stack (arrival time of each surviving fleet)",
+      "source": "stack",
+      "marks": {
+        "compared": "[len(stack) - 1, len(stack) - 2] if __line__ == 9 and len(stack) >= 2 else ([len(stack) - 1] if __line__ == 9 and stack else [])",
+        "found": "[len(stack) - 1] if __line__ == 10 and stack else []"
+      }
+    }
+  ]
+}

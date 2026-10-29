@@ -13,7 +13,7 @@
     {
       "input": "temperatures = [73, 74, 75, 71, 69, 72, 76, 73]",
       "output": "[1, 1, 4, 2, 1, 1, 0, 0]",
-      "explain": "Day 0 (73°) only has to wait 1 day for day 1's 74°. Day 6 (76°) is the hottest day left, so it and the final day never find anything warmer, and both end in 0. This is the example the visualizer runs."
+      "explain": "Day 0 (73\u00b0) only has to wait 1 day for day 1's 74\u00b0. Day 6 (76\u00b0) is the hottest day left, so it and the final day never find anything warmer, and both end in 0. This is the example the visualizer runs."
     },
     {
       "input": "temperatures = [30, 40, 50, 60]",
@@ -26,7 +26,7 @@
     "summary": "Walk through the list once, keeping a stack of indexes that are still waiting for something bigger to show up. When the current item beats the item on top of the stack, pop it (it finally has its answer), and keep popping while the new top also loses. Then push the current index, since it now needs to wait for its own answer.",
     "recognize": [
       "For each position, you need the nearest LATER item that beats it in some way: the next warmer day, the next taller building, the next bigger number.",
-      "A nested loop that scans forward from every position would work but is O(n²), and the problem hints at large inputs.",
+      "A nested loop that scans forward from every position would work but is O(n\u00b2), and the problem hints at large inputs.",
       "Once a bigger item shows up, it can resolve several smaller waiting items at once, not just the most recent one. That \"resolve a whole run of them\" behavior is the signal for a while loop inside the main loop.",
       "The stack stays sorted the whole time (here, strictly decreasing temperatures from bottom to top). Staying sorted like that is what \"monotonic\" means."
     ],
@@ -44,11 +44,11 @@
       "Even though there's a loop inside a loop, each index is only ever pushed once and popped once across the WHOLE run, so the total work stays O(n). That trick of looking expensive on some steps and free on others, while still averaging out to linear time, is called amortized analysis.",
       "Starting the answer list full of 0s means you only ever have to write into the slots that DO find an answer; everything else is already correct."
     ],
-    "time": "O(n), amortized linear time, where n is the number of days. The for loop runs n times. The nested while loop looks like it could make this O(n²), but every index is pushed exactly once and popped at most once across the entire run, so all the pops together cost at most n extra steps total, not per day. Spread evenly across the run, that keeps the whole thing O(n).",
+    "time": "O(n), amortized linear time, where n is the number of days. The for loop runs n times. The nested while loop looks like it could make this O(n\u00b2), but every index is pushed exactly once and popped at most once across the entire run, so all the pops together cost at most n extra steps total, not per day. Spread evenly across the run, that keeps the whole thing O(n).",
     "space": "O(n), linear memory. In the worst case the temperatures keep rising the whole time (like [70, 71, 72, ...]), so nothing ever gets popped and the stack grows to hold every index. The res list is also size n, but it's the required output, not extra working memory.",
     "edge_cases": [
       "A day that never gets a warmer day again, especially the last day: its index gets pushed but never popped, so it correctly stays at the starting 0.",
-      "A tie, like two days both at 70°. The strict greater-than means the second 70° does not resolve the first, so that day keeps waiting for something warmer than 70°, not equal to it.",
+      "A tie, like two days both at 70\u00b0. The strict greater-than means the second 70\u00b0 does not resolve the first, so that day keeps waiting for something warmer than 70\u00b0, not equal to it.",
       "All days at the same temperature: nothing is ever strictly warmer, so every answer stays 0.",
       "A single-day list: the loop runs once, nothing is ever compared against anything else, and the answer is [0]."
     ]
@@ -57,21 +57,42 @@
   "run": {
     "prelude": "from typing import List",
     "call": "Solution().dailyTemperatures([73, 74, 75, 71, 69, 72, 76, 73])",
-    "expected": [1, 1, 4, 2, 1, 1, 0, 0],
+    "expected": [
+      1,
+      1,
+      4,
+      2,
+      1,
+      1,
+      0,
+      0
+    ],
     "describe": "temperatures = [73, 74, 75, 71, 69, 72, 76, 73]"
   },
   "lines": {
     "1": {
       "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
       "syntax": [
-        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
-        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
-        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
       ],
       "why": "LeetCode's tester creates a Solution object and calls your method on it, so the website fixes this structure.",
       "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
       "alternatives": [
-        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
       ],
       "mistake": "Lowercase class solution:. Python treats different capitalization as a different name.",
       "caption": "Python reads the Solution blueprint. Nothing runs yet."
@@ -79,17 +100,38 @@
     "2": {
       "explain": "This defines the method dailyTemperatures. It takes the list temperatures and promises to give back a list of the same length: how many days to wait for a warmer temperature, or 0 if none ever comes.",
       "syntax": [
-        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
-        { "token": "def", "meaning": "Starts a function or method definition." },
-        { "token": "dailyTemperatures", "meaning": "The method name LeetCode calls." },
-        { "token": "(self, temperatures: List[int])", "meaning": "The parameters. self is the Solution object. temperatures is the input list, hinted as a List of int." },
-        { "token": "-> List[int]", "meaning": "Return type hint: a list of whole numbers comes back." },
-        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "dailyTemperatures",
+          "meaning": "The method name LeetCode calls."
+        },
+        {
+          "token": "(self, temperatures: List[int])",
+          "meaning": "The parameters. self is the Solution object. temperatures is the input list, hinted as a List of int."
+        },
+        {
+          "token": "-> List[int]",
+          "meaning": "Return type hint: a list of whole numbers comes back."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
       ],
       "why": "LeetCode chooses the name and inputs. The type hints document that a list of whole numbers goes in and a list of whole numbers comes back, one answer per day.",
       "if_removed": "Without self, the call crashes with a TypeError. Without the type hints, nothing changes when the code runs.",
       "alternatives": [
-        { "code": "def dailyTemperatures(self, temperatures):", "difference": "No type hints. It runs identically." }
+        {
+          "code": "def dailyTemperatures(self, temperatures):",
+          "difference": "No type hints. It runs identically."
+        }
       ],
       "mistake": "Forgetting self, or misspelling the method name so LeetCode's tester can't find it.",
       "caption": "Python remembers the dailyTemperatures instructions for later."
@@ -97,17 +139,38 @@
     "3": {
       "explain": "This builds the answer list res, the same length as temperatures, with every entry starting at 0. 0 means \"no warmer day found yet\", and the loop below overwrites entries as it finds real answers.",
       "syntax": [
-        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
-        { "token": "res", "meaning": "A variable name for the list of answers we'll return." },
-        { "token": "=", "meaning": "Assignment: the name on the left now refers to the value on the right." },
-        { "token": "[0]", "meaning": "A one-item list containing the number 0." },
-        { "token": "*", "meaning": "List repetition: repeats a list's items this many times, instead of multiplying numbers." },
-        { "token": "len(temperatures)", "meaning": "How many days there are, which decides how many 0s to repeat." }
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "res",
+          "meaning": "A variable name for the list of answers we'll return."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: the name on the left now refers to the value on the right."
+        },
+        {
+          "token": "[0]",
+          "meaning": "A one-item list containing the number 0."
+        },
+        {
+          "token": "*",
+          "meaning": "List repetition: repeats a list's items this many times, instead of multiplying numbers."
+        },
+        {
+          "token": "len(temperatures)",
+          "meaning": "How many days there are, which decides how many 0s to repeat."
+        }
       ],
       "why": "We need exactly one answer per day, and most days might end up at 0 if no warmer day ever comes. Starting every slot at 0 means the rest of the solution only has to touch the slots that find a real answer.",
       "if_removed": "Line 9 would crash with a NameError, since res wouldn't exist to be written into.",
       "alternatives": [
-        { "code": "res = [0 for _ in temperatures]", "difference": "A list comprehension that builds the same list, one 0 per day. [0] * n is shorter and a little faster for a constant value like this." }
+        {
+          "code": "res = [0 for _ in temperatures]",
+          "difference": "A list comprehension that builds the same list, one 0 per day. [0] * n is shorter and a little faster for a constant value like this."
+        }
       ],
       "mistake": "Starting with res = [] instead of a list of zeros. Since the loop assigns into res[prevIndex] later instead of appending, an empty list would crash with an IndexError on the very first assignment.",
       "caption": "Make a results list, one 0 for every day. 0 means no warmer day found yet."
@@ -115,15 +178,30 @@
     "4": {
       "explain": "This creates an empty list used as a stack. We only add to its end and remove from its end. It will hold the indexes of days whose warmer day hasn't shown up yet.",
       "syntax": [
-        { "token": "stack", "meaning": "A variable name. Calling it stack tells the reader how we'll use it." },
-        { "token": "=", "meaning": "Assignment." },
-        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." },
-        { "token": "# indexes still waiting for a warmer day", "meaning": "A comment. Everything from # to the end of the line is ignored by Python." }
+        {
+          "token": "stack",
+          "meaning": "A variable name. Calling it stack tells the reader how we'll use it."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[]",
+          "meaning": "Square brackets with nothing inside make a new, empty list."
+        },
+        {
+          "token": "# indexes still waiting for a warmer day",
+          "meaning": "A comment. Everything from # to the end of the line is ignored by Python."
+        }
       ],
       "why": "A stack fits because the most recently added day (the top) is always the first one that should be resolved once a warmer temperature shows up. append and pop are both instant at the end of a Python list.",
       "if_removed": "stack.append and stack.pop would crash with a NameError. Creating it inside the for loop instead would wipe it clean every day, so a day waiting from earlier could never be found.",
       "alternatives": [
-        { "code": "stack = list()", "difference": "Same empty list, made by calling list. [] is shorter." }
+        {
+          "code": "stack = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
       ],
       "mistake": "Storing temperatures on the stack instead of indexes. The answer needs \"how many days later\", which means we need each day's position, not just its temperature.",
       "caption": "Make an empty stack. It will hold the indexes of days still waiting for a warmer temperature."
@@ -131,62 +209,140 @@
     "6": {
       "explain": "This loop visits each day from first to last. On every pass, i holds the day's position and t holds that day's temperature.",
       "syntax": [
-        { "token": "        (8 spaces)", "meaning": "Indentation: part of dailyTemperatures's body." },
-        { "token": "for", "meaning": "Starts a loop that repeats the indented block once per item." },
-        { "token": "i, n", "meaning": "Not used here; i, t are two loop variables, unpacked from a pair each pass." },
-        { "token": "i, t", "meaning": "Two loop variables separated by a comma. Each pass, enumerate hands back (index, temperature), and Python unpacks the pair into i and t. This is tuple unpacking." },
-        { "token": "in", "meaning": "\"Take items one at a time from\"." },
-        { "token": "enumerate(temperatures)", "meaning": "Walks through temperatures and gives back (index, item) pairs: (0, 73), (1, 74), and so on." },
-        { "token": ":", "meaning": "Ends the loop header." }
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: part of dailyTemperatures's body."
+        },
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats the indented block once per item."
+        },
+        {
+          "token": "i, n",
+          "meaning": "Not used here; i, t are two loop variables, unpacked from a pair each pass."
+        },
+        {
+          "token": "i, t",
+          "meaning": "Two loop variables separated by a comma. Each pass, enumerate hands back (index, temperature), and Python unpacks the pair into i and t. This is tuple unpacking."
+        },
+        {
+          "token": "in",
+          "meaning": "\"Take items one at a time from\"."
+        },
+        {
+          "token": "enumerate(temperatures)",
+          "meaning": "Walks through temperatures and gives back (index, item) pairs: (0, 73), (1, 74), and so on."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
       ],
       "why": "We need both the temperature (to compare) and its position (to measure how many days passed later), and enumerate gives both at once without extra bookkeeping.",
       "if_removed": "Without the loop, nothing would ever run and res would stay all zeros. Writing for t in temperatures: would lose the index i, and lines 8-9 couldn't compute a distance.",
       "alternatives": [
-        { "code": "for i in range(len(temperatures)):\n    t = temperatures[i]", "difference": "Same i and t, more typing." }
+        {
+          "code": "for i in range(len(temperatures)):\n    t = temperatures[i]",
+          "difference": "Same i and t, more typing."
+        }
       ],
       "mistake": "Swapping the order to for t, i in enumerate(temperatures):. enumerate always gives the index first, so t would hold the position and i the temperature, and every comparison would be nonsense.",
       "caption": [
-        { "when": "__visits__[6] > len(temperatures)", "text": "Every day has been checked, so the loop ends." },
-        { "when": "__visits__[6] > 1", "text": "Day {i}: the temperature is {t}°. Moving to the next day." },
-        "Start with day 0: the temperature is {temperatures[0]}°."
+        {
+          "when": "__visits__[6] > len(temperatures)",
+          "text": "Every day has been checked, so the loop ends."
+        },
+        {
+          "when": "__visits__[6] > 1",
+          "text": "Day {i}: the temperature is {t}\u00b0. Moving to the next day."
+        },
+        "Start with day 0: the temperature is {temperatures[0]}\u00b0."
       ]
     },
     "7": {
       "explain": "This checks two things before popping: is the stack non-empty, and is today warmer than the day sitting on top of the stack? If both are true, that waiting day finally has its answer.",
       "syntax": [
-        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
-        { "token": "while", "meaning": "Repeats its block for as long as the condition stays True, unlike if which runs its block at most once." },
-        { "token": "stack", "meaning": "Used alone as a condition, a list counts as True if it has items and False if it's empty. This is truthiness." },
-        { "token": "and", "meaning": "True only if both sides are True. Python stops early (short-circuiting) if the left side is False, so the right side is never checked." },
-        { "token": "t", "meaning": "Today's temperature." },
-        { "token": ">", "meaning": "Strictly greater than." },
-        { "token": "temperatures[stack[-1]]", "meaning": "stack[-1] is the index on top of the stack; temperatures[...] looks up that day's temperature." },
-        { "token": ":", "meaning": "Ends the condition." }
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the for loop."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeats its block for as long as the condition stays True, unlike if which runs its block at most once."
+        },
+        {
+          "token": "stack",
+          "meaning": "Used alone as a condition, a list counts as True if it has items and False if it's empty. This is truthiness."
+        },
+        {
+          "token": "and",
+          "meaning": "True only if both sides are True. Python stops early (short-circuiting) if the left side is False, so the right side is never checked."
+        },
+        {
+          "token": "t",
+          "meaning": "Today's temperature."
+        },
+        {
+          "token": ">",
+          "meaning": "Strictly greater than."
+        },
+        {
+          "token": "temperatures[stack[-1]]",
+          "meaning": "stack[-1] is the index on top of the stack; temperatures[...] looks up that day's temperature."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
       ],
       "why": "Checking stack first protects temperatures[stack[-1]] from crashing on an empty stack, since and stops at the first False. One warm day can resolve several waiting days at once, which is why this is a while loop and not a plain if.",
       "if_removed": "Drop the stack check and an empty stack crashes with an IndexError the first time this line runs. Replace while with if and only ONE waiting day would be resolved per new temperature, even when several should be.",
       "alternatives": [
-        { "code": "if len(stack) > 0 and t > temperatures[stack[-1]]:", "difference": "Spells out the emptiness check. Same meaning, but as an if it would only resolve one waiting day, so you'd still need a loop around it to resolve more than one." }
+        {
+          "code": "if len(stack) > 0 and t > temperatures[stack[-1]]:",
+          "difference": "Spells out the emptiness check. Same meaning, but as an if it would only resolve one waiting day, so you'd still need a loop around it to resolve more than one."
+        }
       ],
       "mistake": "Using >= instead of >. A tie doesn't count as warmer, so a day with an equal temperature should keep waiting, not get popped.",
       "caption": [
-        { "when": "stack and t > temperatures[stack[-1]]", "text": "Day {i} ({t}°) is warmer than day {stack[-1]} ({temperatures[stack[-1]]}°), so pop it and resolve it." },
-        { "when": "stack", "text": "Day {i} ({t}°) isn't warmer than day {stack[-1]} ({temperatures[stack[-1]]}°), so stop popping." },
+        {
+          "when": "stack and t > temperatures[stack[-1]]",
+          "text": "Day {i} ({t}\u00b0) is warmer than day {stack[-1]} ({temperatures[stack[-1]]}\u00b0), so pop it and resolve it."
+        },
+        {
+          "when": "stack",
+          "text": "Day {i} ({t}\u00b0) isn't warmer than day {stack[-1]} ({temperatures[stack[-1]]}\u00b0), so stop popping."
+        },
         "The stack is empty, so there's nothing left to compare day {i} against."
       ]
     },
     "8": {
       "explain": "The day on top of the stack finally found its warmer day. This removes it from the stack and saves its index in prevIndex so the next line can use it.",
       "syntax": [
-        { "token": "                (16 spaces)", "meaning": "Indentation: inside the while loop." },
-        { "token": "prevIndex", "meaning": "A variable name holding the popped index." },
-        { "token": "=", "meaning": "Assignment." },
-        { "token": "stack.pop()", "meaning": ".pop() is a list method that removes and returns the LAST item of the list, the top." }
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "prevIndex",
+          "meaning": "A variable name holding the popped index."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "stack.pop()",
+          "meaning": ".pop() is a list method that removes and returns the LAST item of the list, the top."
+        }
       ],
       "why": "We need the popped index twice: once to know which day's answer to fill in, and once to compute how many days it waited. Saving it in a variable avoids calling pop() a second time, which would remove a different item.",
       "if_removed": "Line 9 would crash with a NameError, because prevIndex wouldn't exist.",
       "alternatives": [
-        { "code": "res[stack[-1]] = i - stack.pop()", "difference": "Tries to do the same job in one line, mixing a read of the still-present top with a pop that removes it. It's easy to get the order confused; saving the popped value first is clearer." }
+        {
+          "code": "res[stack[-1]] = i - stack.pop()",
+          "difference": "Tries to do the same job in one line, mixing a read of the still-present top with a pop that removes it. It's easy to get the order confused; saving the popped value first is clearer."
+        }
       ],
       "mistake": "Writing stack.pop instead of stack.pop(). Without the parentheses, prevIndex would refer to the pop method itself, not a popped value.",
       "caption": "Pop day {stack[-1]} off the stack: it finally found a warmer day."
@@ -194,14 +350,26 @@
     "9": {
       "explain": "This fills in the answer for the popped day: it waited i - prevIndex days for a warmer temperature to show up.",
       "syntax": [
-        { "token": "res[prevIndex]", "meaning": "The slot in res for the popped day." },
-        { "token": "=", "meaning": "Assignment." },
-        { "token": "i - prevIndex", "meaning": "Today's position minus that day's position: how many days passed between them." }
+        {
+          "token": "res[prevIndex]",
+          "meaning": "The slot in res for the popped day."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "i - prevIndex",
+          "meaning": "Today's position minus that day's position: how many days passed between them."
+        }
       ],
       "why": "prevIndex is always smaller than i, since it was pushed on an earlier day, so the subtraction is always positive. This is the only place res changes from its starting 0.",
       "if_removed": "res would stay all zeros, and every waiting day would incorrectly report that no warmer day ever comes.",
       "alternatives": [
-        { "code": "res[prevIndex] = i - prevIndex if i > prevIndex else 0", "difference": "An unnecessary safety check: i is always greater than prevIndex here, because the stack only ever holds earlier days. The plain subtraction already does the right thing." }
+        {
+          "code": "res[prevIndex] = i - prevIndex if i > prevIndex else 0",
+          "difference": "An unnecessary safety check: i is always greater than prevIndex here, because the stack only ever holds earlier days. The plain subtraction already does the right thing."
+        }
       ],
       "mistake": "Subtracting in the wrong order, prevIndex - i, which gives a negative number of days.",
       "caption": "Day {prevIndex} waited {i - prevIndex} day(s) for a warmer temperature. res[{prevIndex}] = {i - prevIndex}."
@@ -209,13 +377,22 @@
     "10": {
       "explain": "Today's index goes on top of the stack, where it waits until some later, warmer day resolves it (or the list ends and it stays at 0).",
       "syntax": [
-        { "token": "            (12 spaces)", "meaning": "Indentation: back at the for-loop level, after the while loop ends." },
-        { "token": "stack.append(i)", "meaning": "Adds i to the end of the list, the new top." }
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: back at the for-loop level, after the while loop ends."
+        },
+        {
+          "token": "stack.append(i)",
+          "meaning": "Adds i to the end of the list, the new top."
+        }
       ],
       "why": "Every day needs a chance to find its own warmer day later, so every day gets pushed, including one that just resolved several older days.",
       "if_removed": "Nothing would ever go back onto the stack after the very first day, so no later day could ever be compared against today.",
       "alternatives": [
-        { "code": "stack += [i]", "difference": "Adds a one-item list onto the end. Same result, a little more roundabout." }
+        {
+          "code": "stack += [i]",
+          "difference": "Adds a one-item list onto the end. Same result, a little more roundabout."
+        }
       ],
       "mistake": "Putting this line inside the while loop instead of after it. Then today would get pushed once per pop, duplicating it on the stack.",
       "caption": "Push day {i} onto the stack. It waits there until a warmer day shows up."
@@ -223,14 +400,26 @@
     "12": {
       "explain": "Every day has been checked. Hand back res: for each day, how many days until a warmer one, or 0 if none ever came.",
       "syntax": [
-        { "token": "        (8 spaces)", "meaning": "Back at method level: this runs once, after the loop." },
-        { "token": "return", "meaning": "Hand back the answer and end the method." },
-        { "token": "res", "meaning": "The finished results list." }
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: this runs once, after the loop."
+        },
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "res",
+          "meaning": "The finished results list."
+        }
       ],
       "why": "The loop only fills in days that found a warmer day. Any day that never does keeps its starting 0, which is exactly the answer the problem asks for.",
       "if_removed": "The method would return None instead of the list of answers.",
       "alternatives": [
-        { "code": "return res[:]", "difference": "Returns a copy of res instead of res itself. Harmless here since nothing else uses res afterward, just extra, unnecessary work." }
+        {
+          "code": "return res[:]",
+          "difference": "Returns a copy of res instead of res itself. Harmless here since nothing else uses res afterward, just extra, unnecessary work."
+        }
       ],
       "mistake": "Indenting this line so it sits inside the for loop, which would return an incomplete list after checking only the first day.",
       "caption": "Every day has been checked. Return res: {res}."
@@ -239,9 +428,9 @@
   "brute_force": {
     "code": "class Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        res = [0] * len(temperatures)\n        for i in range(len(temperatures)):\n            for j in range(i + 1, len(temperatures)):\n                if temperatures[j] > temperatures[i]:\n                    res[i] = j - i\n                    break\n        return res",
     "explain": "For each day i, walk forward day by day until a warmer one turns up, then record the distance and stop. break leaves the inner loop immediately once an answer is found.",
-    "why_slow": "In the worst case (temperatures that never rise again, like [73, 72, 71, ...]), the inner loop never finds a warmer day and walks all the way to the end for every single day. That's about n × n comparisons in total: O(n²), quadratic time.",
+    "why_slow": "In the worst case (temperatures that never rise again, like [73, 72, 71, ...]), the inner loop never finds a warmer day and walks all the way to the end for every single day. That's about n \u00d7 n comparisons in total: O(n\u00b2), quadratic time.",
     "how_pattern_fixes": "The slow part is re-scanning forward from every day. A monotonic stack remembers which earlier days are still waiting, so when a warmer day finally shows up, it resolves every waiting day it beats in one go, instead of each day searching forward on its own. Each day is pushed once and popped at most once, so the total work drops to O(n).",
-    "time": "O(n²): quadratic. Every day can scan up to n days ahead of it.",
+    "time": "O(n\u00b2): quadratic. Every day can scan up to n days ahead of it.",
     "space": "O(n): linear. The res list is the only sizeable storage, same as the pattern solution."
   },
   "glossary": {
@@ -250,7 +439,7 @@
     "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
     "argument": "The actual value you pass into a function when you call it. In stack.append(i), i is the argument.",
     "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
-    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n²) quadruples when the input doubles. O(1) doesn't grow.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n\u00b2) quadruples when the input doubles. O(1) doesn't grow.",
     "block": "The group of indented lines under a line that ends with a colon (:).",
     "boolean": "A value that is either True or False. Conditions in while and if statements produce booleans.",
     "break (keyword)": "A keyword that immediately leaves the loop it's in.",
@@ -272,6 +461,7 @@
     "keyword": "A word reserved by Python, like for, while, if, return, def.",
     "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
     "list": "An ordered collection written with square brackets, like [1, 2, 3]. Python lists make perfect stacks.",
+    "list comprehension": "A compact way to build a list in one line: [expr for item in collection] runs expr once per item and collects the results.",
     "loop": "Code that repeats. A for loop repeats once per item, a while loop repeats as long as a condition holds.",
     "method": "A function that belongs to an object, called with a dot: stack.append(i), stack.pop().",
     "monotonic stack": "A stack kept in strictly increasing or decreasing order by popping anything that would break that order before pushing. It's used to find, for each item, the nearest other item that beats it in some way.",
@@ -309,7 +499,9 @@
       "type": "bars",
       "title": "temperatures",
       "source": "temperatures",
-      "pointers": { "i": "i" },
+      "pointers": {
+        "i": "i"
+      },
       "marks": {
         "compared": "[i, stack[-1]] if __line__ == 7 and stack else []",
         "found": "([stack[-1]] if stack else []) if __line__ == 8 else ([prevIndex] if __line__ == 9 else [])",
