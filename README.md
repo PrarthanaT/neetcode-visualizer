@@ -50,6 +50,7 @@ This checks that every section is filled in, that every line of code has a match
 ## Solved problems
 
 ### Arrays & Hashing
+- Contains Duplicate
 - Two Sum
 - Valid Anagram
 

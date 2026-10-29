@@ -1,0 +1,298 @@
+{
+  "slug": "contains-duplicate",
+  "title": "Contains Duplicate",
+  "difficulty": "Easy",
+  "category": "Arrays & Hashing",
+  "leetcode": 217,
+  "statement": [
+    "You are given a list of whole numbers called nums.",
+    "Return True if any number appears more than once in the list.",
+    "Return False if every number in the list is different from every other number."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 2, 3, 1]",
+      "output": "True",
+      "explain": "The number 1 shows up at index 0 and again at index 3, so there's a duplicate. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [1, 2, 3, 4]",
+      "output": "False",
+      "explain": "Every number appears exactly once, so there's no duplicate."
+    }
+  ],
+  "pattern": {
+    "name": "Hash set membership (seen-before check)",
+    "summary": "Walk through the list once, remembering every number you've already visited in a set. Before adding the current number, ask the set whether it's already there, which it answers instantly. If it is, you've found a duplicate; if the loop finishes without that ever happening, every number was unique.",
+    "recognize": [
+      "The question asks whether something has already happened: a repeated number, a repeated character, a value you've visited on an earlier pass.",
+      "You only need a yes-or-no answer about membership, not a count or a position. That's a hint to reach for a set instead of a dictionary.",
+      "The obvious approach compares every pair of items, and the problem hints the list can be large.",
+      "The items can go into a set: numbers, characters, short strings, or anything else that can be a dictionary key."
+    ],
+    "avoid_when": [
+      "You need the position or the count of each repeat, not just whether one exists. A dictionary (value -> index, or value -> count) remembers more than a set can.",
+      "The list is already sorted. Then comparing each number to its neighbor (nums[i] == nums[i - 1]) finds duplicates with no extra memory at all.",
+      "The items can't be put in a set, like a list used as an item. Lists can change after they're stored, so Python won't allow them as set members.",
+      "The input is tiny and memory matters more than speed. A nested loop uses no extra memory and is simple to read."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "\"Have I seen this before?\" is answered instantly by a set, no matter how many items it already holds.",
+      "Check membership before adding. That order doesn't change the answer here, but it's the same habit that matters in problems where a number must not match itself.",
+      "A set only remembers what has been seen, not where or how many times. If you need more than a yes-or-no, use a dictionary instead.",
+      "The function can return the moment a duplicate is found. There's no reason to keep scanning once the answer is known."
+    ],
+    "time": "O(n), linear time. n is how many numbers are in the list. Each number does a fixed amount of work: one membership check and, at most, one insert into the set. If the list doubles in length, the work roughly doubles.",
+    "space": "O(n), linear extra memory. In the worst case every number is unique except the very last one, so the set grows to hold almost the whole list before an answer is found.",
+    "edge_cases": [
+      "An empty list. The loop never runs, so the function reaches the final line and returns False.",
+      "A list with exactly one number. There's nothing to compare it to, so it also returns False.",
+      "The duplicate is near the start, like [5, 5, 1, 2]. The second 5 is caught on the second pass, before the rest of the list is even looked at.",
+      "The duplicate is at the very end, like [1, 2, 3, 3]. The set has to grow to hold almost every number before the match is found on the final pass.",
+      "Negative numbers and zero hash and compare exactly like positive numbers, so they work with no special handling."
+    ]
+  },
+  "code": "class Solution:\n    def containsDuplicate(self, nums: List[int]) -> bool:\n        seen = set()\n\n        for i, n in enumerate(nums):\n            if n in seen:\n                return True\n            seen.add(n)\n\n        return False\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().containsDuplicate([1, 2, 3, 1])",
+    "expected": true,
+    "describe": "nums = [1, 2, 3, 1]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def containsDuplicate would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named containsDuplicate. It takes the list of numbers (nums) and promises to give back a boolean: True or False. Defining it doesn't run it; Python only remembers the instructions until someone calls the method.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "containsDuplicate", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "nums: List[int]", "meaning": "The input, named nums, hinted to be a List of int (whole numbers)." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> bool", "meaning": "The return type hint: the method promises to give back a bool, Python's name for a True-or-False value." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and input are fixed by LeetCode. The type hints are optional notes for readers: nums is a list of whole numbers, and the answer is a yes-or-no value.",
+      "if_removed": "Remove self and Python passes the Solution object into nums, and the call crashes with a TypeError about the wrong number of arguments. Remove the final colon and you get a SyntaxError.",
+      "alternatives": [
+        { "code": "def containsDuplicate(self, nums):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning the string \"True\" instead of the boolean True. A string in quotes is text, not a yes-or-no value, and LeetCode marks it wrong.",
+      "caption": "Python remembers the containsDuplicate instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty set and names it seen. A set stores unique values and can answer \"is this value in here?\" almost instantly, which is exactly what we need to spot a repeat.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside containsDuplicate, which is inside Solution." },
+        { "token": "seen", "meaning": "A variable name we chose. It will hold every number we've visited so far." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "set()", "meaning": "Calls the built-in set function with no arguments, which builds a new, empty set." }
+      ],
+      "why": "We need a memory of what's been visited, and a fast way to ask \"have I seen this exact number?\". A set does that in constant time, however many numbers it holds. It starts empty because before the loop we haven't visited anything.",
+      "if_removed": "Line 6 would crash with a NameError: name 'seen' is not defined. If you create the set inside the loop instead, it gets wiped clean on every pass and never remembers anything, so a duplicate can never be found.",
+      "alternatives": [
+        { "code": "seen = {}", "difference": "An empty dictionary instead of a set. You could use it the same way (checking n in seen), but a dictionary also stores a value per key, which this problem never needs, so a set is the better fit." },
+        { "code": "seen = []", "difference": "A list instead of a set. Checking n in seen then has to walk through the whole list (slow, O(n) per check), which would make the whole solution O(n²) again." }
+      ],
+      "mistake": "Writing seen = set() inside the for loop. It looks harmless, but it resets the memory on every pass, so the function always returns False.",
+      "caption": "Make an empty set called seen. It will remember every number we've visited."
+    },
+    "5": {
+      "explain": "This starts a for loop that visits each number in nums, from first to last. On every pass, i holds the current position (0, 1, 2, ...) and n holds the number at that position.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the same level as seen = set(): this line is part of containsDuplicate's body." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i, n", "meaning": "Two loop variables. Each pass, enumerate hands back a pair (index, number), and Python unpacks it: i gets the index, n gets the number." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "enumerate(", "meaning": "A built-in function that walks through a collection and gives back (index, item) pairs: (0, 1), (1, 2), (2, 3), and so on." },
+        { "token": "nums", "meaning": "The list we are walking through." },
+        { "token": ")", "meaning": "Closes the enumerate call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The algorithm itself only cares about the value n, not its position, but keeping the position lets a reader (and this visualizer) track exactly how far through the list we've gotten on each step.",
+      "if_removed": "Writing for n in nums: instead loses i. The algorithm would still work exactly the same, since i is never used in a comparison, you'd simply have no position to point at.",
+      "alternatives": [
+        { "code": "for n in nums:", "difference": "The simpler, more common way to write this exact solution, since the position is never used in the logic. Either form gives the same answer." },
+        { "code": "for i in range(len(nums)):\n    n = nums[i]", "difference": "Gets the same i and n by counting positions and fetching each number with nums[i]. More typing, same result." }
+      ],
+      "mistake": "Swapping the order: for n, i in enumerate(nums):. enumerate always gives the index first, so n would hold the position and i the number, and every later use of n would be wrong.",
+      "caption": [
+        "Done with i = {i}. The loop moves to the next number in nums.",
+        "The for loop starts at the first number in nums."
+      ]
+    },
+    "6": {
+      "explain": "This asks the set: is n already one of your members? If yes, Python runs the indented line below. If no, Python skips it and moves on to adding n to the set.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for loop, inside containsDuplicate." },
+        { "token": "if", "meaning": "A keyword that starts a condition check. The indented block below runs only when the condition is True." },
+        { "token": "n", "meaning": "The current number from the loop." },
+        { "token": "in", "meaning": "The membership operator. For a set, x in s is True exactly when x has already been added to s. A set checks this in constant time." },
+        { "token": "seen", "meaning": "The set of numbers visited so far." },
+        { "token": ":", "meaning": "Ends the condition. The indented line below runs only when it's True." }
+      ],
+      "why": "This one check replaces the inner loop of the brute force. A set uses hashing to jump straight to where n would be stored, so the check takes the same tiny time whether seen has 3 members or 3 million.",
+      "if_removed": "Without the check, line 8 would just keep running every pass, the function would reach the end of the loop every time, and it would always return False, even when a duplicate exists.",
+      "alternatives": [
+        { "code": "if n in seen:\n    return True\nelse:\n    seen.add(n)", "difference": "The same logic written with an explicit else. It behaves identically; the version in the code just relies on the return to skip straight past the add." }
+      ],
+      "mistake": "Checking against nums instead of seen, as in if n in nums[:i]:. That works but is slow, since slicing and searching a list both take time proportional to i, bringing back the O(n²) behavior a set was meant to avoid.",
+      "caption": [
+        { "when": "n in seen", "text": "Is {n} in seen? Yes! We've visited {n} before, so this is a duplicate." },
+        "Is {n} in seen? No, we haven't visited {n} yet."
+      ]
+    },
+    "7": {
+      "explain": "We found a repeat. This hands True back to whoever called the method and ends it immediately, so the loop stops here.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Three levels of indentation: this line belongs to the if block, so it only runs when the condition was True." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and gives the value after it back to the caller." },
+        { "token": "True", "meaning": "One of Python's two boolean values. The capital T matters: true (lowercase) is just an undefined name." }
+      ],
+      "why": "The question only asks whether any duplicate exists, so the moment one is found, there's no reason to keep scanning the rest of the list.",
+      "if_removed": "If this line were removed (or replaced with pass), Python would fall through to seen.add(n) and keep looping, never reporting the duplicate it just found.",
+      "alternatives": [
+        { "code": "return 1", "difference": "1 is truthy and would often be accepted informally, but it's an int, not a bool, so it doesn't match the promised -> bool return type." }
+      ],
+      "mistake": "Writing return \"True\" with quotes. That returns a string of text, not the boolean True.",
+      "caption": "Found it: {n} was already in seen. Return True."
+    },
+    "8": {
+      "explain": "The number wasn't a repeat, so we add it to seen before moving to the next number. A later number that matches n will then find it on line 6.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back to two levels: this line is in the loop, but NOT inside the if, so it runs whenever the if didn't return." },
+        { "token": "seen", "meaning": "The set we're updating." },
+        { "token": ".add(", "meaning": "A set method that inserts a value. If the value is already present, the set is left unchanged, since sets never store duplicates." },
+        { "token": "n", "meaning": "The current number, the value being inserted." },
+        { "token": ")", "meaning": "Closes the .add call." }
+      ],
+      "why": "The order of lines 6 and 8 matters: we check first, then add. If every unique number gets remembered right after it's checked, the set always holds exactly the numbers seen so far, never the current one.",
+      "if_removed": "seen would stay empty forever, line 6 would never find anything, and the function would always return False, even for [1, 1].",
+      "alternatives": [
+        { "code": "seen |= {n}", "difference": "The set union-update operator. It has the same effect as .add(n), just spelled differently; most Python code prefers .add for a single value." }
+      ],
+      "mistake": "Indenting this line one level further, which would put it inside the if block, right after return. Code after a return never runs, so nothing would ever be added.",
+      "caption": "{n} wasn't in seen, so add it. seen now remembers {n}."
+    },
+    "10": {
+      "explain": "The loop finished without ever returning True, which means no number repeated. This hands back False.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, only after the loop finishes normally." },
+        { "token": "return", "meaning": "Ends the method and hands the following value back to the caller." },
+        { "token": "False", "meaning": "Python's other boolean value, meaning \"no\"." }
+      ],
+      "why": "If every number made it through the loop without matching anything already in seen, then by definition every number in nums is unique.",
+      "if_removed": "If the function never returns here, Python reaches the true end of the method and gives back None instead of False, which LeetCode marks wrong.",
+      "alternatives": [
+        { "code": "return len(seen) == len(nums)", "difference": "A different way to reach the same answer: if nothing was ever skipped, seen ends up the same size as nums. It works, but it needs the loop to always run to completion, so it can't return early the way the original does." }
+      ],
+      "mistake": "Indenting this line so it's inside the for loop. Then it would run on the very first pass and always return False after just one number, before the rest of the list is checked.",
+      "caption": "The loop finished and no duplicate was ever found. Return False."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def containsDuplicate(self, nums: List[int]) -> bool:\n        for i in range(len(nums)):\n            for j in range(i + 1, len(nums)):\n                if nums[i] == nums[j]:\n                    return True\n        return False",
+    "explain": "The most direct idea: compare every pair of numbers. The outer loop picks a number at position i. The inner loop checks every number after it, at position j. If any two match, return True. j starts at i + 1, so no number is ever compared to itself.",
+    "why_slow": "For a list of n numbers, the first number is compared to n - 1 others, the next to n - 2, and so on, adding up to about n × n ÷ 2 comparisons. For 10,000 numbers that's about 50 million checks. That's O(n²), quadratic time: doubling the list roughly quadruples the work.",
+    "how_pattern_fixes": "The slow part is the inner loop, which hunts through the rest of the list for a match. A set removes the hunting entirely: instead of searching, we ask the set \"have you seen this number?\", and it answers instantly. The inner loop disappears, and the work drops from about n × n to about n. The price is memory: the set may end up holding nearly every number.",
+    "time": "O(n²): quadratic. Doubling the list roughly quadruples the work.",
+    "space": "O(1): constant. Only a couple of loop variables, however big the list is."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it. In containsDuplicate([1, 2, 3, 1]), the list [1, 2, 3, 1] is the argument.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n²) means doubling the input quadruples the work. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "bool": "Python's name for the boolean type: a value that is either True or False.",
+    "boolean": "A value that is either True or False. Conditions in if statements produce booleans.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like enumerate(nums).",
+    "character": "A single letter, digit, space or symbol in a string. \"cat\" has three characters.",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is either True or False, used to decide whether code runs, as in if n in seen.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Set and dictionary lookups are constant time.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key → value pairs and finds any key instantly.",
+    "edge case": "An unusual input that might break code: an empty list, a single item, duplicates at the start or end, and so on.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like n in seen or len(nums).",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "hash map": "A structure that stores key → value pairs and finds a key almost instantly by turning the key into a storage location (hashing). Python's dictionary is a hash map.",
+    "hashing": "Turning a value into a number that says where to store it. That lets a set or a dictionary jump straight to the right spot instead of searching.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "index": "A position in a list, counting from 0. In [1, 2, 3], the 3 is at index 2.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "key": "The part of a dictionary entry you look things up by. In {7: 2}, the key is 7.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there with d[key].",
+    "keyword": "A word Python reserves for itself, like def, for, if, return, class, in. You can't use these as variable names.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection.",
+    "method": "A function that lives inside a class, or a function built into an object like a set or a list. It's called with a dot, like seen.add(n).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a set or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, == compares, in checks membership.",
+    "parameter": "A name in a function's definition that will hold an input. nums is containsDuplicate's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like hash set membership or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a list, used to point at one item.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2: it starts at 0 and stops before 3.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant membership checks, like a dictionary with keys but no values. It is written set() when empty.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "tuple unpacking": "Splitting a pair (or a longer tuple) into separate variables in one step, as in i, n = (0, 1).",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (6, 8) else []",
+        "found": "[i] if __line__ == 7 else []",
+        "done": "list(range(i))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "seen  (set of numbers already visited)",
+      "source": "[[x, True] for x in sorted(seen)]",
+      "lookup": "n if __line__ in (6, 7) else None"
+    }
+  ]
+}
