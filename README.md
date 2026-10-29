@@ -2,9 +2,6 @@
 
 A step-through visualizer for classic NeetCode/LeetCode problems. Pick a problem, read a plain-English explanation of the pattern, then watch the actual Python solution run line by line with the data structures animated on screen. It's built for people who are still learning Python and algorithms, not just people brushing up before an interview.
 
-![screenshot placeholder](docs/screenshot.png)
-
-Live demo: _add link here_
 
 ## Features
 
