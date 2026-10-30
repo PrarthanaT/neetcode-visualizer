@@ -1,0 +1,365 @@
+{
+  "slug": "product-of-array-except-self",
+  "title": "Product of Array Except Self",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 238,
+  "statement": [
+    "You are given a list of integers called nums.",
+    "Return a new list, answer, where answer[i] is the product of every number in nums except the one at index i.",
+    "You must solve it without using the division operator, and your solution should run in O(n) time."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 2, 4, 6]",
+      "output": "[48, 24, 12, 8]",
+      "explain": "answer[0] is 2 \u00d7 4 \u00d7 6 = 48 (every number except nums[0]). answer[1] is 1 \u00d7 4 \u00d7 6 = 24. answer[2] is 1 \u00d7 2 \u00d7 6 = 12. answer[3] is 1 \u00d7 2 \u00d7 4 = 8. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [-1, 0, 3, -3]",
+      "output": "[0, 9, 0, 0]",
+      "explain": "There's a single 0 in the list, at index 1. Every product that leaves that 0 in (indexes 0, 2, and 3) comes out to 0. Only answer[1], which excludes the 0, survives as a nonzero number: -1 \u00d7 3 \u00d7 -3 = 9."
+    }
+  ],
+  "pattern": {
+    "name": "Prefix and suffix running products",
+    "summary": "answer[i] is the product of everything to the left of i, times the product of everything to the right of i. Walk the list once left to right, storing in answer[i] the running product of everything before i. Then walk it once right to left, multiplying answer[i] by the running product of everything after i. Two linear passes, no division, and the only extra memory is two running totals.",
+    "recognize": [
+      "The answer at each position depends on combining everything before it with everything after it, like a product, sum, or min/max \"except self\".",
+      "The problem explicitly forbids the simplest shortcut (here, dividing the total product by nums[i]), which usually means it wants you to notice that shortcut's flaw: it breaks when a 0 is in the list, and it doesn't fit the spirit of the exercise.",
+      "You could compute the answer with a nested loop, recomputing a product from scratch at every position, but the problem hints the list can be large enough that O(n\u00b2) is too slow.",
+      "\"Everything before i\" and \"everything after i\" can each be built incrementally while scanning in one direction, so two linear passes replace the nested loop."
+    ],
+    "avoid_when": [
+      "Division is allowed and the list is guaranteed to have no zeros. Then total = product of the whole list, and answer[i] = total / nums[i] is a simpler one-pass solution (though it still needs a special case if any zero can appear).",
+      "You need the actual running products as separate named values for later use, not just the final combined array; then two explicit prefix and suffix arrays may be clearer than reusing one output array as working space.",
+      "The combining operation isn't associative the same way multiplication is (order matters and can't be split into independent left/right halves); then the prefix/suffix trick doesn't carry over directly."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "\"Except self\" problems often split cleanly into \"everything before me\" and \"everything after me\", each of which can be tracked with a single running value while scanning in one direction.",
+      "Reusing res as the prefix-pass output, then updating it in place during the suffix pass, avoids allocating two separate arrays: the final answer is built directly, one multiplication at a time.",
+      "A running product (or sum) only needs one variable, updated after it's used. prefix is read into res[i] before it absorbs nums[i], so it always reflects everything strictly before the current index.",
+      "Division looks tempting for an \"except self\" product, but it fails the moment any number in the list is 0, since you can't divide by it. The prefix/suffix approach never divides, so it has no such blind spot."
+    ],
+    "time": "O(n), linear time. n is the length of nums. The prefix pass visits every index once, and the suffix pass visits every index once more, so the total work is proportional to 2n, which is still O(n).",
+    "space": "O(1) extra space, not counting res itself. The problem requires returning a list of n numbers, so res is unavoidable, but beyond it the algorithm only ever needs the two running totals, prefix and suffix.",
+    "edge_cases": [
+      "A list with exactly one number, like [5]. The product of \"every number except itself\" is the product of an empty list, which is 1 by convention, and both passes agree: res ends as [1], regardless of what that one number was.",
+      "Exactly one 0 in the list. Every position except the 0's own index multiplies 0 into its product and comes out as 0; only the 0's own index (which excludes it) can be nonzero.",
+      "Two or more zeros in the list. Now every position's product includes at least one 0 (since excluding one index still leaves the other zero in), so every answer is 0.",
+      "Negative numbers. Multiplication handles signs on its own: res ends up negative wherever an odd number of the excluded factors were negative, with no special-casing needed.",
+      "All ones, like [1, 1, 1]. Every running product stays 1 throughout both passes, and the answer is [1, 1, 1]."
+    ]
+  },
+  "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        res = [1] * len(nums)\n\n        prefix = 1\n        for i in range(len(nums)):\n            res[i] = prefix\n            prefix *= nums[i]\n\n        suffix = 1\n        for i in range(len(nums) - 1, -1, -1):\n            res[i] *= suffix\n            suffix *= nums[i]\n\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().productExceptSelf([1, 2, 4, 6])",
+    "expected": [48, 24, 12, 8],
+    "describe": "nums = [1, 2, 4, 6]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def productExceptSelf would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named productExceptSelf. It takes the list of numbers (nums) and promises to give back a new list of integers: the answer array.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "productExceptSelf", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "nums: List[int]", "meaning": "The input, named nums, hinted to be a List of int (whole numbers)." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> List[int]", "meaning": "The return type hint: the method promises to give back a List of int, the same shape as the input." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and input are fixed by LeetCode. The return type hint tells a reader that the answer is a plain list of whole numbers, the same length and shape as nums.",
+      "if_removed": "Remove self and Python passes the Solution object into nums, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't change how the code runs if removed.",
+      "alternatives": [
+        { "code": "def productExceptSelf(self, nums):", "difference": "No type hints. It runs identically; you just lose the documentation that nums and the return value are both lists of integers." }
+      ],
+      "mistake": "Forgetting the brackets and writing -> int. That claims the method returns a single number, not a list of them.",
+      "caption": "Python remembers the productExceptSelf instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates res, a new list the same length as nums, with every slot starting at 1. res will be filled in twice: once with the prefix pass, once with the suffix pass, and then returned as the final answer.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside productExceptSelf, which is inside Solution." },
+        { "token": "res", "meaning": "A variable name we chose, short for \"result\"." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "[1]", "meaning": "A one-item list containing the number 1." },
+        { "token": "* len(nums)", "meaning": "List repetition: a list times a whole number repeats that list's contents that many times. [1] * 4 makes [1, 1, 1, 1]." }
+      ],
+      "why": "Starting every slot at 1 (not 0) matters because every slot will be built up by multiplication. 1 is the \"do nothing\" value for multiplying, the same role 0 plays for adding.",
+      "if_removed": "Line 10 (res[i] = prefix) would crash with a NameError, since res wouldn't exist yet to index into.",
+      "alternatives": [
+        { "code": "res = [0] * len(nums)", "difference": "Starting at 0 instead of 1 would be wrong: anything multiplied by 0 stays 0, so every slot of res would end up 0 no matter what prefix or suffix hold." }
+      ],
+      "mistake": "Writing res = [1] * len(nums) inside one of the loops below. That would reset the whole array back to all-1s on every single pass, erasing any work already done.",
+      "caption": "Create res: {len(nums)} ones, {[1] * len(nums)}, one slot per number in nums. Each slot will be built up by multiplication."
+    },
+    "5": {
+      "explain": "This creates prefix, starting at 1. During the loop just below, prefix will track the running product of every number strictly to the left of the current index i.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as res = [1] * len(nums)." },
+        { "token": "prefix", "meaning": "A variable name we chose for the running product of everything seen so far, moving left to right." },
+        { "token": "=", "meaning": "Assignment: prefix now refers to the value 1." },
+        { "token": "1", "meaning": "The starting value. Before any numbers have been seen, the product of \"nothing yet\" is 1." }
+      ],
+      "why": "Before the loop starts, there's nothing to the left of index 0, so the running product of \"everything to the left\" has to start at 1, multiplication's identity value.",
+      "if_removed": "Line 7 (prefix *= nums[i]) would crash with a NameError, since prefix wouldn't exist yet.",
+      "alternatives": [
+        { "code": "prefix = 0", "difference": "Wrong starting value: multiplying anything by 0 keeps it 0 forever, so every res[i] written on line 6 would become 0." }
+      ],
+      "mistake": "Creating prefix = 1 inside the for loop below instead of before it. That would reset the running product back to 1 on every single iteration, so it would never accumulate anything from earlier numbers.",
+      "caption": "Start prefix at 1: the running product of everything to the left of i. Nothing is to the left yet."
+    },
+    "6": {
+      "explain": "This starts a for loop that visits every index from 0 up to (but not including) len(nums), moving left to right across nums.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as prefix = 1." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i", "meaning": "The loop variable. Each pass, i holds the current index: 0, then 1, then 2, and so on." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "range(", "meaning": "A built-in function that produces whole numbers in order." },
+        { "token": "len(nums)", "meaning": "The length of nums: how many numbers it holds. range(len(nums)) counts 0, 1, 2, ..., up to one less than that length." },
+        { "token": ")", "meaning": "Closes the range(...) call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The prefix pass needs to visit every index exactly once, from the first to the last, so that prefix has accumulated the product of everything to the left by the time it reaches each new index.",
+      "if_removed": "Without this loop, res would stay as all 1s from line 3, and prefix would never pick up any of the numbers in nums.",
+      "alternatives": [
+        { "code": "for i, num in enumerate(nums):", "difference": "Also gives the index i, plus the number itself as num. This code only ever needs nums[i], so the plain range(len(nums)) form is equally valid, just a little more explicit about using i as a position." }
+      ],
+      "mistake": "Writing range(1, len(nums)) and starting at 1 instead of 0. That skips writing res[0] during the prefix pass, leaving it at its initial value of 1 instead of (correctly) 1 anyway here by coincidence, but it would be wrong for problems where index 0's prefix isn't simply 1.",
+      "caption": [
+        "Done with i = {i}. The prefix pass moves to the next index.",
+        "The prefix pass starts at i = 0, the first index in nums."
+      ]
+    },
+    "7": {
+      "explain": "This stores the current value of prefix into res[i]. Since prefix holds the running product of everything strictly before index i, res[i] becomes exactly that: the product of everything to the left of i.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for loop, inside productExceptSelf." },
+        { "token": "res[i]", "meaning": "The slot in res at position i." },
+        { "token": "=", "meaning": "Assignment: overwrite that slot with the value on the right." },
+        { "token": "prefix", "meaning": "The running product of everything before index i, built up by earlier passes through this loop." }
+      ],
+      "why": "This has to happen before prefix absorbs nums[i] on the next line. If the order were reversed, res[i] would end up including nums[i] itself, which the problem explicitly says to exclude.",
+      "if_removed": "res[i] would stay at its starting value of 1 for every index, and the prefix pass would have no visible effect at all.",
+      "alternatives": [
+        { "code": "res[i] *= prefix", "difference": "Since res[i] already starts at 1 (from line 3), multiplying by prefix gives the same result as overwriting with =. Using = is just more direct about what's happening on this first pass." }
+      ],
+      "mistake": "Swapping the order of lines 6 and 7, writing prefix *= nums[i] first and then res[i] = prefix. That would fold nums[i] into res[i], making every answer include the very number it's supposed to exclude.",
+      "caption": "res[{i}] = prefix = {prefix}: everything to the left of index {i}."
+    },
+    "8": {
+      "explain": "This multiplies nums[i] into prefix, so that on the next pass through the loop, prefix includes the number at the current index too, ready to be \"to the left\" of the next one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Same indentation as res[i] = prefix: still inside the for loop." },
+        { "token": "prefix", "meaning": "The running product variable being updated." },
+        { "token": "*=", "meaning": "Augmented assignment for multiplication: prefix *= nums[i] means the same thing as prefix = prefix * nums[i], but without writing prefix twice." },
+        { "token": "nums[i]", "meaning": "The number at the current index, read out of the input list." }
+      ],
+      "why": "Doing this after res[i] = prefix is what keeps res[i] excluding nums[i] itself, while still letting prefix grow to include it in time for the next index's turn.",
+      "if_removed": "prefix would stay at 1 forever, and every res[i] (except possibly index 0) would be wrong, since no number would ever actually get folded into the running product.",
+      "alternatives": [
+        { "code": "prefix = prefix * nums[i]", "difference": "Spelled out in full instead of using *=. It does exactly the same thing; *= is just shorter." }
+      ],
+      "mistake": "Writing prefix *= res[i] instead of prefix *= nums[i]. res[i] was just set to the old prefix one line above, so this would make prefix grow by multiplying itself, which has nothing to do with the actual numbers in nums.",
+      "caption": "Fold nums[{i}] = {nums[i]} into prefix: prefix becomes {prefix * nums[i]}, ready for the next index."
+    },
+    "10": {
+      "explain": "This creates suffix, starting at 1, the same way prefix did. During the loop just below, suffix will track the running product of every number strictly to the right of the current index i.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as the earlier prefix = 1." },
+        { "token": "suffix", "meaning": "A variable name we chose for the running product of everything seen so far, this time moving right to left." },
+        { "token": "=", "meaning": "Assignment: suffix now refers to the value 1." },
+        { "token": "1", "meaning": "The starting value: before the suffix pass has seen anything, the product of \"nothing yet\" is 1." }
+      ],
+      "why": "The prefix pass is finished by this point, and res[i] already holds \"everything to the left of i\" for every index. The suffix pass needs its own fresh running product, independent of prefix, to multiply in \"everything to the right\".",
+      "if_removed": "Line 12 (suffix *= nums[i]) would crash with a NameError, since suffix wouldn't exist yet.",
+      "alternatives": [
+        { "code": "suffix = 1", "difference": "No real alternative here: it has to start at 1, the identity value for multiplication, the same as prefix did." }
+      ],
+      "mistake": "Reusing prefix instead of creating a new suffix variable. prefix already holds the product of the entire list by this point (since the first loop ran it all the way through), so reusing it here would multiply every res[i] by far more than just the numbers to its right.",
+      "caption": "Start suffix at 1: the running product of everything to the right of i. res currently holds just the prefix products: {res}."
+    },
+    "11": {
+      "explain": "This starts a second for loop that visits every index from the last one down to 0, moving right to left across nums.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as suffix = 1." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i", "meaning": "The loop variable, reused from the first loop. It now counts down instead of up." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "range(", "meaning": "A built-in function that produces whole numbers in order, following the start, stop, and step it's given." },
+        { "token": "len(nums) - 1, -1, -1", "meaning": "Three arguments to range: start at len(nums) - 1 (the last valid index), stop before -1 (meaning stop after reaching 0), and step by -1 (count downward one at a time)." },
+        { "token": ")", "meaning": "Closes the range(...) call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "The suffix pass needs to visit every index exactly once, from the last to the first, so that suffix has accumulated the product of everything to the right by the time it reaches each new index.",
+      "if_removed": "Without this loop, res would be left holding only the prefix products from the first loop, missing every contribution from numbers to the right of each index.",
+      "alternatives": [
+        { "code": "for i in reversed(range(len(nums))):", "difference": "reversed() walks a forward range backward. It visits the exact same indexes in the exact same order as range(len(nums) - 1, -1, -1); it's just a different way to spell \"count down\"." }
+      ],
+      "mistake": "Writing range(len(nums) - 1, -1) without the third argument. range's default step is +1, so this would try to count up from an already-high number toward a lower stop and produce no values at all, meaning the suffix pass would never run.",
+      "caption": [
+        "Done with i = {i}. The suffix pass moves to the next index.",
+        "The suffix pass starts at i = {len(nums) - 1}, the last index in nums."
+      ]
+    },
+    "12": {
+      "explain": "This multiplies suffix into res[i]. res[i] already held \"everything to the left of i\" from the prefix pass, so after this line it holds the product of everything to the left AND everything to the right: the final answer for position i.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the second for loop, inside productExceptSelf." },
+        { "token": "res[i]", "meaning": "The slot in res at position i, already set during the prefix pass." },
+        { "token": "*=", "meaning": "Augmented assignment for multiplication: res[i] *= suffix means res[i] = res[i] * suffix." },
+        { "token": "suffix", "meaning": "The running product of everything strictly to the right of index i, built up by earlier iterations of this second loop." }
+      ],
+      "why": "This has to happen before suffix absorbs nums[i] on the next line, for the same reason the prefix pass checked res[i] before updating prefix: otherwise nums[i] itself would sneak into its own excluded product.",
+      "if_removed": "res[i] would be left holding only the prefix pass's value (everything to the left of i), completely missing every number to the right, so the final answer would be wrong for every index except the last.",
+      "alternatives": [
+        { "code": "res[i] = res[i] * suffix", "difference": "Spelled out in full instead of using *=. It does exactly the same thing." }
+      ],
+      "mistake": "Writing res[i] = suffix instead of res[i] *= suffix. That would throw away the prefix pass's work entirely and leave res[i] holding only the product of everything to the right, not combined with the left side.",
+      "caption": "res[{i}] *= suffix = {suffix}: now it's the product of everything to the left AND right of index {i}, which comes to {res[i] * suffix}."
+    },
+    "13": {
+      "explain": "This multiplies nums[i] into suffix, so that on the next pass through the loop (one index further left), suffix includes the number at the current index too, ready to be \"to the right\" of that next one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Same indentation as res[i] *= suffix: still inside the second for loop." },
+        { "token": "suffix", "meaning": "The running product variable being updated, mirroring what prefix *= nums[i] did in the first loop." },
+        { "token": "*=", "meaning": "Augmented assignment for multiplication: suffix *= nums[i] means suffix = suffix * nums[i]." },
+        { "token": "nums[i]", "meaning": "The number at the current index, read out of the input list." }
+      ],
+      "why": "Doing this after res[i] *= suffix is what keeps res[i] excluding nums[i] itself, while still letting suffix grow to include it in time for the next (more leftward) index's turn.",
+      "if_removed": "suffix would stay at 1 forever, and the suffix pass would never actually fold any numbers in, leaving every res[i] holding only its prefix-pass value.",
+      "alternatives": [
+        { "code": "suffix = suffix * nums[i]", "difference": "Spelled out in full instead of using *=. It does exactly the same thing; *= is just shorter." }
+      ],
+      "mistake": "Writing suffix *= res[i] instead of suffix *= nums[i]. res[i] was just updated one line above to the final answer for that position, so multiplying suffix by it would pull in far more than just the numbers to the right.",
+      "caption": "Fold nums[{i}] = {nums[i]} into suffix: suffix becomes {suffix * nums[i]}, ready for the next (more leftward) index."
+    },
+    "15": {
+      "explain": "Both passes are done: every slot of res has absorbed the product of everything to its left (from the first loop) and everything to its right (from the second loop). This hands res back to whoever called the method.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, after both loops finish." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and hands the value after it back to the caller." },
+        { "token": "res", "meaning": "The list built up across both passes: the final answer." }
+      ],
+      "why": "res already is the answer by this point; there's no further combining step needed, since the prefix pass and the suffix pass together have already multiplied in every number except each slot's own index.",
+      "if_removed": "Python would reach the true end of the method with no return statement, and give back None instead of the answer list, which LeetCode would mark wrong.",
+      "alternatives": [
+        { "code": "return list(res)", "difference": "Makes a shallow copy of res before returning it. Since nothing outside the method holds a reference to res that would be affected either way, this behaves identically here; it's just extra, unnecessary work." }
+      ],
+      "mistake": "Indenting this line so it's inside the second for loop. Then the method would return after the very first iteration of the suffix pass, before most of res had been finished.",
+      "caption": "Both passes are done. Return res: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        res = []\n\n        for i in range(n):\n            product = 1\n            for j in range(n):\n                if j != i:\n                    product *= nums[j]\n            res.append(product)\n\n        return res",
+    "explain": "For each index i, start a fresh product at 1 and loop over every index j in nums, multiplying nums[j] in only when j isn't i. After the inner loop finishes, product is exactly the answer for position i, so it's appended to res.",
+    "why_slow": "For every one of the n positions, the inner loop scans the entire list again, doing about n multiplications. That's roughly n \u00d7 n = n\u00b2 multiplications total. For a list of 10,000 numbers, that's about 100 million operations just to build one answer array.",
+    "how_pattern_fixes": "The slow part is recomputing a product from scratch for every single index. The prefix/suffix approach never recomputes: it keeps one running product moving left to right (reused and extended at every step) and another moving right to left, so each number is multiplied in exactly twice total (once in each pass), not once per answer slot. The work drops from about n\u00b2 multiplications to about 2n.",
+    "time": "O(n\u00b2): quadratic. Doubling the list roughly quadruples the work.",
+    "space": "O(n): res holds n numbers, same as the final answer in either approach. The brute force needs no other extra memory beyond that and the loop variables."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "A value passed into a function or range() call when it's used. In range(len(nums) - 1, -1, -1), there are three arguments: the start, the stop, and the step.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "augmented assignment": "A shorthand that combines an operation with assignment, like prefix *= nums[i], which means the same thing as prefix = prefix * nums[i].",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n\u00b2) means doubling the input quadruples the work. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "edge case": "An unusual input that might break code: an empty list, a single item, a 0 in the list, and so on.",
+    "expression": "Any piece of code that produces a value, like prefix * nums[i] or len(nums).",
+    "for loop": "A loop that runs its block once for each item in a collection (or each number from range), putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(nums).",
+    "identity value": "The value that leaves another value unchanged under some operation. 1 is the identity value for multiplication (x \u00d7 1 = x); 0 is the identity value for addition.",
+    "in place": "Changing an object directly instead of making a new one. res[i] = prefix changes a slot of the existing res list in place, rather than building a brand-new list.",
+    "index": "A position in a list, counting from 0. In [1, 2, 4, 6], the 4 is at index 2.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "keyword": "A word Python reserves for itself, like def, for, class, in, return. You can't use these as variable names.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 4, 6]) is 4.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 4, 6]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection or range.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that lives inside a class. It's called with a dot on an object, like Solution().productExceptSelf(...).",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: * multiplies, - subtracts, = assigns, *= multiplies and reassigns in one step.",
+    "parameter": "A name in a function's definition that will hold an input. nums is productExceptSelf's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like running totals built up in two passes, or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a list, used to point at one item. i is used as a pointer here, first moving forward, then backward.",
+    "range": "A built-in function that produces whole numbers. range(stop) counts from 0 up to (not including) stop. range(start, stop, step) counts from start toward stop, moving by step each time, which can be negative to count downward.",
+    "reference": "What a variable actually holds: a way to reach an object, not a copy of it. list(res) makes a fresh list so the copy and the original res no longer share a reference.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "running product": "A single value that gets multiplied by one more number on every step of a loop, so it always reflects everything seen so far.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "A piece of data, like a number. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (8, 13) else []",
+        "done": "list(range(i)) if __line__ in (6, 7, 8) else (list(range(i + 1, len(nums))) if __line__ in (11, 12, 13) else [])"
+      }
+    },
+    {
+      "type": "array",
+      "title": "res  (becomes the final answer)",
+      "source": "res",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ in (7, 12) else []",
+        "done": "list(range(i)) if __line__ in (6, 7, 8) else (list(range(i + 1, len(nums))) if __line__ in (11, 12, 13) else [])"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "prefix  (running product, left of i)",
+      "source": "[['prefix', prefix]] if 'prefix' in globals() else []"
+    },
+    {
+      "type": "hashmap",
+      "title": "suffix  (running product, right of i)",
+      "source": "[['suffix', suffix]] if 'suffix' in globals() else []"
+    }
+  ]
+}
