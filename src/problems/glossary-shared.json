@@ -1,0 +1,6 @@
+{
+  "prefix": "Everything in a sequence up to (and usually including) some position, read from the start.",
+  "suffix": "Everything in a sequence from some position to the end, read backwards from the end.",
+  "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+  "membership operator": "The in keyword used as a check: x in collection is True exactly when x is already inside collection."
+}

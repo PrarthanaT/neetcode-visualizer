@@ -1,20 +1,24 @@
 // Checks every problem JSON for completeness:
 //  - required sections exist and aren't empty
 //  - every non-blank code line has a full `lines` entry (and no entries point at missing lines)
-//  - every technical term used anywhere in the text is defined in that problem's glossary
+//  - every technical term used anywhere in the text is defined in that problem's glossary,
+//    or in the shared glossary (src/problems/glossary-shared.json)
 // Usage: npm run validate
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "problems");
-const files = readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "index.json");
+const SKIP = new Set(["index.json", "glossary-shared.json"]);
+const files = readdirSync(dir).filter((f) => f.endsWith(".json") && !SKIP.has(f));
 const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
+const sharedGlossary = JSON.parse(readFileSync(join(dir, "glossary-shared.json"), "utf8"));
 const problems = files.map((f) => ({ file: f, p: JSON.parse(readFileSync(join(dir, f), "utf8")) }));
 
-// Terms that must be defined whenever they appear, plus every term any problem defines.
-// Words that are also everyday English (set, and, not, while...) get a qualifier in
-// glossaries, like "set (collection)", so they are never matched against prose.
+// Terms that must be defined whenever they appear, plus every term any problem defines
+// (in its own glossary or the shared one). Words that are also everyday English (set, and,
+// not, while...) get a qualifier in glossaries, like "set (collection)", so they are never
+// matched against prose.
 const BASE_TERMS = [
   "algorithm", "argument", "assignment", "Big O", "boolean", "brute force", "class", "comment", "condition",
   "dictionary", "expression", "function", "hash map", "index", "indentation", "integer", "keyword", "list",
@@ -23,6 +27,7 @@ const BASE_TERMS = [
   "TypeError", "NameError", "SyntaxError", "None",
 ];
 const known = new Set(BASE_TERMS);
+for (const t of Object.keys(sharedGlossary)) known.add(t);
 for (const { p } of problems) for (const t of Object.keys(p.glossary ?? {})) known.add(t);
 
 const LINE_FIELDS = ["explain", "syntax", "why", "if_removed", "alternatives", "mistake", "caption"];
@@ -76,10 +81,10 @@ for (const { file, p } of problems) {
     if (!codeLines[+n - 1]?.trim()) fail(file, `lines has an entry for line ${n}, which is blank or doesn't exist`);
 
   const prose = proseOf(p);
-  const glossary = new Set(Object.keys(p.glossary ?? {}).map((t) => t.toLowerCase()));
+  const glossary = new Set([...Object.keys(p.glossary ?? {}), ...Object.keys(sharedGlossary)].map((t) => t.toLowerCase()));
   for (const term of known) {
     if (glossary.has(term.toLowerCase())) continue;
-    if (termRegex(term).test(prose)) fail(file, `uses "${term}" but the glossary doesn't define it`);
+    if (termRegex(term).test(prose)) fail(file, `uses "${term}" but neither its glossary nor the shared one defines it`);
   }
   if (/O\(/.test(prose) && !glossary.has("big o")) fail(file, `uses O(...) notation but doesn't define Big O`);
 }

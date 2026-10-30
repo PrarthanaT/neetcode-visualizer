@@ -85,7 +85,8 @@ def check(path):
 
 def main():
     only = sys.argv[1] if len(sys.argv) > 1 else None
-    files = sorted(f for f in os.listdir(PROBLEMS) if f.endswith(".json") and f != "index.json")
+    skip = {"index.json", "glossary-shared.json"}
+    files = sorted(f for f in os.listdir(PROBLEMS) if f.endswith(".json") and f not in skip)
     ok = True
     for f in files:
         if only and f != only + ".json":
