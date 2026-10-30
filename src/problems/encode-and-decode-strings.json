@@ -1,0 +1,487 @@
+{
+  "slug": "encode-and-decode-strings",
+  "title": "Encode and Decode Strings",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 271,
+  "statement": [
+    "You are given a list of strings called strs.",
+    "Design two functions: encode, which combines the whole list into a single string, and decode, which takes that single string and returns the original list of strings back out, in the same order.",
+    "The strings can contain any characters at all, including digits, spaces, or whatever character you might otherwise think of using as a separator.",
+    "decode(encode(strs)) must always return exactly strs, no matter what the strings contain."
+  ],
+  "examples": [
+    {
+      "input": "strs = [\"neet\", \"code\", \"love\", \"you\"]",
+      "output": "encode gives \"4#neet4#code4#love3#you\"; decode on that gives back [\"neet\", \"code\", \"love\", \"you\"]",
+      "explain": "Each string is written as its own length, a '#', and then the string itself, with nothing needed between entries, since the next length's digits always follow right after. This is the example the visualizer runs."
+    },
+    {
+      "input": "strs = [\"\"]",
+      "output": "encode gives \"0#\"; decode on that gives back [\"\"]",
+      "explain": "An empty string still gets a length prefix of 0, so decode knows to read zero characters and still produce one entry in the list."
+    }
+  ],
+  "pattern": {
+    "name": "Encoding with a length prefix (self-describing delimiter)",
+    "summary": "To squash a list of strings into one string, and later split it back apart exactly, write each string's own length in front of it before gluing it on. Decoding then never has to guess where one string ends and the next begins: read the length, skip the one delimiter character that follows it, and take exactly that many characters as the string.",
+    "recognize": [
+      "The question asks you to pack several pieces of variable-length data into one piece of data, then pull the original pieces back out exactly, with no obvious way to \"split on a character\", since that character might appear inside the data itself.",
+      "Using a plain separator, like a comma or a newline, would be ambiguous, because the strings being combined can contain that exact separator as part of their own content.",
+      "Each piece of data already knows how long it is, and that length is small enough to write down compactly alongside the data.",
+      "The combined format only needs to be understood by your own two functions; it doesn't need to look like anything standard, like JSON or CSV."
+    ],
+    "avoid_when": [
+      "The pieces being joined are guaranteed never to contain some specific character, like a comma. Then a plain separator is simpler and doesn't need a length prefix at all.",
+      "The combined format needs to be read by other systems, not just your own decode function. Then a standard format is usually the right choice, even though it's more verbose.",
+      "The pieces are fixed-width, always exactly the same length. Then decode can just cut the string into equal chunks, with no length prefix needed.",
+      "You never need to reverse the operation. If you only ever need to combine strings for display, a simple join is enough."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A length prefix makes decode unambiguous: it never has to guess where a string ends, because it's told exactly how many characters to take.",
+      "The delimiter ('#' here) doesn't need to be a character the original strings avoid. It's only ever read right after a run of digits, so even a string that itself contains '#' is handled correctly.",
+      "encode and decode are inverses of each other: whatever encode writes down, decode knows exactly how to read back, because both sides agree on the same format.",
+      "Turning a number into a string (str(len(word))) and a string back into a number (int(s[i:j])) are opposite operations, used once on each side of this pair of functions."
+    ],
+    "time": "O(m), linear time for both functions, where m is the total number of characters across every string. encode visits each character of each string once, to copy it into res. decode visits each character of the combined string once: a few characters for each length prefix, plus every character of every original string.",
+    "space": "O(m), linear extra memory for both functions. encode's res string, and decode's res list plus the slices it creates, are all proportional to the total size of the data being moved.",
+    "edge_cases": [
+      "An empty list of strings, strs = []. encode's loop never runs, so it returns \"\", and decode's while loop never runs either, correctly returning [] back.",
+      "A string that is itself empty, like \"\" inside strs. Its length prefix is \"0#\", with nothing after the '#', and decode correctly reads zero characters for it, adding \"\" back into the list.",
+      "A string that contains digits or the '#' character as ordinary text, like \"4#5\". decode is never confused by this, because it only reads digits and a '#' at the exact position where a length prefix is expected, never while copying out a string's own characters.",
+      "A single very long string, whose length takes more than one digit to write, like \"12#hello world!\". decode's inner loop simply keeps reading digits until it hits the '#', however many digits there are.",
+      "Strings with spaces or punctuation. encode and decode never look at the meaning of any character except the digits of a length and the one '#' that follows them, so every other character passes through completely unchanged."
+    ]
+  },
+  "code": "class Solution:\n    def encode(self, strs: List[str]) -> str:\n        res = \"\"\n        for i, word in enumerate(strs):\n            res += str(len(word)) + \"#\" + word\n        return res\n\n    def decode(self, s: str) -> List[str]:\n        res = []\n        i = 0\n\n        while i < len(s):\n            j = i\n            while s[j] != \"#\":\n                j += 1\n\n            length = int(s[i:j])\n            i = j + 1\n            j = i + length\n            res.append(s[i:j])\n            i = j\n\n        return res\n",
+  "run": {
+    "prelude": "from typing import List\n\n\ndef run_encode_decode_demo():\n    sol = Solution()\n    encoded = sol.encode([\"neet\", \"code\", \"love\", \"you\"])\n    decoded = sol.decode(encoded)\n    return decoded\n",
+    "call": "run_encode_decode_demo()",
+    "expected": ["neet", "code", "love", "you"],
+    "describe": "strs = [\"neet\", \"code\", \"love\", \"you\"]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem. This problem asks for two methods, encode and decode, which both live inside this one class.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your methods on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def encode and def decode would be plain functions, not methods of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint, with both encode and decode inside it. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named encode. It takes the list of strings (strs) and promises to give back a single str (a string) that represents the whole list.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "encode", "meaning": "The method's name. The pairing decode method, defined later in this same class, must agree with whatever format encode produces." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "strs: List[str]", "meaning": "The input, named strs, hinted to be a List of str (strings)." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> str", "meaning": "The return type hint: the method promises to give back a single string, not a list." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The whole point of this problem is to turn many strings into one string (encode) and then back again (decode). The type hints make that shape explicit: a List[str] goes in here, and a single str comes out.",
+      "if_removed": "Remove self and Python passes the Solution object into strs, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't change how the code runs if removed.",
+      "alternatives": [
+        { "code": "def encode(self, strs):", "difference": "No type hints. It runs identically; you just lose the documentation that encode returns one combined string." }
+      ],
+      "mistake": "Naming the two methods something other than encode and decode. LeetCode's test harness calls them by these exact names, so renaming either one breaks the grader even if the logic inside is correct.",
+      "caption": "Python remembers the encode instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty string named res, short for \"result\". It will hold the fully encoded text as it's built up, one string at a time.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside encode, which is inside Solution." },
+        { "token": "res", "meaning": "A variable name we chose for the string being built." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "\"\"", "meaning": "Two quote marks with nothing between them: the empty string, a string with zero characters." }
+      ],
+      "why": "We need somewhere to accumulate the encoded output, and starting from nothing makes sense because, before the loop, no string from strs has been written down yet.",
+      "if_removed": "Line 5 would crash with a NameError: name 'res' is not defined, because you can't add onto something that doesn't exist.",
+      "alternatives": [
+        { "code": "pieces = []\n# ... inside the loop:\npieces.append(str(len(word)) + \"#\" + word)\n# ... after the loop:\nreturn \"\".join(pieces)", "difference": "Collects each encoded chunk into a list, then joins them all at once at the end, instead of growing a string piece by piece. Since strings can't be changed in place, each res += actually builds a brand-new string every time; for a very large strs, collecting pieces and joining once avoids repeating that copy over and over." }
+      ],
+      "mistake": "Writing res = 0 instead of res = \"\". That makes res a number, and line 5's res += \"...\" would then crash with a TypeError, since Python won't add a string onto an int.",
+      "caption": "Make an empty string called res. It will hold the fully encoded text."
+    },
+    "4": {
+      "explain": "This starts a for loop that visits each string in strs, from first to last. On every pass, i holds the current position and word holds the string at that position.",
+      "syntax": [
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "i, word", "meaning": "Two loop variables. Each pass, enumerate hands back a pair (index, string), and Python unpacks it: i gets the index, word gets the string." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "enumerate(", "meaning": "A built-in function that walks through a collection and gives back (index, item) pairs: (0, \"neet\"), (1, \"code\"), and so on." },
+        { "token": "strs", "meaning": "The list of strings we're walking through." },
+        { "token": ")", "meaning": "Closes the enumerate call." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "encode only needs the string word to build its encoded chunk, not its position, but keeping the position lets a reader (and this visualizer) see exactly how far through strs we've gotten on each step.",
+      "if_removed": "Writing for word in strs: instead loses i. encode would still produce exactly the same output, since i is never used in the logic, you'd simply have no position to point at.",
+      "alternatives": [
+        { "code": "for word in strs:", "difference": "The simpler, more common way to write this exact solution, since the position is never used in the logic. Either form encodes the list the same way." }
+      ],
+      "mistake": "Swapping the order: for word, i in enumerate(strs):. enumerate always gives the index first, so word would hold a number and i a string, and len(word) on the next line would crash with a TypeError.",
+      "caption": [
+        "Done encoding at i = {i}. The loop moves to the next string in strs.",
+        "The for loop starts at the first string in strs."
+      ]
+    },
+    "5": {
+      "explain": "This builds one self-describing chunk for the current string, its length, a '#', and the string's own characters, and glues that chunk onto the end of res.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for loop, inside encode." },
+        { "token": "res", "meaning": "The string being built up." },
+        { "token": "+=", "meaning": "A shorthand for res = res + (...): take the current value of res, add something onto the end, and store the result back in res." },
+        { "token": "str(", "meaning": "A built-in function that converts its argument into a string of text." },
+        { "token": "len(word)", "meaning": "len is a built-in function that counts the items in something; for a string, that's how many characters it has." },
+        { "token": ")", "meaning": "Closes the str(...) call." },
+        { "token": "+ \"#\" + word", "meaning": "String concatenation: glue the length's digits, then the single character '#', then the string's own characters, all onto one piece of text." }
+      ],
+      "why": "This is the exact format decode, defined later in this class, will expect: a length, then '#', then that many characters. Writing the length first means decode can always tell, before reading any of the string's own characters, exactly how many of them belong to it.",
+      "if_removed": "Without the length and the '#', just writing res += word, there'd be no way for decode to know where one string ends and the next begins, especially since the strings can contain any characters at all.",
+      "alternatives": [
+        { "code": "res += f\"{len(word)}#{word}\"", "difference": "An f-string (formatted string) that inserts len(word) and word directly into a template. It produces the exact same text as str(len(word)) + \"#\" + word, just written differently." }
+      ],
+      "mistake": "Writing res += len(word) without wrapping it in str(...). len(word) is an int, and Python won't let you add an int directly onto a string with +, raising a TypeError.",
+      "caption": "Encode {word}: write its length ({len(word)}), then '#', then the string itself. res is now {res + str(len(word)) + \"#\" + word}."
+    },
+    "6": {
+      "explain": "The loop has encoded every string in strs into res. This hands the finished, combined string back to whoever called encode.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, after the loop finishes." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and hands the value after it back to the caller." },
+        { "token": "res", "meaning": "The fully built, encoded string." }
+      ],
+      "why": "encode's whole job is to produce this single string, so once every entry in strs has been written into res, there's nothing left to do but return it.",
+      "if_removed": "The method would reach its end without a return statement and give back None instead of the encoded string, which decode could never make sense of.",
+      "alternatives": [
+        { "code": "return res[:]", "difference": "res[:] copies the whole string. For an immutable string that copy is identical to res itself, so it changes nothing here; the habit matters more for a list, where a plain return could let the caller later modify the very list your method is still holding onto." }
+      ],
+      "mistake": "Indenting this line so it's inside the for loop instead of after it. That would return after encoding only the very first string, discarding every string that came after it.",
+      "caption": "Every string has been encoded into res. Return the combined string: {res}."
+    },
+    "8": {
+      "explain": "This defines a method named decode. It takes the single combined string (s) that encode produced, and promises to give back the original List[str], the list of strings it started from.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "decode", "meaning": "The method's name. It must agree with whatever format encode, defined just above, produces." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "s: str", "meaning": "The input, named s, hinted to be a single str: the encoded text produced by encode." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> List[str]", "meaning": "The return type hint: a List of str, the original strings, in their original order." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "decode reverses exactly what encode did. Its input type (str) and output type (List[str]) are the mirror image of encode's own str and List[str], which is a useful sanity check that the two methods really are inverses of each other.",
+      "if_removed": "Remove self and Python passes the Solution object into s, and the call crashes with a TypeError about the wrong number of arguments.",
+      "alternatives": [
+        { "code": "def decode(self, s):", "difference": "No type hints. It runs identically; you just lose the documentation that decode expects one combined string and returns a list." }
+      ],
+      "mistake": "Assuming decode can be called on any string, not just one encode actually produced. decode trusts that every length prefix is genuine; feeding it a string that wasn't built by encode can produce garbage output or crash, since there's no way to tell a real length prefix from random text that happens to contain digits and a '#'.",
+      "caption": "Python remembers the decode instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "9": {
+      "explain": "This creates an empty list named res. It will collect each original string as decode pulls it back out of s.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside decode, which is inside Solution." },
+        { "token": "res", "meaning": "A variable name we chose for the list of decoded strings. It's a different variable from encode's res, defined above, even though they share a name: each method has its own separate set of local variables." },
+        { "token": "=", "meaning": "Assignment: make the name on the left refer to the value on the right." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "decode needs somewhere to collect every string it recovers from s, and it starts empty because, before the loop below, nothing has been decoded yet.",
+      "if_removed": "Line 20 would crash with a NameError: name 'res' is not defined.",
+      "alternatives": [
+        { "code": "res = list()", "difference": "Calls the list function to make an empty list. Exactly the same result; [] is shorter and slightly faster." }
+      ],
+      "mistake": "Reusing encode's res by accident is impossible here, since each method's variables are completely separate, but creating res = [] inside the while loop below instead of before it would reset the answer to empty on every single pass, discarding everything already decoded.",
+      "caption": "Make an empty list called res. It will collect the original strings as they're pulled back out of s."
+    },
+    "10": {
+      "explain": "This creates a variable i, starting at 0, that tracks the position in s where the next length prefix begins.",
+      "syntax": [
+        { "token": "i", "meaning": "A variable name we chose, short for \"index\": the current scanning position in s." },
+        { "token": "=", "meaning": "Assignment: make the name on the left refer to the value on the right." },
+        { "token": "0", "meaning": "The starting position: the very first character of s, at index 0." }
+      ],
+      "why": "decode has to work through s from the beginning, one encoded string at a time, and i is how it keeps track of where the next one starts.",
+      "if_removed": "Line 12 would crash with a NameError: name 'i' is not defined, since the while loop's condition depends on i.",
+      "alternatives": [
+        { "code": "i = 0  # on the same line as res = []: i = 0; res = []", "difference": "Squeezing both assignments onto one line with a semicolon. It runs identically; keeping them on separate lines is just easier to read." }
+      ],
+      "mistake": "Starting i at 1 instead of 0. That would skip the very first character of s, almost certainly corrupting the first string's length prefix.",
+      "caption": "Start a position i at 0: the beginning of the encoded string s."
+    },
+    "12": {
+      "explain": "This starts a while loop that keeps going as long as there's still unread text left in s. Unlike a for loop, a while loop doesn't know in advance how many times it will run, since that depends on how many strings were encoded.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside decode's body." },
+        { "token": "while", "meaning": "A keyword that starts a loop: \"keep repeating the indented block for as long as this condition stays True\"." },
+        { "token": "i", "meaning": "The current scanning position." },
+        { "token": "<", "meaning": "The less-than comparison operator." },
+        { "token": "len(s)", "meaning": "The total number of characters in the encoded string s." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below is the loop body." }
+      ],
+      "why": "Each pass through this loop decodes exactly one original string, and there's no way to know in advance how many strings were encoded, only that there's more to read as long as i hasn't reached the very end of s.",
+      "if_removed": "Without this loop, lines 13 through 21 would run at most once (or not be reachable at all if written as an if), decoding only the first string and ignoring the rest.",
+      "alternatives": [
+        { "code": "while i < len(s):", "difference": "This is the line itself, written here to note the comparison direction: once i reaches len(s) exactly, every character has been consumed, and the loop correctly stops." }
+      ],
+      "mistake": "Writing while i <= len(s): with <=. That would let the loop try to run one more time after every character has already been read, and line 13's j = i would then be an index equal to len(s), which is one past the end of s and would crash as soon as line 14 tries to read s[j].",
+      "caption": [
+        "Reached position {i} in s, with {len(s) - i} character(s) left to decode.",
+        "Every character of s has been decoded. The loop ends."
+      ]
+    },
+    "13": {
+      "explain": "This starts j at the same position as i: j will scan forward from here to find the end of the current length prefix.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop, so this runs once per string being decoded." },
+        { "token": "j", "meaning": "A second position variable, used to search forward from i without losing track of where the current string's prefix began." },
+        { "token": "=", "meaning": "Assignment: make the name on the left refer to the value on the right." },
+        { "token": "i", "meaning": "The position where the current length prefix starts." }
+      ],
+      "why": "Two separate position variables are needed here: i marks where the current string's data begins, and j is free to move ahead searching for the '#', without disturbing i.",
+      "if_removed": "Line 14 would crash with a NameError the very first time through the loop, since j wouldn't exist yet.",
+      "alternatives": [
+        { "code": "j = s.index(\"#\", i)  # replaces lines 13-15", "difference": "Jumps straight to the position of the next '#' starting the search from i, in one call, instead of starting j at i and advancing it one character at a time." }
+      ],
+      "mistake": "Writing i = j instead of j = i, reversing the assignment. That would overwrite i with whatever stale value j happened to hold from a previous string, instead of giving j a fresh copy of i to search forward from.",
+      "caption": "Start scanning for the '#' at position {i}: set j = i = {i}."
+    },
+    "14": {
+      "explain": "This starts an inner while loop that moves j forward, one character at a time, as long as the character at position j isn't the '#' delimiter. When it finishes, j points at the '#' that follows the current length's digits.",
+      "syntax": [
+        { "token": "while", "meaning": "Starts a loop that keeps repeating its block for as long as the condition stays True." },
+        { "token": "s[j]", "meaning": "Square brackets after a string look up the single character at that position. s[j] is the character currently being examined." },
+        { "token": "!=", "meaning": "The \"not equal\" comparison operator." },
+        { "token": "\"#\"", "meaning": "The one-character string being compared against: the delimiter that always follows a length's digits." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below is the loop body." }
+      ],
+      "why": "A length can be more than one digit long (a string of length 12 needs two digits), so decode can't assume the prefix is always a fixed width. Scanning forward until the '#' is found works for a prefix of any number of digits.",
+      "if_removed": "Without this loop, j would stay equal to i, and line 17 would try to read s[i:i], an empty slice, instead of the actual digits of the length.",
+      "alternatives": [
+        { "code": "j = s.index(\"#\", i)", "difference": "A built-in string method that searches for \"#\" starting from position i and returns its index directly, with no explicit loop needed. It finds the exact same position as the while loop, just in one call." }
+      ],
+      "mistake": "Forgetting that this loop can run off the end of s if the '#' is somehow missing (which never happens for a string that encode actually produced, but would for malformed input), raising an IndexError on s[j] once j reaches len(s).",
+      "caption": [
+        { "when": "s[j] != '#'", "text": "s[{j}] is {s[j]}, not '#' yet. Keep scanning the length's digits." },
+        "s[{j}] is '#'. The length prefix ends here; it covers s[{i}:{j}]."
+      ]
+    },
+    "15": {
+      "explain": "This moves j one position further along s, so the while loop above can check the next character.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Indentation: inside the inner while loop's body." },
+        { "token": "j", "meaning": "The scanning position being advanced." },
+        { "token": "+=", "meaning": "A shorthand for j = j + 1: add one to the current value and store it back." },
+        { "token": "1", "meaning": "The amount to add." }
+      ],
+      "why": "Each pass through this inner loop needs to look at a new character, or it would check the exact same position over and over and never find the '#'.",
+      "if_removed": "j would never move, s[j] would always refer to the same character, and if that character isn't '#', the loop would run forever (or until it hits the step limit this visualizer enforces).",
+      "alternatives": [
+        { "code": "j = j + 1", "difference": "The same addition written out in full instead of using +=. Identical result; += is just shorter." }
+      ],
+      "mistake": "Writing i += 1 instead of j += 1 by accident. That would move the start of the current string's prefix forward on every scan, instead of moving the search position, corrupting the slice taken on line 17.",
+      "caption": "Move the scan forward: j becomes {j + 1}."
+    },
+    "17": {
+      "explain": "This reads the digits between i and j, the characters making up the current length prefix, and converts them from text into an actual number.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: back at the outer while loop's level, after the inner scanning loop has finished." },
+        { "token": "length", "meaning": "A new variable holding how many characters the upcoming string has." },
+        { "token": "=", "meaning": "Assignment: compute the right side first, then store the result in length." },
+        { "token": "int(", "meaning": "A built-in function that converts its argument into a whole number." },
+        { "token": "s[i:j]", "meaning": "A slice: the characters of s from position i up to, but not including, position j. Since j now points at the '#', this is exactly the digits of the length, with the '#' itself excluded." },
+        { "token": ")", "meaning": "Closes the int(...) call." }
+      ],
+      "why": "s[i:j] is still text, like the string \"4\", not the number 4. int(...) converts that text into an actual integer so it can be used in arithmetic on the next two lines to work out exactly where the string's content starts and ends.",
+      "if_removed": "Line 19's j = i + length would crash with a TypeError, since you can't add an integer to a string like \"4\".",
+      "alternatives": [
+        { "code": "length = int(s[i:j], 10)", "difference": "int's second argument is the base to interpret the digits in. 10 means ordinary decimal, which is also int's default when no base is given, so this behaves identically to int(s[i:j])." }
+      ],
+      "mistake": "Writing s[i:j + 1] by mistake, which would include the '#' character itself in the slice being converted. int(\"4#\") raises a ValueError, since '#' isn't a valid digit.",
+      "caption": "Read the length prefix s[{i}:{j}] = \"{s[i:j]}\" and convert it to a number: length = {int(s[i:j])}."
+    },
+    "18": {
+      "explain": "This moves i forward to just past the '#', to the position where the current string's actual characters begin.",
+      "syntax": [
+        { "token": "i", "meaning": "The position variable being updated." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in i." },
+        { "token": "j + 1", "meaning": "One position past j, which currently points at the '#'. Adding 1 skips over the delimiter itself." }
+      ],
+      "why": "j is sitting on the '#', not on the first character of the string's own content. Moving i to j + 1 lines i up with exactly where the real characters start.",
+      "if_removed": "i would stay pointing at the start of the length prefix, and line 19's j = i + length, together with line 20's slice, would end up a few characters too early, including the length digits and the '#' as if they were part of the string.",
+      "alternatives": [
+        { "code": "i += length + 1  # computed earlier, right after reading length", "difference": "Jumps i all the way past both the '#' and the string's content in one step, instead of first skipping just the '#' (this line) and separately computing where the content ends (line 19). It reaches the same final position, just by combining two steps into one." }
+      ],
+      "mistake": "Writing i = j instead of i = j + 1. That would leave i pointing directly at the '#' character itself, so the slice taken on line 20 would start with '#' instead of the string's first real character.",
+      "caption": "Skip past the '#': i moves to {j + 1}, the start of this string's own characters."
+    },
+    "19": {
+      "explain": "This computes where the current string's characters end, by adding its length onto the position where it starts.",
+      "syntax": [
+        { "token": "j", "meaning": "Being reused here for a new purpose: instead of searching for the '#', it now marks the end of the current string's content." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in j." },
+        { "token": "i + length", "meaning": "The starting position of the string's content, plus how many characters it has, gives the position right after its last character." }
+      ],
+      "why": "Now that both where the string starts (i) and how long it is (length) are known, simple addition gives exactly where it ends, with no need to search for anything.",
+      "if_removed": "Line 20's slice s[i:j] would use j's old value, still pointing at the '#' from the length prefix, which would cut the string off (almost) immediately instead of taking its full length.",
+      "alternatives": [
+        { "code": "end = i + length\nres.append(s[i:end])", "difference": "Uses a differently-named variable, end, instead of reusing j for this new purpose. It avoids reusing j for two different meanings within the same iteration, at the cost of one extra variable name." }
+      ],
+      "mistake": "Writing j = length instead of j = i + length. Slices are measured from the start of the string s, not from i, so forgetting to add i would almost always grab the wrong stretch of characters.",
+      "caption": "This string is {length} character(s) long, starting at {i}, so it ends just before {i + length}."
+    },
+    "20": {
+      "explain": "This reads out the current string's characters, from i up to (but not including) j, and adds that string onto the end of res.",
+      "syntax": [
+        { "token": "res", "meaning": "The list of decoded strings being built up." },
+        { "token": ".append(", "meaning": "A list method that adds a single item onto the end of the list, changing it in place." },
+        { "token": "s[i:j]", "meaning": "A slice of s: the characters from position i up to, but not including, position j. Since i and j were just computed, this is exactly the current string's own content, with no length digits or delimiters mixed in." },
+        { "token": ")", "meaning": "Closes the .append call." }
+      ],
+      "why": "This is the moment the original string, say \"neet\", is recovered from inside s and placed into the answer, in the exact same order it appeared in the original strs.",
+      "if_removed": "res would stay empty, or stay missing this entry, and decode's final answer would be missing strings even though every length prefix was read correctly.",
+      "alternatives": [
+        { "code": "res = res + [s[i:j]]", "difference": "Builds a brand-new list instead of growing res in place. It gives the same final contents, just by copying the whole list each time rather than appending onto the end, which is slower across many strings." }
+      ],
+      "mistake": "Writing res.append(s[i:j + 1]) or res.append(s[i - 1:j]), shifting the slice by one character in either direction. Both would quietly cut off or add an extra character to the decoded string.",
+      "caption": "Extract s[{i}:{j}] = \"{s[i:j]}\" and add it to res. res is now {res + [s[i:j]]}."
+    },
+    "21": {
+      "explain": "This moves i to where the next length prefix begins, right after the string just decoded.",
+      "syntax": [
+        { "token": "i", "meaning": "The position variable being updated, ready for the next pass of the outer while loop." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in i." },
+        { "token": "j", "meaning": "The position right after the current string's last character, which is exactly where the next string's length prefix starts." }
+      ],
+      "why": "The outer while loop's condition (line 12) checks i against len(s) to decide whether to decode another string, so i has to actually move forward, or the loop would try to decode the exact same string forever.",
+      "if_removed": "i would never change, the while loop's condition on line 12 would never become False (assuming any string remains), and decode would loop forever, or until this visualizer's step limit is reached, repeatedly decoding the very first string.",
+      "alternatives": [
+        { "code": "i, j = j, j  # instead of i = j", "difference": "Assigns j to both i and j at once using tuple unpacking. It leaves both variables holding the same value j already had, which is the same end result as i = j, just spelled in a more roundabout way." }
+      ],
+      "mistake": "Writing i += 1 instead of i = j. That would only move forward by one character instead of jumping all the way to the start of the next length prefix, causing decode to try (and fail) to read a length prefix from the middle of the previous string's own characters.",
+      "caption": "Move i to {j}, right after the string just decoded. That's where the next length prefix will start."
+    },
+    "23": {
+      "explain": "The while loop has consumed every character of s, decoding one string per pass. This hands the completed list of original strings back to whoever called decode.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, after the while loop finishes." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and hands the value after it back to the caller." },
+        { "token": "res", "meaning": "The list of decoded strings, in the same order they were originally encoded." }
+      ],
+      "why": "decode's whole job is to rebuild the original list, so once the entire encoded string s has been consumed, res holds exactly that list and there's nothing left to do but return it.",
+      "if_removed": "The method would reach its end without a return statement and give back None instead of the decoded list, even though the decoding work itself had already finished correctly.",
+      "alternatives": [
+        { "code": "return res[:]", "difference": "Returns a copy of res instead of res itself. It protects against the caller later mutating the exact list object this method built, at the cost of copying every item once more before returning." }
+      ],
+      "mistake": "Indenting this line so it's inside the while loop instead of after it. That would return after decoding only the very first string, discarding the rest of s.",
+      "caption": "Every character of s has been decoded. Return the list of original strings: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def encode(self, strs: List[str]) -> str:\n        return \",\".join(strs)\n\n    def decode(self, s: str) -> List[str]:\n        return s.split(\",\")",
+    "explain": "Glue every string together with a comma between them, and split on commas to pull them back apart. It's shorter than the length-prefix version and feels like the obvious first idea.",
+    "why_slow": "This isn't about speed, it's about correctness: the moment any string in strs contains a comma itself, like [\"a,b\", \"c\"], joining gives \"a,b,c\" and splitting on commas gives back [\"a\", \"b\", \"c\"], three strings instead of the original two. The data is silently corrupted, with no error raised at all, which is worse than being merely slow.",
+    "how_pattern_fixes": "A length prefix never depends on what characters the strings happen to contain. decode doesn't scan the string's own content looking for a special character; it reads an exact number of characters that encode already told it to expect. That means no character, including the delimiter itself, ever needs to be forbidden from appearing inside the original strings.",
+    "time": "O(m): joining and splitting strings both take time proportional to the total number of characters, same as the length-prefix version. The two approaches tie on speed; the real difference is correctness, not performance.",
+    "space": "O(m): the joined string and the split list are both proportional to the total size of the input."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it. In len(word), word is the argument.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(1) means it doesn't grow at all.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "brute force": "Solving a problem with the most obvious approach, even when it has a hidden flaw a more careful approach avoids.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(word).",
+    "character": "A single letter, digit, space or symbol in a string. \"cat\" has three characters.",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def, while or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol that compares two values and gives True or False: == (equal), != (not equal), <, >, <=, >=.",
+    "condition": "An expression that is either True or False, used to decide whether code runs, as in while i < len(s).",
+    "delimiter": "A character used to mark where one piece of data ends and the next begins. '#' is the delimiter in this problem's encoded format.",
+    "edge case": "An unusual input that might break code: an empty list, an empty string, a string containing the delimiter, and so on.",
+    "enumerate": "A built-in function that walks a collection and hands back (index, item) pairs, so a loop gets both the position and the value.",
+    "expression": "Any piece of code that produces a value, like s[i:j] or int(s[i:j]).",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "in place": "Changing an object directly instead of making a new one. res.append(...) grows a list in place, while res = res + [...] builds a brand-new list instead.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "index": "A position in a string or list, counting from 0. In \"4#neet\", the 'n' is at index 2.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like a character past the end of a string.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "join": "A string method that glues every item of a list together into one string, with the string it's called on placed between each pair: \"\".join([\"a\", \"b\"]) makes \"ab\".",
+    "keyword": "A word Python reserves for itself, like def, for, while, if, return, class, in. You can't use these as variable names.",
+    "len": "A built-in function that gives the number of items in something: len(\"neet\") is 4.",
+    "list": "An ordered collection written with square brackets, like [\"neet\", \"code\"]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection; a while loop repeats for as long as a condition stays True.",
+    "method": "A function that lives inside a class, or a function built into an object like a string or a list. It's called with a dot, like res.append(...) or \",\".join(...).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds (or concatenates), - subtracts, = assigns, == compares, != checks inequality, < compares order.",
+    "parameter": "A name in a function's definition that will hold an input. strs is encode's parameter; s is decode's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like encoding with a length prefix or two pointers.",
+    "pointer": "A variable that holds a position (an index) in a string or list, used to point at one item.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows, written in Big O.",
+    "str": "Python's name for the string type.",
+    "string": "Text, written in quotes like 'cat' or \"hello\". Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple unpacking": "Splitting a pair (or a longer tuple) into separate variables in one step, as in i, n = (0, 1).",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, like adding a string and a number, or a function gets the wrong number of arguments.",
+    "type hint": "A label like strs: List[str] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "The part of a dictionary entry you get back, or more generally, any piece of data a variable can refer to.",
+    "ValueError": "The error Python raises when a value has the right type but an invalid value for what you're trying to do, like int(\"4#\"), where '#' isn't a valid digit.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "strs  (input to encode)",
+      "source": "strs",
+      "pointers": {
+        "i": "i"
+      },
+      "marks": {
+        "compared": "[i] if __line__ == 5 else []",
+        "done": "list(range(i))"
+      }
+    },
+    {
+      "type": "array",
+      "title": "s  (the encoded string decode is splitting apart)",
+      "source": "list(s)",
+      "pointers": {
+        "i": "i",
+        "j": "j"
+      },
+      "marks": {
+        "compared": "([i] if __line__ == 13 else (list(range(i, j + 1)) if __line__ in (14, 15) else (list(range(i, j)) if __line__ == 17 else [])))",
+        "found": "list(range(i, j)) if __line__ in (20, 21) else []"
+      }
+    },
+    {
+      "type": "array",
+      "title": "res  (the string being built by encode, then split back into words by decode)",
+      "source": "list(res)"
+    }
+  ]
+}
