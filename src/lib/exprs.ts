@@ -12,6 +12,10 @@ export function collectExprs(problem: Problem): Record<string, string> {
       for (const [name, expr] of Object.entries(panel.marks)) if (expr) exprs[`${i}.mark.${name}`] = expr;
     if ("lookup" in panel && panel.lookup) exprs[`${i}.lookup`] = panel.lookup;
     if ("water" in panel && panel.water) exprs[`${i}.water`] = panel.water;
+    if ("cursor" in panel && panel.cursor) exprs[`${i}.cursor`] = panel.cursor;
+    if ("rowHighlight" in panel && panel.rowHighlight) exprs[`${i}.rowHighlight`] = panel.rowHighlight;
+    if ("colHighlight" in panel && panel.colHighlight) exprs[`${i}.colHighlight`] = panel.colHighlight;
+    if ("boxHighlight" in panel && panel.boxHighlight) exprs[`${i}.boxHighlight`] = panel.boxHighlight;
   });
   return exprs;
 }

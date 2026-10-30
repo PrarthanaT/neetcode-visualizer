@@ -31,6 +31,14 @@ def collect_exprs(problem):
             exprs["{}.lookup".format(i)] = panel["lookup"]
         if panel.get("water"):
             exprs["{}.water".format(i)] = panel["water"]
+        if panel.get("cursor"):
+            exprs["{}.cursor".format(i)] = panel["cursor"]
+        if panel.get("rowHighlight"):
+            exprs["{}.rowHighlight".format(i)] = panel["rowHighlight"]
+        if panel.get("colHighlight"):
+            exprs["{}.colHighlight".format(i)] = panel["colHighlight"]
+        if panel.get("boxHighlight"):
+            exprs["{}.boxHighlight".format(i)] = panel["boxHighlight"]
     return exprs
 
 

@@ -70,6 +70,22 @@ export type PanelSpec =
       /** Pointer labels whose None should sit at the left end instead of the right. */
       null_left?: string[];
       source?: undefined;
+    }
+  | {
+      type: "grid";
+      title: string;
+      /** Python expression giving a 2D list (rows of cells) to draw. */
+      source: string;
+      /** Python expression giving [row, col] of the active cell, or None. */
+      cursor?: string;
+      /** Python expression giving the row index to outline, or None. */
+      rowHighlight?: string;
+      /** Python expression giving the column index to outline, or None. */
+      colHighlight?: string;
+      /** Python expression giving [boxRow, boxCol] of the 3x3 box to outline, or None. */
+      boxHighlight?: string;
+      /** compared | found | done -> Python expression giving a list of [row, col] pairs. */
+      marks?: Partial<Record<MarkKind, string>>;
     };
 
 export type MarkKind = "compared" | "found" | "done";

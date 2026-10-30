@@ -6,12 +6,14 @@ import BarsRenderer from "./BarsRenderer";
 import HashMapRenderer from "./HashMapRenderer";
 import StackRenderer from "./StackRenderer";
 import LinkedListRenderer from "./LinkedListRenderer";
+import GridRenderer from "./GridRenderer";
 
-// tree and grid renderers come later
+// tree renderer comes later
 export const RENDERERS: Partial<Record<PanelSpec["type"], ComponentType<RendererProps<any>>>> = {
   array: ArrayRenderer,
   bars: BarsRenderer,
   hashmap: HashMapRenderer,
   stack: StackRenderer,
   linkedlist: LinkedListRenderer,
+  grid: GridRenderer,
 };

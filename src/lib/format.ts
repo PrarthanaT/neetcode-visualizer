@@ -37,3 +37,10 @@ export const asIndex = (v: Plain | undefined): number | null =>
 
 export const asIndexList = (v: Plain | undefined): number[] =>
   Array.isArray(v) ? v.filter((x): x is number => typeof x === "number") : [];
+
+/** A [row, col] pair, e.g. a grid panel's cursor or box highlight. */
+export const asCell = (v: Plain | undefined): [number, number] | null =>
+  Array.isArray(v) && v.length === 2 && typeof v[0] === "number" && typeof v[1] === "number" ? [v[0], v[1]] : null;
+
+export const asCellList = (v: Plain | undefined): [number, number][] =>
+  Array.isArray(v) ? v.map(asCell).filter((c): c is [number, number] => c !== null) : [];
