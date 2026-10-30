@@ -1,0 +1,339 @@
+{
+  "slug": "longest-consecutive-sequence",
+  "title": "Longest Consecutive Sequence",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 128,
+  "statement": [
+    "You are given an unsorted list of integers called nums.",
+    "Return the length of the longest run of consecutive integers that all appear somewhere in nums.",
+    "The numbers don't need to appear next to each other in nums itself, and they don't need to be in order; they only need to all be present. Your solution should run in O(n) time."
+  ],
+  "examples": [
+    {
+      "input": "nums = [100, 4, 200, 1, 3, 2]",
+      "output": "4",
+      "explain": "1, 2, 3, and 4 are all somewhere in nums, and they're four consecutive integers in a row. 100 and 200 are each isolated (99 and 101, and 199 and 201, are all missing), so neither extends into a longer run. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [0, 3, 7, 2, 5, 8, 4, 6, 0, 1]",
+      "output": "9",
+      "explain": "0 through 8 are all present (the second 0 is just a duplicate and doesn't add anything new), giving a run of 9 consecutive integers: 0, 1, 2, 3, 4, 5, 6, 7, 8."
+    }
+  ],
+  "pattern": {
+    "name": "Hash set, counting forward only from each run's start",
+    "summary": "Put every number into a set, so checking whether any particular number is present takes constant time. Then, for each unique number n, check whether n - 1 is in the set. If it is, n is the middle or end of some run, not its start, so skip it: the run starting at n - 1 (or earlier) will cover it. If n - 1 is missing, n must be a run's start, so count forward: is n + 1 present? n + 2? Keep going until the next number is missing, and remember the longest run found this way.",
+    "recognize": [
+      "The question is about runs or streaks of consecutive values, where \"consecutive\" means differing by exactly 1 (or some other fixed step), not about adjacency in the original list.",
+      "You could sort the numbers first and then scan for runs, which works, but the problem specifically asks for O(n) time, and sorting alone already costs O(n log n).",
+      "A set answers \"is this specific number present?\" instantly, which is exactly the repeated question needed to walk forward (or backward) from any starting point.",
+      "Each run only needs to be counted once, from its true start, instead of from every number inside it, to avoid repeating the same work."
+    ],
+    "avoid_when": [
+      "The list is already sorted, or sorting it wouldn't violate a time limit. Then a single linear scan comparing each number to the one before it finds every run directly, with no set needed.",
+      "\"Consecutive\" refers to position in the original list (neighboring elements), not to numeric value. That's a different kind of run entirely, found by comparing nums[i] to nums[i - 1], not value-based set lookups.",
+      "You need to report where each run is (its actual numbers or where they came from in nums), not just the length of the longest one; the set-based approach only tracks length unless you deliberately save more."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "\"Is this value present anywhere?\" is a different question from \"is this value next to something in the list?\". A set answers the first question instantly, regardless of where in nums (or whether at all, position-wise) the value originally was.",
+      "The if (n - 1) not in numSet check is what keeps the algorithm at O(n) overall: it guarantees the inner while loop only ever starts counting from a genuine run start, so every number in nums is ever counted as part of at most one run's forward walk.",
+      "Checking n - 1 before counting forward is the same idea as checking a stack's top before popping, or checking a value before inserting it: look first, to avoid redoing work that's already been done (or will be done) somewhere else.",
+      "Converting nums to a set up front also quietly removes duplicates, which is exactly what's wanted here: a repeated number doesn't make a run any longer, so it shouldn't be counted twice."
+    ],
+    "time": "O(n), linear time. n is how many numbers are in nums. Building numSet costs O(n). Every unique number is visited once by the outer for loop, and the if (n - 1) not in numSet check means the inner while loop only ever runs for numbers that start a run; across all runs combined, the total number of while-loop steps can never exceed n, since each number is counted forward from its run's start exactly once.",
+    "space": "O(n), linear extra memory, for the set holding every unique number in nums.",
+    "edge_cases": [
+      "An empty list. numSet ends up empty, the for loop never runs, and the function returns longest's starting value of 0.",
+      "A list with exactly one number. It trivially starts its own run (there's nothing at n - 1), and the while loop finds nothing further (there's nothing at n + 1 either), so the answer is 1.",
+      "Every number already consecutive, like [1, 2, 3, 4, 5]. Only 1 passes the (n - 1) not in numSet check; the while loop then walks all the way from 1 to 5, giving a single run covering the entire list.",
+      "No two numbers consecutive, like [10, 20, 30]. Every number passes the (n - 1) not in numSet check (since each is its own isolated run), but none extend past length 1, so the answer is 1.",
+      "Duplicate numbers, like [1, 1, 2, 2, 3]. set(nums) collapses the duplicates to {1, 2, 3} before any counting starts, so the run is correctly measured as length 3, not inflated by the repeats."
+    ]
+  },
+  "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        numSet = set(nums)\n        longest = 0\n\n        for n in numSet:\n            if (n - 1) not in numSet:\n                length = 1\n\n                while (n + length) in numSet:\n                    length += 1\n\n                longest = max(length, longest)\n\n        return longest\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().longestConsecutive([100, 4, 200, 1, 3, 2])",
+    "expected": 4,
+    "describe": "nums = [100, 4, 200, 1, 3, 2]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def longestConsecutive would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named longestConsecutive. It takes the list of numbers (nums) and promises to give back a single integer: the length of the longest run.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "longestConsecutive", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "nums: List[int]", "meaning": "The input, named nums, hinted to be a List of int (whole numbers)." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> int", "meaning": "The return type hint: the method promises to give back a single int, not a list." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and input are fixed by LeetCode. The return type hint tells a reader that the answer is a single count, not the run itself.",
+      "if_removed": "Remove self and Python passes the Solution object into nums, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't change how the code runs if removed.",
+      "alternatives": [
+        { "code": "def longestConsecutive(self, nums):", "difference": "No type hints. It runs identically; you just lose the documentation that the answer is a plain whole number." }
+      ],
+      "mistake": "Forgetting the -> int and leaving it implicit. The code would still run fine, but a reader skimming the signature would have to guess whether the method returns a count, a list, or something else.",
+      "caption": "Python remembers the longestConsecutive instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This builds numSet, a set holding every unique number from nums. Checking whether any particular number is present in numSet takes constant time, no matter how big nums is.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside longestConsecutive, which is inside Solution." },
+        { "token": "numSet", "meaning": "A variable name we chose for the set of unique numbers." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "set(", "meaning": "The built-in set type, called like a function here to build a new set out of another collection." },
+        { "token": "nums)", "meaning": "The list being converted. Every number in nums becomes a member of the new set, with any duplicates collapsed to one." }
+      ],
+      "why": "The rest of the algorithm repeatedly asks \"is this number present anywhere in nums?\". Doing that by scanning the list itself would take O(n) time per question; a set answers it in O(1), which is what keeps the whole solution linear.",
+      "if_removed": "Line 7 ((n - 1) not in numSet) would crash with a NameError, since numSet wouldn't exist yet.",
+      "alternatives": [
+        { "code": "numSet = set(nums)", "difference": "No real alternative here that keeps the O(1) membership checks: a list or a sorted list would both make every later membership check slower, O(n) or O(log n) instead of O(1)." }
+      ],
+      "mistake": "Looping over nums directly later with n in nums instead of n in numSet. That technically still gives the right answer, but it turns every membership check back into an O(n) scan, losing the whole point of building numSet in the first place.",
+      "caption": "Build numSet: the unique numbers in nums, {sorted(set(nums))}, ready for instant membership checks."
+    },
+    "4": {
+      "explain": "This creates longest, starting at 0: the length of the longest run found so far. It will be updated every time a longer run is discovered.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as numSet = set(nums)." },
+        { "token": "longest", "meaning": "A variable name we chose to track the best answer seen so far." },
+        { "token": "=", "meaning": "Assignment: longest now refers to the value 0." },
+        { "token": "0", "meaning": "The starting value. Before any run has been measured, the longest one found so far has length 0." }
+      ],
+      "why": "The function needs somewhere to remember the best run length across every starting point it tries, not just the most recent one.",
+      "if_removed": "Line 13 (longest = max(length, longest)) would crash with a NameError, since longest wouldn't exist yet.",
+      "alternatives": [
+        { "code": "longest = 0", "difference": "No real alternative: it has to start at 0 (or at negative infinity), low enough that the very first real run measured is guaranteed to count as an improvement." }
+      ],
+      "mistake": "Creating longest = 0 inside the for loop below. That would reset the best-so-far back to 0 at the start of every single run, throwing away the memory of any longer run already found.",
+      "caption": "Start longest at 0: no run has been measured yet."
+    },
+    "6": {
+      "explain": "This starts a for loop that visits every unique number in numSet, one at a time. Since numSet is a set, there's no guaranteed order: it might visit 100 before 1, or 4 before 200.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as longest = 0." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "n", "meaning": "The loop variable. Each pass, n holds one of the numbers from numSet." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "numSet", "meaning": "The set of unique numbers built on line 3." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every unique number is a candidate for being the start of some run, so each one has to be considered. Looping over numSet instead of nums also means duplicates are only ever considered once.",
+      "if_removed": "Without this loop, longest would stay 0 forever, since no run would ever be measured.",
+      "alternatives": [
+        { "code": "for n in nums:", "difference": "Loops over the original list instead of the set. It would still eventually find the same answer (the (n - 1) not in numSet check still filters correctly), but duplicate numbers would needlessly repeat the exact same work." }
+      ],
+      "mistake": "Assuming the loop visits numbers in increasing order, and relying on that assumption elsewhere. Sets in Python make no such promise; the order can look sorted by coincidence for small ints, but shouldn't be counted on.",
+      "caption": [
+        "Done with n = {n}. The loop moves to another number in numSet.",
+        "The loop starts at one of the numbers in numSet. Sets have no guaranteed order."
+      ]
+    },
+    "7": {
+      "explain": "This checks whether n - 1 is missing from numSet. If it is missing, n can't be the middle or end of a longer run, so it must be where some run starts. If n - 1 is present, some other number already covers this run's start, so n is skipped.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for loop, inside longestConsecutive." },
+        { "token": "if", "meaning": "A keyword that starts a condition check. The indented block below runs only when the condition is True." },
+        { "token": "(n - 1)", "meaning": "The number one less than n, the one that would come right before n in a run of consecutive integers." },
+        { "token": "not in", "meaning": "The negated membership operator. (n - 1) not in numSet is True exactly when n - 1 has not been added to numSet." },
+        { "token": "numSet", "meaning": "The set of unique numbers." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below runs only when it's True." }
+      ],
+      "why": "This single check is what keeps the whole algorithm fast: without it, every number in a run of length k would independently count forward and discover the exact same run, k separate times. By only counting forward from true starts, each run gets measured exactly once.",
+      "if_removed": "Every number would count forward from itself, rediscovering the same runs over and over. The final answer would still come out correct (the longest run is still found eventually), but the total work could balloon back up to roughly O(n²) in the worst case, like [1, 2, 3, ..., n].",
+      "alternatives": [
+        { "code": "if n - 1 not in numSet:", "difference": "The parentheses around n - 1 aren't required by Python's rules here; the expression means the same thing with or without them. They're kept in the original for readability, visually grouping the subtraction before the not in check." }
+      ],
+      "mistake": "Writing if n + 1 not in numSet instead of n - 1. That would flag the END of a run as its start (since nothing follows it), measuring backward-looking checks that don't match how the while loop below counts forward.",
+      "caption": [
+        { "when": "(n - 1) not in numSet", "text": "{n} - 1 = {n - 1} is not in numSet, so {n} starts a new run." },
+        "{n} - 1 = {n - 1} is in numSet, so {n} doesn't start a run; some earlier number already covers it."
+      ]
+    },
+    "8": {
+      "explain": "This starts counting the current run's length at 1: the run so far consists of just n itself.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Three levels of indentation: inside the if block, inside the for loop, inside longestConsecutive." },
+        { "token": "length", "meaning": "A variable name we chose to count how long the run starting at n turns out to be." },
+        { "token": "=", "meaning": "Assignment: length now refers to the value 1." },
+        { "token": "1", "meaning": "The starting count: n alone is a run of length 1, before anything further is checked." }
+      ],
+      "why": "n has already been confirmed to start a run (by the check on line 7), so the run's length is at least 1 before any extending even happens.",
+      "if_removed": "Line 10 ((n + length) in numSet) would crash with a NameError, since length wouldn't exist yet.",
+      "alternatives": [
+        { "code": "length = 1", "difference": "No real alternative: a run containing just n has length exactly 1, so there's no other correct starting value." }
+      ],
+      "mistake": "Writing length = 0 instead of 1. That would undercount every single run by exactly one, since n itself is part of the run but wouldn't be counted.",
+      "caption": "Start counting from {n}: length = 1 so far."
+    },
+    "10": {
+      "explain": "This checks whether the next number in sequence, n + length, is present in numSet. If it is, the run keeps going, and the loop body extends it by one more.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same indentation as length = 1: still inside the if block." },
+        { "token": "while", "meaning": "A keyword that starts a loop that keeps repeating as long as its condition stays True." },
+        { "token": "(n + length)", "meaning": "The next number that would extend the current run: n, plus however many numbers have already been confirmed." },
+        { "token": "in", "meaning": "The membership operator. x in s is True exactly when x is already a member of s." },
+        { "token": "numSet", "meaning": "The set of unique numbers." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below runs again and again as long as the condition stays True." }
+      ],
+      "why": "Walking forward one number at a time, checking membership each time, is exactly how the length of a run starting at n gets measured: it keeps growing for as long as the next number in sequence actually exists somewhere in nums.",
+      "if_removed": "Without this loop, every run would be measured as length 1, since length would never grow past its starting value.",
+      "alternatives": [
+        { "code": "while n + length in numSet:", "difference": "The parentheses around n + length aren't required by Python's rules here either; the expression means the same thing with or without them." }
+      ],
+      "mistake": "Writing while (n + length) in nums instead of numSet. That would work, but every single check would be an O(n) scan through the list instead of an O(1) set lookup, undoing the whole reason numSet was built.",
+      "caption": [
+        { "when": "(n + length) in numSet", "text": "{n} + {length} = {n + length} is in numSet: the run keeps going." },
+        "{n} + {length} = {n + length} is not in numSet: the run starting at {n} stops here, at length {length}."
+      ]
+    },
+    "11": {
+      "explain": "The next number in sequence was found, so this extends the run by one, growing length so the next pass checks the number after that.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Four levels of indentation: inside the while loop, inside the if block, inside the for loop." },
+        { "token": "length", "meaning": "The run-length counter being updated." },
+        { "token": "+=", "meaning": "Augmented assignment for addition: length += 1 means the same thing as length = length + 1." },
+        { "token": "1", "meaning": "The amount to add: the run grew by exactly one more number." }
+      ],
+      "why": "Each time n + length turns out to be present, the run has grown by one more number, so length needs to grow to match before the while loop checks the next candidate.",
+      "if_removed": "The while loop's condition would never change, so if it ever ran once, it would run forever: an infinite loop, since (n + length) in numSet would keep testing the exact same number every time.",
+      "alternatives": [
+        { "code": "length = length + 1", "difference": "Spelled out in full instead of using +=. It does exactly the same thing; += is just shorter." }
+      ],
+      "mistake": "Writing n += 1 instead of length += 1. That would change which run is being measured entirely, instead of extending the current run's length count.",
+      "caption": "Extend the run: length becomes {length + 1}."
+    },
+    "13": {
+      "explain": "The while loop has finished counting this run's full length. This compares it against the best one found so far and keeps whichever is bigger.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Back to the same indentation as length = 1: this line runs once the while loop above it has finished." },
+        { "token": "longest", "meaning": "The best run length found across every starting point tried so far." },
+        { "token": "=", "meaning": "Assignment: overwrite longest with the value on the right." },
+        { "token": "max(", "meaning": "A built-in function that returns the largest of its arguments." },
+        { "token": "length, longest)", "meaning": "The two values being compared: this run's just-measured length, and the best length found before it. max picks whichever is larger." }
+      ],
+      "why": "Every run starting point gets its own length measured independently; this line is what carries the best one forward so it survives into later iterations of the outer for loop, and ultimately gets returned.",
+      "if_removed": "longest would stay 0 forever, no matter how long any run actually was, since nothing would ever copy a measured length into it.",
+      "alternatives": [
+        { "code": "if length > longest:\n    longest = length", "difference": "An explicit if instead of max(...). It reaches the exact same result; max(length, longest) is just a shorter way to write \"keep the bigger one\"." }
+      ],
+      "mistake": "Writing longest = length instead of longest = max(length, longest). That would always overwrite longest with whatever run was measured most recently, even if it was shorter than one found earlier, losing track of the true best.",
+      "caption": [
+        { "when": "length > longest", "text": "This run (starting at {n}) has length {length}, beating the old best of {longest}. longest becomes {length}." },
+        "This run (starting at {n}) has length {length}, not better than the current best of {longest}. longest stays {longest}."
+      ]
+    },
+    "15": {
+      "explain": "Every unique number in numSet has been considered as a possible run start. This hands longest, the best length found, back to whoever called the method.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, after the for loop finishes completely." },
+        { "token": "return", "meaning": "A keyword that ends the method and hands the following value back to the caller." },
+        { "token": "longest", "meaning": "The length of the longest run found across every starting point tried." }
+      ],
+      "why": "By the time every number in numSet has been tried as a possible run start, longest already holds the length of the single longest run in the whole list, since every run was measured from its true start exactly once.",
+      "if_removed": "If the function never returns here, Python reaches the true end of the method and gives back None instead of the answer, which LeetCode would mark wrong.",
+      "alternatives": [
+        { "code": "return longest", "difference": "No real alternative here: longest already holds exactly the answer the problem asks for, with no further computation needed." }
+      ],
+      "mistake": "Indenting this line so it's inside the for loop. Then the function would return after checking just the very first number from numSet, instead of after comparing every run.",
+      "caption": "Every possible run start was checked. Return longest = {longest}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        numSet = set(nums)\n        longest = 0\n\n        for n in numSet:\n            length = 1\n            while (n + length) in numSet:\n                length += 1\n            longest = max(length, longest)\n\n        return longest",
+    "explain": "The same forward-counting idea, but without first checking whether n is actually a run's start. Every single number in numSet counts forward from itself, even numbers in the middle or at the end of a run that some other, earlier number has already measured.",
+    "why_slow": "Consider nums = [1, 2, 3, ..., n]: one giant run of length n. Every one of the n numbers independently counts all the way forward to the end of the run, so the total work across all of them is roughly 1 + 2 + 3 + ... + n, which adds up to about n² ÷ 2. For a list of 10,000 consecutive numbers, that's tens of millions of membership checks just to measure one run.",
+    "how_pattern_fixes": "The slow part is re-measuring a run from every number inside it, not just from its start. Adding the if (n - 1) not in numSet check (used by the solution above) skips any number that isn't a genuine run start, so each run only ever gets counted forward exactly once, from its true beginning. The total work across every run combined drops from roughly n² to roughly n.",
+    "time": "O(n²) in the worst case, when the whole list forms one long run. On average, with scattered, shorter runs, it's faster than this, but a single long run is enough to make it quadratic.",
+    "space": "O(n): numSet holds every unique number, the same memory the solution above uses too."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it. In max(length, longest), there are two arguments.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "augmented assignment": "A shorthand that combines an operation with assignment, like length += 1, which means the same thing as length = length + 1.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(n) means it grows in step with the input. O(n²) means doubling the input quadruples the work.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like set(nums).",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, class or while, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "condition": "An expression that is True or False, used by if or while to decide whether its block runs.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Set lookups like n in numSet are constant time.",
+    "edge case": "An unusual input that might break code: an empty list, a single number, duplicates, or numbers that are nowhere near consecutive.",
+    "expression": "Any piece of code that produces a value, like n - 1 or max(length, longest).",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "infinite loop": "A loop whose condition never becomes False, so it never stops on its own. A while loop can cause one if its body forgets to change something the condition depends on.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "keyword": "A word Python reserves for itself, like def, for, while, if, in, not, return, class. You can't use these as variable names.",
+    "list": "An ordered collection written with square brackets, like [100, 4, 200, 1, 3, 2]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection; a while loop repeats as long as its condition stays True.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that lives inside a class. It's called with a dot on an object, like Solution().longestConsecutive(...).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a set, or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: - subtracts, + adds, = assigns, += adds and reassigns in one step, in checks membership.",
+    "parameter": "A name in a function's definition that will hold an input. nums is longestConsecutive's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like counting forward only from a confirmed start, or two pointers.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant membership checks, like a dictionary with keys but no values. It is written set() when empty.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Python's sorted() function returns a new sorted list.",
+    "sorting": "Putting items in order. Python's sorted([3, 1, 2]) gives [1, 2, 3]. Sorting takes about O(n log n) time.",
+    "stack": "A collection where you only add and remove from one end, the top. Mentioned here only by comparison; this problem doesn't actually use one.",
+    "top": "The end of a stack where items are added and removed.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "run starting at n  (confirmed so far)",
+      "source": "list(range(n, n + length)) if 'length' in globals() else []",
+      "pointers": {
+        "next": "length if 'length' in globals() else HIDE"
+      },
+      "marks": {
+        "found": "list(range(length)) if __line__ == 13 and length > longest else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "numSet",
+      "source": "[[x, True] for x in sorted(numSet)]",
+      "lookup": "(n - 1) if __line__ == 7 else ((n + length) if __line__ == 10 else None)"
+    },
+    {
+      "type": "hashmap",
+      "title": "longest",
+      "source": "[['longest', longest]] if 'longest' in globals() else []"
+    }
+  ]
+}
