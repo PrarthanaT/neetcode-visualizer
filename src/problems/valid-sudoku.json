@@ -1,0 +1,444 @@
+{
+  "slug": "valid-sudoku",
+  "title": "Valid Sudoku",
+  "difficulty": "Medium",
+  "category": "Arrays & Hashing",
+  "leetcode": 36,
+  "statement": [
+    "You are given a 9x9 Sudoku board as a list of 9 lists, each holding 9 single-character strings. A blank cell is the string \".\".",
+    "Determine whether the board is valid so far. It does not need to be completely filled in, and it does not need to have a solution: you are only checking the digits already placed.",
+    "A board is valid if, among the digits 1-9 already placed, no digit repeats within any single row, within any single column, or within any single 3x3 box (the board is divided into nine of these, outlined by its thicker grid lines)."
+  ],
+  "examples": [
+    {
+      "input": "board = [[\"5\",\"3\",\".\",\".\",\"7\",\".\",\".\",\".\",\".\"], [\"6\",\".\",\".\",\"1\",\"9\",\"5\",\".\",\".\",\".\"], [\".\",\"9\",\"8\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"], [\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\",\".\"]]",
+      "output": "True",
+      "explain": "Only the top-left corner has any digits. Row 0 has {5, 3, 7}, row 1 has {6, 1, 9, 5}, and row 2 has {9, 8}: no repeats within any row. Column 0 has {5, 6}, column 4 has {7, 9}, and so on: no repeats within any column. The top-left 3x3 box holds {5, 3, 6, 9, 8}, and the box just to its right holds {7, 1, 9, 5}: no repeats within either box. This is the example the visualizer runs."
+    },
+    {
+      "input": "board = the same board as above, except row 2's first cell is changed from \".\" to \"5\"",
+      "output": "False",
+      "explain": "Row 0, column 0 already holds \"5\". Placing another \"5\" at row 2, column 0 repeats it in column 0 (rows 0 and 2 share a column), and also repeats it in the top-left 3x3 box (rows 0 and 2, columns 0 and 0, both fall inside that same box). Either violation alone would be enough to make the board invalid."
+    }
+  ],
+  "pattern": {
+    "name": "One hash set per row, column, and box",
+    "summary": "Scan every cell of the board once, left to right, top to bottom. Keep three families of sets: one set per row, one per column, and one per 3x3 box, each remembering which digits have already been placed in it. Before placing the current cell's digit into its row's, column's, and box's sets, check whether that digit is already in any of the three. If it is, the board is invalid; if the scan finishes with no such match, it's valid.",
+    "recognize": [
+      "The question asks you to check several independent \"no repeats allowed\" rules at once, over groups that overlap (a cell belongs to one row, one column, and one box, all at the same time).",
+      "Each rule (\"no repeats in a row\", \"no repeats in a column\", \"no repeats in a box\") is itself just a membership check, the same yes-or-no question a hash set answers instantly.",
+      "A fixed, small number of groups exist (9 rows, 9 columns, 9 boxes here), and every cell can be mapped to exactly which group of each kind it belongs to using simple arithmetic (its row index, its column index, and // 3 on each of those for the box).",
+      "You could re-scan each row, column, and box from scratch for every cell to check for repeats, but the problem hints the board can be busy enough that redoing all that work per cell would be wasteful."
+    ],
+    "avoid_when": [
+      "The groups being checked aren't fixed and known in advance, or can't be computed from a cell's position with simple arithmetic.",
+      "You need more than a yes-or-no about repeats, such as counting how many digits are still missing from each row, column, or box; then a count (a dictionary) fits better than a plain set.",
+      "The board is tiny and only checked once, where the simplicity of directly comparing every pair of cells in a row, column, or box might be preferred over introducing extra sets."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A single cell at (r, c) belongs to three different groups at once: row r, column c, and box (r // 3, c // 3). Checking \"is this placement valid\" means checking membership in all three groups, not just one.",
+      "// 3 turns a 0-8 row or column index into a 0-2 box index. Pairing the two (row's box index, column's box index) gives one of the nine distinct 3x3 boxes, same as a 2D grid position for boxes instead of cells.",
+      "collections.defaultdict(set) means indexing a key that's never been seen, like rows[5], doesn't crash: it quietly creates a fresh empty set first, then hands it back. That lets the code add to rows[r] immediately, on the very first digit seen in that row, with no separate \"does this row already have a set\" check.",
+      "Checking val in rows[r] or val in cols[c] or val in squares[...] stops as soon as one of the three comes back True (or all three come back False), rather than always checking every one; Python's or short-circuits this way automatically."
+    ],
+    "time": "O(1) per cell, so O(1) overall for a fixed 9x9 board (81 cells, each doing a constant amount of set-membership work). More generally, for an n x n board, it's O(n²): every one of the n² cells is visited exactly once.",
+    "space": "O(1) for a fixed 9x9 board: at most 9 rows, 9 columns, and 9 boxes, each holding at most 9 digits. More generally, O(n²) for an n x n board, since the sets together can hold up to every cell's digit.",
+    "edge_cases": [
+      "A completely empty board (every cell is \".\"). Every cell hits the val == \".\" check and is skipped, so the three sets stay empty and the board is trivially valid.",
+      "A board that's fully and correctly filled in, with no blanks at all. Every cell gets checked and added; as long as it's a genuinely valid solved Sudoku, no check ever matches and the function returns True.",
+      "Two of the same digit in the same row but different columns and different boxes. The row's set alone catches it; the column and box checks aren't even needed for this particular pair.",
+      "Two of the same digit in different rows and different columns, but inside the same 3x3 box. Only the box's set catches this one; the row and column checks both pass.",
+      "A digit repeated a third time in the same row. The first occurrence is added with nothing to compare to. The second occurrence matches it and returns False immediately, before a third occurrence is ever reached."
+    ]
+  },
+  "code": "class Solution:\n    def isValidSudoku(self, board: List[List[str]]) -> bool:\n        rows = collections.defaultdict(set)\n        cols = collections.defaultdict(set)\n        squares = collections.defaultdict(set)\n\n        for r in range(9):\n            for c in range(9):\n                val = board[r][c]\n\n                if val == \".\":\n                    continue\n\n                if val in rows[r] or val in cols[c] or val in squares[(r // 3, c // 3)]:\n                    return False\n\n                rows[r].add(val)\n                cols[c].add(val)\n                squares[(r // 3, c // 3)].add(val)\n\n        return True\n",
+  "run": {
+    "prelude": "import collections\nfrom typing import List",
+    "call": "Solution().isValidSudoku([['5','3','.','.','7','.','.','.','.'], ['6','.','.','1','9','5','.','.','.'], ['.','9','8','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.'], ['.','.','.','.','.','.','.','.','.']])",
+    "expected": true,
+    "describe": "board with only its top-left corner filled in"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution. A class is a container that groups related functions together. LeetCode always wraps your answer in a class called Solution, so you write this line on every problem.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword (a word reserved by the language) that means \"I am about to define a class\"." },
+        { "token": "Solution", "meaning": "The name we give the class. LeetCode looks for exactly this name, with a capital S." },
+        { "token": ":", "meaning": "A colon ends the header line and tells Python an indented block follows." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so the structure is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def isValidSudoku would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "Older Python 2 style. In Python 3 every class already builds on object, so it behaves exactly the same." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named isValidSudoku. It takes the board (a 9x9 grid of single-character strings) and promises to give back a boolean: True or False.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation. These 4 spaces put the line inside the class above it." },
+        { "token": "def", "meaning": "Short for \"define\". A keyword that starts a function or method definition." },
+        { "token": "isValidSudoku", "meaning": "The method's name. LeetCode calls exactly this name, so its spelling and capitalization matter." },
+        { "token": "(self,", "meaning": "Opens the parameter list. self is the first parameter of every method: the Solution object it was called on. We never use it here, but Python requires it." },
+        { "token": "board: List[List[str]]", "meaning": "The input, named board, hinted to be a List of Lists of str: a grid, where each row is itself a list of single-character strings." },
+        { "token": ")", "meaning": "Closes the parameter list." },
+        { "token": "-> bool", "meaning": "The return type hint: the method promises to give back a bool, Python's name for a True-or-False value." },
+        { "token": ":", "meaning": "Ends the header. The indented lines below are the method's body." }
+      ],
+      "why": "The name and input are fixed by LeetCode. The nested type hint, List[List[str]], tells a reader at a glance that board isn't a flat list, but a list of rows, each row itself a list of strings.",
+      "if_removed": "Remove self and Python passes the Solution object into board, and the call crashes with a TypeError about the wrong number of arguments. The type hints themselves don't change how the code runs if removed.",
+      "alternatives": [
+        { "code": "def isValidSudoku(self, board):", "difference": "No type hints. It runs identically; you just lose the documentation that board is a grid of strings rather than, say, a grid of numbers." }
+      ],
+      "mistake": "Forgetting the nested brackets and writing board: List[str]. That claims board is a flat list of strings, not a list of rows.",
+      "caption": "Python remembers the isValidSudoku instructions inside Solution for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates rows, a dictionary where any missing key is automatically given a brand-new, empty set the first time it's looked up. rows will map each row number (0-8) to the set of digits already placed in that row.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: this line is inside isValidSudoku, which is inside Solution." },
+        { "token": "rows", "meaning": "A variable name we chose for the per-row sets." },
+        { "token": "=", "meaning": "The assignment operator: it means \"make the name on the left refer to the value on the right\", not \"is equal to\"." },
+        { "token": "collections.defaultdict(", "meaning": "A function from Python's collections module that builds a special kind of dictionary: one that makes up a value for any key it doesn't already have." },
+        { "token": "set", "meaning": "The built-in set type itself, passed in (not called) as the \"factory\": whenever a missing key is looked up, defaultdict calls set() to make its starting value." },
+        { "token": ")", "meaning": "Closes the defaultdict(...) call." }
+      ],
+      "why": "Without knowing in advance which rows will have digits, a plain dictionary would need a separate check (\"does rows already have an entry for r?\") before the very first digit in each row. defaultdict(set) removes that check entirely: rows[r] always works, even the first time.",
+      "if_removed": "Line 14 (val in rows[r]) would crash the first time a never-seen row index is used, raising a KeyError, if rows were a plain dictionary ({}) instead.",
+      "alternatives": [
+        { "code": "rows = {}\n# ...\nif r not in rows:\n    rows[r] = set()", "difference": "A plain dictionary with a manual \"create it if missing\" check before every use. It behaves identically to defaultdict(set), just with more code repeated at every place rows is touched." }
+      ],
+      "mistake": "Writing collections.defaultdict(set()) with parentheses after set. That calls set() once immediately and passes the resulting (already-empty) set object as the factory, which is wrong: defaultdict needs a callable it can invoke itself each time, not a single shared object every row would then secretly share.",
+      "caption": "Create rows: an empty-by-default dictionary that will map each row number to the set of digits already seen in it."
+    },
+    "4": {
+      "explain": "This creates cols, built the exact same way as rows, but it will map each column number (0-8) to the set of digits already placed in that column.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as rows = collections.defaultdict(set)." },
+        { "token": "cols", "meaning": "A variable name we chose for the per-column sets." },
+        { "token": "=", "meaning": "Assignment, as above." },
+        { "token": "collections.defaultdict(set)", "meaning": "The same kind of auto-filling dictionary as rows, started fresh and empty for columns." }
+      ],
+      "why": "Columns need exactly the same bookkeeping as rows, just indexed by column number instead of row number, so the setup is identical.",
+      "if_removed": "Line 14 (val in cols[c]) would crash with a NameError, since cols wouldn't exist yet.",
+      "alternatives": [
+        { "code": "cols = collections.defaultdict(set)", "difference": "No real alternative: it needs to be its own, separate defaultdict(set), independent from rows, so that a digit seen in one row doesn't get mistaken for having been seen in some column." }
+      ],
+      "mistake": "Writing cols = rows instead of a fresh collections.defaultdict(set). That would make cols and rows the exact same dictionary object, so adding a digit to one would incorrectly show up in the other too.",
+      "caption": "Create cols the same way: it will map each column number to the set of digits already seen in it."
+    },
+    "5": {
+      "explain": "This creates squares, built the same way again, mapping each 3x3 box to the set of digits already placed in it. A box is identified by a pair, (box row, box column), each ranging 0-2.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as cols = collections.defaultdict(set)." },
+        { "token": "squares", "meaning": "A variable name we chose for the per-box sets." },
+        { "token": "=", "meaning": "Assignment, as above." },
+        { "token": "collections.defaultdict(set)", "meaning": "The same kind of auto-filling dictionary as rows and cols, started fresh and empty for 3x3 boxes." }
+      ],
+      "why": "The nine 3x3 boxes need their own \"no repeated digit\" bookkeeping, separate from rows and columns, since a digit can be fine within its row and column but still repeat inside its box (or vice versa).",
+      "if_removed": "Line 14 (val in squares[...]) would crash with a NameError, since squares wouldn't exist yet, and box violations would never be caught at all.",
+      "alternatives": [
+        { "code": "squares = collections.defaultdict(set)", "difference": "No real alternative: a fresh, independent set collection is needed, keyed later by each cell's (row // 3, column // 3) box position." }
+      ],
+      "mistake": "Forgetting to create squares at all and relying only on rows and cols. The board would then pass cases where a digit repeats inside one 3x3 box while still, by coincidence, avoiding any shared row or column.",
+      "caption": "Create squares: it will map each 3x3 box, identified by (box row, box column), to the set of digits already seen in it."
+    },
+    "7": {
+      "explain": "This starts a loop over every row index, r, from 0 up to (but not including) 9: the full height of the board.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation at the method level, the same as squares = collections.defaultdict(set)." },
+        { "token": "for", "meaning": "A keyword that starts a loop: \"for each item in this collection, do the indented block\"." },
+        { "token": "r", "meaning": "The loop variable: the current row index." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "range(9)", "meaning": "A built-in function call that produces the whole numbers 0 through 8: exactly the 9 row indexes of the board." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body, which runs once for each value of r." }
+      ],
+      "why": "Every one of the 9 rows has to be visited for the board to be fully checked, so the outer loop walks through them from top to bottom.",
+      "if_removed": "Without this loop, nothing inside it would ever run, and the function would reach return True immediately, never having checked a single cell.",
+      "alternatives": [
+        { "code": "for r in range(len(board)):", "difference": "Uses len(board) instead of the literal 9. It behaves identically for a proper 9x9 board, and is a little more defensive if board's size were ever different, though a Sudoku board is always 9x9 by definition." }
+      ],
+      "mistake": "Writing range(1, 9) and starting at 1 instead of 0. That would skip row 0 entirely, so any digit repeated only within row 0 would never be caught.",
+      "caption": [
+        "Done with row r = {r}. The outer loop moves to the next row.",
+        "The outer loop starts at row r = 0, the top of the board."
+      ]
+    },
+    "8": {
+      "explain": "This starts a loop over every column index, c, from 0 up to (but not including) 9, nested inside the row loop. Together, r and c visit every one of the 81 cells.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Two levels of indentation: inside the for r loop, inside isValidSudoku." },
+        { "token": "for", "meaning": "A keyword that starts a loop." },
+        { "token": "c", "meaning": "The loop variable: the current column index." },
+        { "token": "in", "meaning": "\"Take items one at a time from\"." },
+        { "token": "range(9)", "meaning": "Produces the whole numbers 0 through 8: the 9 column indexes." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the inner loop body, which runs once for each value of c." }
+      ],
+      "why": "For each row r, every column across that row has to be checked, so this inner loop runs all the way through 0-8 before the outer loop advances to the next row.",
+      "if_removed": "Without this nested loop, board[r][c] on the next line would have no c to use, and Python would raise a NameError the moment it tried to run.",
+      "alternatives": [
+        { "code": "for c in range(len(board[r])):", "difference": "Uses len(board[r]) instead of the literal 9. It behaves identically for a proper 9x9 board." }
+      ],
+      "mistake": "Writing for c in range(9) at the same indentation as for r in range(9), instead of nested one level deeper inside it. That would run the column loop once, entirely on its own, after the row loop already finished, rather than once per row.",
+      "caption": [
+        "Done with column c = {c} in row {r}. The inner loop moves to the next column.",
+        "Row {r}: the inner loop starts at column c = 0."
+      ]
+    },
+    "9": {
+      "explain": "This reads the character at the current cell, row r and column c, and stores it in val: either a digit \"1\"-\"9\", or \".\" for a blank cell.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Three levels of indentation: inside the for c loop, inside the for r loop, inside isValidSudoku." },
+        { "token": "val", "meaning": "A variable name we chose, short for \"value\": the current cell's contents." },
+        { "token": "=", "meaning": "Assignment: compute the right side, then store it in val." },
+        { "token": "board[r]", "meaning": "Indexing into board by row: this is the r-th row, itself a list of 9 strings." },
+        { "token": "[c]", "meaning": "Indexing into that row by column: this is the single character at column c." }
+      ],
+      "why": "Every later check in this pass (is it blank? does it repeat?) depends on knowing the current cell's character, so it's read into val once, up front, rather than writing board[r][c] again and again.",
+      "if_removed": "Line 11 (if val == \".\") would crash with a NameError, since val wouldn't exist yet.",
+      "alternatives": [
+        { "code": "val = board[r][c]", "difference": "No real alternative here: the rest of the loop body could use board[r][c] directly instead of val each time, but that's more to type for the exact same value, computed fresh each time instead of once." }
+      ],
+      "mistake": "Writing board[c][r] instead of board[r][c], swapping the row and column. For a square board this doesn't crash, but it silently reads the wrong cell (unless r happens to equal c), checking the transposed board instead of the real one.",
+      "caption": "Read the cell at row {r}, column {c}: val = {board[r][c]}."
+    },
+    "11": {
+      "explain": "This checks whether the current cell is blank. If val is the string \".\", Python runs the indented line below (continue); otherwise it's skipped.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same indentation as val = board[r][c]: still inside the innermost loop." },
+        { "token": "if", "meaning": "A keyword that starts a condition check. The indented block below runs only when the condition is True." },
+        { "token": "val", "meaning": "The current cell's contents." },
+        { "token": "==", "meaning": "The equality operator: checks whether two values are the same, without changing either one. Not to be confused with =, which assigns." },
+        { "token": "\".\"", "meaning": "The string that represents a blank cell." },
+        { "token": ":", "meaning": "Ends the condition. The indented line below runs only when it's True." }
+      ],
+      "why": "A blank cell has no digit to check or record, so there's nothing useful to do with it beyond skipping straight to the next cell.",
+      "if_removed": "Without this check, val would always fall through to line 14, and val in rows[r] would compare \".\" against the sets of digits, which never matches, so blanks would happen to still work by accident here, but the clearer and safer habit is to skip them explicitly.",
+      "alternatives": [
+        { "code": "if val != \".\":\n    # the rest of the loop body, re-indented one level deeper", "difference": "Flips the condition and wraps the real work in an if block instead of skipping with continue. It reaches the same result, just restructured." }
+      ],
+      "mistake": "Comparing against the character \"0\" instead of \".\". The problem's blank marker is specifically the string \".\", not \"0\", so this check would never actually match a blank cell.",
+      "caption": [
+        { "when": "val == '.'", "text": "val is \".\": this cell is blank. Skip it." },
+        "val is \"{val}\", not blank, so this check doesn't skip it."
+      ]
+    },
+    "12": {
+      "explain": "This immediately jumps back to the top of the innermost loop, moving on to the next column, without running any of the lines below it.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Four levels of indentation: this line belongs to the if block, so it only runs when the condition on line 11 was True." },
+        { "token": "continue", "meaning": "A keyword that skips the rest of the current loop iteration and goes straight to the loop's next pass." }
+      ],
+      "why": "A blank cell contributes nothing to any row, column, or box's set of digits, so there's no reason to run the repeat-check or the three .add calls for it.",
+      "if_removed": "Python would fall through to line 14 and check val (\".\") against the sets anyway. Since \".\" never matches a digit already in any set, this particular board would still come out correct, but lines 17-19 would then try to .add(\".\") into rows[r], cols[c], and squares[...], quietly polluting them with a non-digit entry.",
+      "alternatives": [
+        { "code": "if val != \".\":\n    if val in rows[r] or val in cols[c] or val in squares[(r // 3, c // 3)]:\n        return False\n    rows[r].add(val)\n    cols[c].add(val)\n    squares[(r // 3, c // 3)].add(val)", "difference": "Wraps the real work in an if val != \".\" block instead of using continue to skip past it. Same behavior, one fewer keyword, one more level of indentation for everything that follows." }
+      ],
+      "mistake": "Writing break instead of continue. break would exit the inner loop entirely, abandoning the rest of the current row instead of simply moving on to the next column.",
+      "caption": "Skip to the next column. Nothing to check or record for a blank cell."
+    },
+    "14": {
+      "explain": "This is the heart of the check: it asks whether val is already in the current row's set, the current column's set, or the current box's set. If any one of the three is True, a repeat has been found.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same indentation as val = board[r][c] and the earlier if: this line only runs when the cell wasn't blank." },
+        { "token": "if", "meaning": "A keyword that starts a condition check." },
+        { "token": "val in rows[r]", "meaning": "True exactly when val has already been added to the set for row r." },
+        { "token": "or", "meaning": "True if either side is True. Python's or short-circuits: once the left side is True, it never even evaluates the right side." },
+        { "token": "val in cols[c]", "meaning": "True exactly when val has already been added to the set for column c." },
+        { "token": "or", "meaning": "Chains the third check onto the first two the same way." },
+        { "token": "val in squares[(r // 3, c // 3)]", "meaning": "True exactly when val has already been added to the set for the current 3x3 box." },
+        { "token": "(r // 3, c // 3)", "meaning": "A tuple: the box's row (0, 1, or 2) paired with the box's column (0, 1, or 2), computed from r and c with integer (floor) division by 3." },
+        { "token": ":", "meaning": "Ends the condition. The indented line below runs only when the whole or chain is True." }
+      ],
+      "why": "A placement is invalid the moment it repeats a digit in any ONE of its row, column, or box, so this single line checks all three memberships, combined with or so that any one match is enough.",
+      "if_removed": "Without this check, the function would never detect a repeated digit anywhere, and would always fall through to adding val into the sets, eventually returning True for every board, valid or not.",
+      "alternatives": [
+        { "code": "if val in rows[r]:\n    return False\nif val in cols[c]:\n    return False\nif val in squares[(r // 3, c // 3)]:\n    return False", "difference": "Three separate if statements instead of one or chain. It checks the exact same three things and reaches the same answer; the single line with or is just more compact." }
+      ],
+      "mistake": "Using and instead of or. val in rows[r] and val in cols[c] and val in squares[...] would require val to repeat in all three groups at once before returning False, missing boards that are invalid because of just one of the three.",
+      "caption": [
+        { "when": "val in rows[r] or val in cols[c] or val in squares[(r // 3, c // 3)]", "text": "val = {val} is already in row {r}, column {c}, or box ({r // 3}, {c // 3}). That's a repeat." },
+        "val = {val} is new to row {r}, column {c}, and box ({r // 3}, {c // 3}). No repeat yet."
+      ]
+    },
+    "15": {
+      "explain": "A repeat was found. This hands False back to whoever called the method and ends it immediately, so the rest of the board is never even checked.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Four levels of indentation: this line belongs to the if block on line 14, so it only runs when a repeat was just found." },
+        { "token": "return", "meaning": "A keyword that ends the method right now and gives the value after it back to the caller." },
+        { "token": "False", "meaning": "One of Python's two boolean values. The capital F matters: false (lowercase) is just an undefined name." }
+      ],
+      "why": "The question only asks whether the board is valid overall, so the moment any single rule is broken anywhere, there's no reason to keep checking the rest.",
+      "if_removed": "If this line were removed (or replaced with pass), Python would fall through to lines 17-19 and add the repeated digit into the sets anyway, then keep scanning the rest of the board as if nothing were wrong, eventually returning True for an invalid board.",
+      "alternatives": [
+        { "code": "return 0", "difference": "0 is falsy and would often be accepted informally, but it's an int, not a bool, so it doesn't match the promised -> bool return type." }
+      ],
+      "mistake": "Writing return \"False\" with quotes. That returns a string of text, which Python (and LeetCode) treats as truthy, not the boolean False.",
+      "caption": "Repeat found at row {r}, column {c}. Return False."
+    },
+    "17": {
+      "explain": "The digit wasn't a repeat, so it's added to its row's set. A later cell in the same row that holds this same digit will now find it on line 14.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Back to the same indentation as val = board[r][c]: this line runs whenever line 14's check didn't return False." },
+        { "token": "rows[r]", "meaning": "The set of digits already seen in row r. Since rows is a defaultdict(set), this creates a fresh empty set here automatically if row r has never had a digit added before." },
+        { "token": ".add(", "meaning": "A set method that inserts a value. If the value is already present, the set is left unchanged, since sets never store duplicates." },
+        { "token": "val)", "meaning": "The current cell's digit, the value being inserted." }
+      ],
+      "why": "The order matters here, the same way it does in a seen-before check: this line only runs because line 14 already confirmed val isn't a repeat, so it's now safe to record it as seen.",
+      "if_removed": "rows[r] would stay empty forever, line 14's val in rows[r] check would never find anything, and two of the same digit in one row would slip through undetected.",
+      "alternatives": [
+        { "code": "rows[r] |= {val}", "difference": "The set union-update operator. It has the same effect as .add(val), just spelled differently; most Python code prefers .add for a single value." }
+      ],
+      "mistake": "Indenting this line one level further, putting it inside the if block from line 14, right after return False. Code after a return never runs, so nothing would ever be added to any set, and every digit would look brand-new forever.",
+      "caption": "Record val = {val} in row {r}'s set."
+    },
+    "18": {
+      "explain": "The same digit is also added to its column's set, mirroring line 17 but keyed by column instead of row.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same indentation as rows[r].add(val): still runs whenever line 14's check didn't return False." },
+        { "token": "cols[c]", "meaning": "The set of digits already seen in column c." },
+        { "token": ".add(", "meaning": "The same set method as on line 17: inserts a value, doing nothing if it's already present." },
+        { "token": "val)", "meaning": "The current cell's digit." }
+      ],
+      "why": "A digit has to be remembered separately for its column, independent of its row, since the two checks protect against different kinds of repeats.",
+      "if_removed": "cols[c] would stay empty forever, and two of the same digit sharing a column (even in completely different rows) would never be caught.",
+      "alternatives": [
+        { "code": "cols[c] |= {val}", "difference": "The set union-update operator, equivalent to .add(val) for a single value." }
+      ],
+      "mistake": "Writing cols[r] instead of cols[c], mixing up the row and column index. That would record the digit under the wrong column entirely.",
+      "caption": "Record val = {val} in column {c}'s set."
+    },
+    "19": {
+      "explain": "The same digit is also added to its 3x3 box's set, keyed by the (box row, box column) pair computed the same way as on line 14.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Same indentation as cols[c].add(val): still runs whenever line 14's check didn't return False." },
+        { "token": "squares[(r // 3, c // 3)]", "meaning": "The set of digits already seen in the current cell's 3x3 box, identified by the same (r // 3, c // 3) pair used on line 14." },
+        { "token": ".add(", "meaning": "The same set method again: inserts a value, doing nothing if it's already present." },
+        { "token": "val)", "meaning": "The current cell's digit." }
+      ],
+      "why": "The box check needs its own memory too, separate from both rows and cols, since a digit can repeat inside a box without sharing a row or a column with its earlier occurrence (for example, two diagonal cells within the same box).",
+      "if_removed": "squares[...] would stay empty forever, and a repeated digit confined to one 3x3 box, but spread across different rows and columns within it, would never be caught.",
+      "alternatives": [
+        { "code": "box = (r // 3, c // 3)\n# then use squares[box] here and on line 14", "difference": "Computes (r // 3, c // 3) once and stores it in a named variable, reused in both places. Same result; this just avoids writing the same arithmetic expression twice." }
+      ],
+      "mistake": "Writing squares[(r // 3, c // 3)].add(r) or passing the wrong value, instead of val. Adding anything other than the actual digit placed would make this box's set meaningless for future comparisons.",
+      "caption": "Record val = {val} in box ({r // 3}, {c // 3})'s set."
+    },
+    "21": {
+      "explain": "The entire board was scanned with no repeat ever found in any row, column, or box. This hands True back to whoever called the method.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation back at the method level: this line runs once, only after both loops finish completely without an early return." },
+        { "token": "return", "meaning": "A keyword that ends the method and hands the following value back to the caller." },
+        { "token": "True", "meaning": "Python's other boolean value, meaning \"yes\"." }
+      ],
+      "why": "If every cell made it through the loop without ever triggering line 15's return False, then by definition no row, column, or box has a repeated digit, so the board is valid.",
+      "if_removed": "If the function never returns here, Python reaches the true end of the method and gives back None instead of True, which LeetCode marks wrong.",
+      "alternatives": [
+        { "code": "return all(len(s) == len(set(s)) for s in board)", "difference": "A completely different (and incorrect) shortcut that only re-checks rows for duplicates, missing columns and boxes entirely. It's shown here only as a reminder that a real fix needs all three checks, not as a safe substitute for this line." }
+      ],
+      "mistake": "Indenting this line so it's inside the for r loop. Then the function would return True after checking just the very first row, never examining the rest of the board.",
+      "caption": "Every cell was checked with no repeats found. Return True."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def isValidSudoku(self, board: List[List[str]]) -> bool:\n        for r in range(9):\n            for c in range(9):\n                val = board[r][c]\n                if val == \".\":\n                    continue\n\n                for c2 in range(9):\n                    if c2 != c and board[r][c2] == val:\n                        return False\n\n                for r2 in range(9):\n                    if r2 != r and board[r2][c] == val:\n                        return False\n\n                br, bc = 3 * (r // 3), 3 * (c // 3)\n                for r2 in range(br, br + 3):\n                    for c2 in range(bc, bc + 3):\n                        if (r2, c2) != (r, c) and board[r2][c2] == val:\n                            return False\n\n        return True",
+    "explain": "For every non-blank cell, directly re-scan the rest of its row for a matching digit, then the rest of its column, then the 3x3 box it belongs to (found by rounding r and c down to the box's top-left corner, br and bc). If any of those scans turns up the same digit at a different position, the board is invalid.",
+    "why_slow": "Every one of the 81 cells repeats a 9-cell row scan, a 9-cell column scan, and a 9-cell box scan, none of which are remembered between cells, so the same comparisons get redone over and over for different cells that happen to share a row, column, or box.",
+    "how_pattern_fixes": "The slow part is re-scanning a row, column, or box from scratch for every single cell inside it. Keeping one running set per row, column, and box removes the re-scanning entirely: checking \"has this digit already appeared here\" becomes a single set-membership test, answered instantly, no matter how much of the row, column, or box has already been filled in.",
+    "time": "O(1) per cell for a fixed 9x9 board, same Big O as the hash-set version, since both only ever do a bounded, constant amount of work per cell; the hash-set version is simply doing noticeably less of it (3 set checks instead of up to 27 cell comparisons).",
+    "space": "O(1): no extra sets are kept at all, just a handful of loop variables, however many digits are already placed."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it. In collections.defaultdict(set), set is the argument.",
+    "assignment": "Giving a name to a value with =, as in x = 5. Afterwards, using x means 5. It is not a statement of equality. That's ==.",
+    "Big O": "A shorthand for how the work (or memory) grows as the input gets bigger. O(1) means it doesn't grow at all, however big the input is. O(n²) means doubling one dimension of the input quadruples the work.",
+    "block": "A group of lines indented under a line that ends with a colon (:). The whole block belongs to that line, for example the body of a loop or an if.",
+    "bool": "Python's name for the boolean type: a value that is either True or False.",
+    "boolean": "A value that is either True or False. Conditions in if statements produce booleans.",
+    "brute force": "Solving a problem by trying every possibility. It is usually simple and correct, but slow for big inputs.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like range(9).",
+    "character": "A single letter, digit, space or symbol in a string. \".\" and \"5\" are both single characters.",
+    "class": "A blueprint that groups related functions (and data) together. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows. Inside brackets after a name it introduces a type hint.",
+    "condition": "An expression that is True or False, used by if to decide whether its block runs.",
+    "defaultdict": "A dictionary from the collections module that makes up a starting value for missing keys, so d[key].add(x) works even the first time, with no separate check needed first.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key → value pairs and finds any key instantly.",
+    "edge case": "An unusual input that might break code: a totally empty board, a fully filled one, or a repeat hidden only inside a box.",
+    "equality operator": "The == symbol, which checks whether two values are the same, without changing either one. Not to be confused with = (assignment).",
+    "expression": "Any piece of code that produces a value, like r // 3 or val in rows[r].",
+    "for loop": "A loop that runs its block once for each item in a collection (or each number from range), putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions. You define it once with def and call it whenever you need it. It can take inputs and give back a result.",
+    "hash map": "A structure that stores key → value pairs and finds a key almost instantly by turning the key into a storage location (hashing). Python's dictionary is a hash map.",
+    "index": "A position in a list, counting from 0. board[0] is the first row; board[0][0] is its first cell.",
+    "indentation": "Spaces at the start of a line. In Python, indentation decides which block a line belongs to. Four spaces per level is the standard.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "key": "The part of a dictionary entry you look things up by. In rows[r], r is the key.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there with d[key].",
+    "keyword": "A word Python reserves for itself, like def, for, if, in, return, class, continue. You can't use these as variable names.",
+    "len": "A built-in function that gives the number of items in something: len(board) is 9.",
+    "list": "An ordered collection written with square brackets, like [\"5\", \"3\", \".\"]. You reach items by their index.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection or range.",
+    "method": "A function that lives inside a class, or a function built into an object like a set. It's called with a dot, like rows[r].add(val).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function that ends without a return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list, a set, or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: // divides and rounds down, == compares, = assigns, in checks whether a value is in a collection.",
+    "parameter": "A name in a function's definition that will hold an input. board is isValidSudoku's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like one hash set per group being checked, or two pointers.",
+    "range": "A built-in function that produces whole numbers. range(9) gives 0, 1, 2, ..., 8: it starts at 0 and stops before 9.",
+    "return": "A keyword that ends a function and hands a value back to the caller.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant checks for whether a value is already inside it, like a dictionary with keys but no values. It is written set() when empty.",
+    "short-circuiting": "and and or stop as soon as the answer is known. True or X never evaluates X, since the whole or is already known to be True.",
+    "str": "Python's name for the string type.",
+    "string": "Text, written in quotes like \".\" or \"5\". Python calls the type str, and even a single character is still a string, not its own separate type.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an unclosed bracket, and so on.",
+    "top": "Here, the top-left corner or top edge of the board: where row and column indexes are at their lowest.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1), and unlike a list, it can be used as a dictionary key.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "type hint": "A label like board: List[List[str]] that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "A piece of data, like a single character read from the board. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =. Like a labeled sticky note you can move to a different value later."
+  },
+  "visualizer": [
+    {
+      "type": "grid",
+      "title": "board",
+      "source": "board",
+      "cursor": "[r, c] if 'c' in globals() else None",
+      "rowHighlight": "r if 'r' in globals() else None",
+      "colHighlight": "c if 'c' in globals() else None",
+      "boxHighlight": "[r // 3, c // 3] if 'c' in globals() else None",
+      "marks": {
+        "compared": "[[r, c]] if __line__ == 14 else []",
+        "found": "[[r, c]] if __line__ == 15 else []",
+        "done": "[[rr, cc] for rr in range(9) for cc in range(9) if rr < r or (rr == r and cc < c)] if 'c' in globals() else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "rows[r]  (digits already seen in this row)",
+      "source": "[[v, True] for v in sorted(rows.get(r, set()))] if 'r' in globals() else []",
+      "lookup": "val if __line__ == 14 else None"
+    },
+    {
+      "type": "hashmap",
+      "title": "cols[c]  (digits already seen in this column)",
+      "source": "[[v, True] for v in sorted(cols.get(c, set()))] if 'c' in globals() else []",
+      "lookup": "val if __line__ == 14 else None"
+    },
+    {
+      "type": "hashmap",
+      "title": "squares[(r//3, c//3)]  (digits already seen in this 3x3 box)",
+      "source": "[[v, True] for v in sorted(squares.get((r // 3, c // 3), set()))] if 'c' in globals() else []",
+      "lookup": "val if __line__ == 14 else None"
+    }
+  ]
+}
