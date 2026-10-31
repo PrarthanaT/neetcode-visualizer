@@ -1,0 +1,402 @@
+{
+  "slug": "sliding-window-maximum",
+  "title": "Sliding Window Maximum",
+  "difficulty": "Hard",
+  "category": "Sliding Window",
+  "leetcode": 239,
+  "statement": [
+    "You are given an array of integers nums and a whole number k.",
+    "A window of size k slides across nums from the very left to the very right, moving one position at a time.",
+    "For every position the window stops at, record the largest value currently inside it. Return those values, in order, as a list."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3",
+      "output": "[3, 3, 5, 5, 6, 7]",
+      "explain": "The first window is [1, 3, -1], max 3. The window then slides one step at a time: [3, -1, -3] (max 3), [-1, -3, 5] (max 5), [-3, 5, 3] (max 5), [5, 3, 6] (max 6), [3, 6, 7] (max 7). This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [1], k = 1",
+      "output": "[1]",
+      "explain": "The only window is the whole array, so its only value is also its maximum."
+    }
+  ],
+  "pattern": {
+    "name": "Monotonic decreasing deque of indexes, so the current window's max is always at the front",
+    "summary": "Keep q, a deque of indexes into nums (built here from a plain list, used only at its two ends), kept so the values at those indexes are always strictly decreasing from front to back. Before adding index r, pop indexes off the BACK whose values are smaller than nums[r]: they can never be the max of any future window, since r is both newer and bigger. Pop from the FRONT whenever the index sitting there has slid outside the window entirely. Whatever's left at the front is always the current window's maximum: it's the oldest surviving index, and every index after it in q points to something smaller.",
+    "recognize": [
+      "You need the max (or min) of every fixed-size window as it slides across an array, not just the max of one window.",
+      "Recomputing a window's max from scratch on every slide would re-examine most of the same elements the previous window already looked at.",
+      "An element that's smaller than something newer, and will leave the window no later than that newer element does, can be thrown away for good: it can never be the answer for any future window.",
+      "You need the actual maximum value repeatedly, not just a running count or a yes/no check, which is what calls for a monotonic deque instead of a simpler two-pointer count."
+    ],
+    "avoid_when": [
+      "You only need the max of the whole array once, not a separate max for every sliding window. A single running maximum in one pass is enough.",
+      "The window's size should grow and shrink based on some condition, instead of staying fixed. That's a different sliding-window shape entirely (Minimum Window Substring's).",
+      "k is very close to len(nums), where a heap keyed by value might be simpler to reach for, even though each of its operations costs more than the deque's do.",
+      "You need the value or index of every element currently in the window, not just its maximum."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "q always holds strictly decreasing values of nums, read front to back, because the while loop on lines 8-9 removes anything smaller than the newest arrival before that arrival is ever added.",
+      "Every index enters q exactly once, on line 10, and only ever leaves through a pop, either line 9 (too small) or line 13 (too old). It never sits in q twice.",
+      "The front of q is only checked for expiring on line 12, not proactively removed the moment l passes it, so q can briefly hold an index just behind l that simply hasn't been checked yet.",
+      "res.append(nums[q[0]]) on line 16 only runs once r - l + 1 == k, which happens for every r from k - 1 onward, so res ends up with exactly len(nums) - k + 1 entries, one per window position."
+    ],
+    "time": "O(n), linear time. Each index enters q exactly once (line 10) and leaves at most once (line 9 or line 13), so across the whole run the total work done by every pop combined is at most n, even though a single pass of the while loop can pop several indexes back to back.",
+    "space": "O(k) in the worst case: q can hold at most k indexes at once, since anything more than k positions behind r would already have expired off the front.",
+    "edge_cases": [
+      "k == 1: line 12 expires the previous index immediately every single step, so q never holds more than one index, and the method just returns nums itself.",
+      "k == len(nums): there's only one window, and q holds a strictly decreasing run of candidates the whole way through until the single answer is read right at the end.",
+      "A strictly decreasing run, like [5, 4, 3, 2, 1]: the while loop on lines 8-9 never pops anything, since nothing new is ever bigger than what's already in q, so q just grows until indexes start expiring off the front instead.",
+      "A strictly increasing run, like [1, 2, 3, 4, 5]: every new r immediately pops everything already in q on lines 8-9, so q never holds more than one index at a time."
+    ]
+  },
+  "code": "class Solution:\n    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:\n        res = []\n        q = []\n        l = 0\n\n        for r in range(len(nums)):\n            while q and nums[q[-1]] < nums[r]:\n                q.pop()\n            q.append(r)\n\n            if q[0] < l:\n                q.pop(0)\n\n            if r - l + 1 == k:\n                res.append(nums[q[0]])\n                l += 1\n\n        return res\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().maxSlidingWindow([1, 3, -1, -3, 5, 3, 6, 7], 3)",
+    "expected": [3, 3, 5, 5, 6, 7],
+    "describe": "nums = [1, 3, -1, -3, 5, 3, 6, 7], k = 3"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def maxSlidingWindow would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named maxSlidingWindow. It takes the array nums and the window size k, and promises to give back a list of whole numbers: one maximum per window position.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "maxSlidingWindow", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "nums: List[int],", "meaning": "The array to slide across, hinted as a List of int (whole numbers)." },
+        { "token": "k: int)", "meaning": "The window's fixed size, hinted as an int." },
+        { "token": "-> List[int]", "meaning": "Return type hint: the answer is itself a list of whole numbers." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The names and parameter order are chosen by LeetCode: nums first (the array), k second (the window's size). Returning a list, one value per window, directly matches what the problem asks for.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def maxSlidingWindow(self, nums, k):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Swapping the parameter order to (self, k, nums). LeetCode calls this method with nums first, so swapping would feed the window size into nums and crash the first time range(len(nums)) is reached.",
+      "caption": "Python remembers the maxSlidingWindow instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates res, an empty list that will collect one maximum per window position, in order.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for result." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "The answer is a list of maximums, one for every position the window stops at, and they need to be collected somewhere as they're found, in the order the window visits them.",
+      "if_removed": "Line 16 would crash with a NameError, since res wouldn't exist to append to.",
+      "alternatives": [
+        { "code": "res = list()", "difference": "Makes the same empty list; [] is shorter." }
+      ],
+      "mistake": "Creating res inside the for loop on line 7 instead of before it. That would throw away every earlier window's maximum each time a new one is found, leaving res with at most one entry at the end.",
+      "caption": "Make an empty list called res. It will collect this window's maximum, once per position."
+    },
+    "4": {
+      "explain": "This creates q, an empty list that will act as the deque of indexes into nums, kept in strictly decreasing order of value from front to back.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "q", "meaning": "A variable name we chose, short for queue, holding the deque's indexes." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "[]", "meaning": "Square brackets with nothing inside make a new, empty list." }
+      ],
+      "why": "q needs to support adding and removing at BOTH ends (back for new, too-small values; front for expired, too-old ones). A plain Python list supports both, through append/pop at the back and pop(0) at the front, so there's no need for a specialized deque type here.",
+      "if_removed": "Line 8 would crash with a NameError, since q wouldn't exist to check or update.",
+      "alternatives": [
+        { "code": "from collections import deque\nq = deque()", "difference": "Python's own deque type makes removing from the front O(1) instead of the O(k) that list.pop(0) costs. It needs an extra import; since q never holds more than k indexes here, a plain list keeps things simple without changing the overall O(n) result." }
+      ],
+      "mistake": "Writing q = {} instead. Curly braces with nothing inside make an empty dictionary, not an empty list, and dictionaries don't support append or pop(0) the same way.",
+      "caption": "Make an empty list called q. It will hold indexes into nums, kept in decreasing order of value."
+    },
+    "5": {
+      "explain": "This creates l, the window's left edge, starting at position 0.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l", "meaning": "A variable name for the window's left boundary." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any array: the window starts as far left as possible." }
+      ],
+      "why": "The window needs two edges to track its current span. l starts at the very first index, since before any value has been read, the only possible window starts there.",
+      "if_removed": "Line 12 (and every line that compares against l) would crash with a NameError, since l wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = r = 0", "difference": "Chains an assignment to set two names at once. r is reassigned by the for loop on line 7 anyway, so this would only save a line, not change behaviour." }
+      ],
+      "mistake": "Starting l at 1 instead of 0. That would skip ever letting the very first window begin at index 0, which is where the real first window has to start.",
+      "caption": "Make l = 0: the window's left edge starts at the first index."
+    },
+    "7": {
+      "explain": "This loop moves r through every index of nums, one at a time. Each pass tries to add index r to q, then checks whether the window has reached size k.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "r", "meaning": "The loop variable: the window's right edge, the newest index being added." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "range(len(nums))", "meaning": "range of len(nums) produces every valid index of nums, 0 through len(nums) - 1." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every index needs a turn as the window's newest right edge, since the window has to slide across the entire array, one position at a time.",
+      "if_removed": "Without this loop, the body would run at most once, and only the very first index of nums would ever be considered.",
+      "alternatives": [
+        { "code": "r = 0\nwhile r < len(nums):\n    ...\n    r += 1", "difference": "A while loop doing the same sweep with an explicit counter. More typing for an identical result; the for loop is simpler here since r always advances by exactly 1." }
+      ],
+      "mistake": "Writing for r in range(k - 1, len(nums)): to skip straight to the first full window. That would skip ever adding the first k - 1 indexes to q, so the very first window's candidates would be missing entirely.",
+      "caption": [
+        { "when": "r < len(nums)", "text": "r moves to nums[{r}] = {nums[r]} at index {r}. Try to add it to q." },
+        "Every index of nums has had a turn as the window's right edge."
+      ]
+    },
+    "8": {
+      "explain": "This checks whether q has anything in it, and if so, whether the value at its back end (its most recently added index) is smaller than the new value nums[r].",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "while", "meaning": "A keyword that starts a loop which keeps repeating its block for as long as the condition stays True." },
+        { "token": "q", "meaning": "On its own, a non-empty list is True and an empty one is False." },
+        { "token": "and", "meaning": "Both sides must be True. Python stops checking the moment the left side is False, so nums[q[-1]] is never evaluated when q is empty." },
+        { "token": "nums[q[-1]]", "meaning": "q[-1] is the index most recently added to q (the back); nums[q[-1]] is the value stored there." },
+        { "token": "< nums[r]", "meaning": "True when that back value is smaller than the newly arrived value." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below runs as long as it's True." }
+      ],
+      "why": "A value at the back of q that's smaller than nums[r] can never be any future window's maximum: nums[r] is both newer (it will still be in the window after that value expires) and bigger. There's no reason to keep it around at all.",
+      "if_removed": "q could end up holding values that are smaller than something newer and still around, so q[0] (read on line 16) might not actually be the window's true maximum anymore.",
+      "alternatives": [
+        { "code": "if q and nums[q[-1]] < nums[r]:\n    q.pop()", "difference": "A single if only removes ONE smaller value, but several in a row at the back of q could all be smaller than nums[r]. Only a while loop keeps removing until the back is no longer smaller (or q is empty)." }
+      ],
+      "mistake": "Writing nums[q[-1]] > nums[r] by accident, flipping the comparison. That would throw away the bigger, more useful values and keep the ones that can never be a future max.",
+      "caption": [
+        { "when": "q and nums[q[-1]] < nums[r]", "text": "nums[{r}] = {nums[r]} beats nums[q[-1]] = {nums[q[-1]] if q else None}. Pop the back of q." },
+        "Either q is empty, or the back of q already holds something bigger. Stop popping."
+      ]
+    },
+    "9": {
+      "explain": "Remove the index at the back of q, since its value can never be a future window's maximum once nums[r] is around.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block, so it only runs when line 8's condition was True." },
+        { "token": "q.pop()", "meaning": ".pop with no argument removes and returns the LAST item of a list, which is q's back end here." }
+      ],
+      "why": "Discarding this index for good is safe: it's smaller than nums[r], and nums[r] will outlive it in every future window they could both still be part of.",
+      "if_removed": "The while loop's own condition on line 8 would stay True forever, since nothing would ever actually leave q, running forever instead of stopping once the back is no longer smaller.",
+      "alternatives": [
+        { "code": "q.pop(-1)", "difference": "Explicitly asking for the last index. q.pop() with no argument already defaults to removing the last item, so this is identical, just more typing." }
+      ],
+      "mistake": "Writing q.pop(0) here by accident, removing from the FRONT instead of the back. That would discard the current window's oldest surviving candidate instead of the one that just became useless.",
+      "caption": "Pop index {q[-1] if q else None} off the back of q: its value can't win anymore."
+    },
+    "10": {
+      "explain": "Add index r to the back of q, now that everything smaller than nums[r] has already been cleared out of its way.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the while loop has finished." },
+        { "token": "q.append(", "meaning": ".append is a list method that adds one item to the end." },
+        { "token": "r)", "meaning": "The index just reached, being added to q." }
+      ],
+      "why": "r needs to join q so it can be considered as a candidate maximum for this window and every future window it's still inside. By this point, q's back is guaranteed to hold a value bigger than nums[r], keeping the whole list decreasing.",
+      "if_removed": "r would never become a candidate for any window's maximum, even if it's the biggest value around, so the method would silently skip values and return wrong maximums.",
+      "alternatives": [
+        { "code": "q += [r]", "difference": "Adds a single-item list onto the end of q using +=. Works the same as append here; append is the more direct, common way to add one item." }
+      ],
+      "mistake": "Appending nums[r] itself instead of r. q needs to store POSITIONS, not values, so that line 12 can later tell whether an index has aged out of the window; storing values alone would lose that information.",
+      "caption": "Add index {r} to the back of q: nums[{r}] = {nums[r]} is now a candidate."
+    },
+    "12": {
+      "explain": "This checks whether the index currently at the front of q has slid outside the window entirely, meaning it's older than the window's left edge l.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "q[0]", "meaning": "The index at the front of q, the oldest surviving candidate." },
+        { "token": "< l", "meaning": "True when that index is to the left of the window's current left edge, meaning it's no longer inside the window." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "An index that's fallen behind l isn't part of the current window anymore, so it can't be the answer for it, even if its value is still the biggest one q happens to hold.",
+      "if_removed": "q[0] on line 16 could point at an index outside the current window, reporting a stale maximum that was never actually inside the window being measured.",
+      "alternatives": [
+        { "code": "while q and q[0] < l:\n    q.pop(0)", "difference": "A while loop instead of if. Since l only ever advances by one step per r, at most one index can expire per pass here, so if is enough; the while version behaves identically but suggests more than one removal might be needed." }
+      ],
+      "mistake": "Writing q[0] <= l instead of <. l itself is still inside the window (the window spans from l to r, inclusive), so using <= would wrongly expire the window's own left edge.",
+      "caption": [
+        { "when": "q[0] < l", "text": "Index {q[0]} has slid outside the window (left edge is now {l}). Pop the front of q." },
+        "The front of q is still inside the window. Nothing to expire."
+      ]
+    },
+    "13": {
+      "explain": "Remove the index at the front of q, since it no longer belongs to the window at all.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 12's condition was True." },
+        { "token": "q.pop(0)", "meaning": ".pop(0) removes and returns the FIRST item of a list, instead of the last." }
+      ],
+      "why": "Once an index has expired, it should never be considered again, so it needs to be removed from q entirely, not just skipped over.",
+      "if_removed": "q[0] could keep pointing at the same expired index forever, so line 16 would keep reporting a stale value instead of the window's real current maximum.",
+      "alternatives": [
+        { "code": "q = q[1:]", "difference": "Slices out everything except the first item, building a brand new list. It achieves the same result as pop(0), but copies the rest of q's contents every time instead of removing one item in place." }
+      ],
+      "mistake": "Writing q.pop() here by accident, removing from the BACK instead of the front. That would discard the newest candidate instead of the one that actually expired.",
+      "caption": "Pop index {q[0]} off the front of q: it's no longer inside the window."
+    },
+    "15": {
+      "explain": "This checks whether the window has grown to its full size k yet. Only once it has does it make sense to report a maximum for it.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "r - l + 1", "meaning": "The window's current size: the distance from l to r, plus 1 since both ends are included." },
+        { "token": "== k", "meaning": "True exactly when the window has reached its full, fixed size." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "For the first k - 1 indexes, the window is still filling up and hasn't reached size k yet, so there's no complete window to report a maximum for.",
+      "if_removed": "res.append on line 16 would run on every single pass, including ones where the window is still smaller than k, producing far more entries than the len(nums) - k + 1 windows that actually exist, and l would never advance.",
+      "alternatives": [
+        { "code": "if r >= k - 1:", "difference": "Checks r directly against k - 1 instead of the window's size. Since l only starts advancing once the window first reaches size k, and from then on grows in lockstep with r, this behaves identically here, but it hides WHY the window is ready (because it reached size k) behind a check that looks like it's only about r." }
+      ],
+      "mistake": "Using >= instead of ==. Since l advances by exactly one every time this condition fires, r - l + 1 never actually grows past k once it first gets there, so >= would behave identically, but == makes it clear the window's size is meant to stay pinned, not merely bounded.",
+      "caption": [
+        { "when": "r - l + 1 == k", "text": "Window size {r - l + 1} has reached k = {k}. Record its maximum." },
+        "Window size {r - l + 1} hasn't reached k = {k} yet. Keep growing."
+      ]
+    },
+    "16": {
+      "explain": "Record this window's maximum: the value at the index currently sitting at the front of q.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 15's condition was True." },
+        { "token": "res.append(", "meaning": ".append is a list method that adds one item to the end." },
+        { "token": "nums[q[0]])", "meaning": "q[0] is the front index; nums[q[0]] is the value stored there, the window's current maximum." }
+      ],
+      "why": "q is kept strictly decreasing and only ever holds indexes still inside the window (expired ones are removed by line 13), so its front is always the biggest surviving value, exactly the window's maximum.",
+      "if_removed": "res would stay empty forever, and the method would return [] no matter what nums and k were.",
+      "alternatives": [
+        { "code": "res.append(max(nums[l:r + 1]))", "difference": "Recomputes the maximum by scanning the whole window directly. Gives the same answer, but costs O(k) every single window instead of the O(1) read that q's front already gives for free." }
+      ],
+      "mistake": "Writing res.append(nums[r]) instead of nums[q[0]]. That would report the newest value in the window, not its actual maximum, which are only the same thing when r happens to be the biggest index in q.",
+      "caption": "Window from {l} to {r}: maximum is nums[{q[0]}] = {nums[q[0]]}."
+    },
+    "17": {
+      "explain": "Move the window's left edge one step to the right, since this window's maximum has just been recorded and it's time to slide forward.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the if block from line 15." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Sliding the window means moving both of its edges forward together. r already advances on its own through the for loop; l has to be moved explicitly, exactly once per window reported.",
+      "if_removed": "l would stay at 0 forever, so r - l + 1 would just keep growing past k, and line 15's == k check would never be True again after the first time, so only one maximum would ever be recorded.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 here by accident instead of l += 1. The for loop already advances r on its own; manually bumping it again would skip an index of nums entirely.",
+      "caption": "Slide the window forward: l moves to {l + 1}."
+    },
+    "19": {
+      "explain": "Once every index of nums has had a turn as the window's right edge, return the list of recorded maximums, one per window position.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the list of maximums collected." }
+      ],
+      "why": "res has gained exactly one entry per window position, in the order the window visited them, which is exactly the answer the problem asks for.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the list of maximums, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return res[:]", "difference": "Returns a copy of res instead of res itself. Since nothing else holds a reference to res after the method ends, this makes no observable difference here." }
+      ],
+      "mistake": "Putting this return statement inside the for loop. Then the method would stop after the very first pass, before most windows had even been reached.",
+      "caption": "Every index has been checked. Return res: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def maxSlidingWindow(self, nums: List[int], k: int) -> List[int]:\n        res = []\n        for l in range(len(nums) - k + 1):\n            windowMax = nums[l]\n            for i in range(l, l + k):\n                windowMax = max(windowMax, nums[i])\n            res.append(windowMax)\n        return res",
+    "explain": "Try every possible left edge l for a window of size k. For each one, scan all k values inside that window directly to find its maximum, then move on to the next window.",
+    "why_slow": "For n = len(nums), this checks roughly n windows, and scanning k values inside each one costs O(k), for a total around O(n * k). It also throws away all the work done finding one window's maximum and starts over from scratch for the very next window, even though the two windows overlap in all but two positions.",
+    "how_pattern_fixes": "The monotonic deque keeps candidates for the maximum alive across windows instead of rescanning. Each index is only ever added to q once and removed from it once, so the total work across the entire run is O(n) instead of O(n * k).",
+    "time": "O(n * k): for n = len(nums), about n windows, each costing O(k) to scan directly.",
+    "space": "O(k): windowMax is a single number, but conceptually each window's scan touches k values at a time."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips B entirely (short-circuiting).",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n * k) grows with both n and k together. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in while and if statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "deque": "A double-ended queue: a list-like structure that's quick to add to or remove from at both ends. This solution builds one out of a plain Python list, since it never grows past k items.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds a key almost instantly.",
+    "expression": "Any piece of code that produces a value, like r - l + 1 or nums[q[-1]] < nums[r].",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. append and pop(0) change a list in place.",
+    "inclusive": "Including the end points. An inclusive window from 2 to 5 contains 2, 3, 4 and 5.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "join": "Used loosely in English here: an index \"joins\" q, meaning it becomes part of it, not Python's string .join() method.",
+    "keyword": "A word reserved by Python, like for, while, if, return.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3].",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, < compares.",
+    "parameter": "A name in a function's definition that receives an input. nums and k are maxSlidingWindow's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in an array. Here l and r are pointers.",
+    "pop": "A list method that removes the LAST item and gives it back. pop(0) removes the first item instead, which is slower, since every remaining item has to shift down by one.",
+    "queue": "A first in, first out line: the oldest item leaves first. That's the opposite of a stack.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "reference": "What a variable actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "A piece of data, like a number stored in a list. More generally, anything a variable can refer to.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of nums currently being considered, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "list(range(l, r + 1)) if 'r' in globals() else []",
+        "found": "[q[0]] if __line__ in (15, 16) and q and r - l + 1 == k else []"
+      }
+    },
+    {
+      "type": "stack",
+      "title": "q  (deque of indexes; bottom = front/oldest, top = back/newest)",
+      "source": "q",
+      "marks": {
+        "compared": "[len(q) - 1] if __line__ == 8 and q and nums[q[-1]] < nums[r] else []",
+        "found": "[0] if __line__ in (12, 13) and q and q[0] < l else []"
+      }
+    }
+  ]
+}
