@@ -1,0 +1,342 @@
+{
+  "slug": "longest-substring-without-repeating-characters",
+  "title": "Longest Substring Without Repeating Characters",
+  "difficulty": "Medium",
+  "category": "Sliding Window",
+  "leetcode": 3,
+  "statement": [
+    "You are given a string s. Find the length of the longest run of characters inside s, kept in their original order with none skipped, that never repeats a character.",
+    "That kind of run (characters that stay next to each other in order, with nothing skipped) is called a substring. It's different from picking characters out of order.",
+    "Return just the length of the longest such substring, not the substring itself."
+  ],
+  "examples": [
+    {
+      "input": "s = \"abcabcbb\"",
+      "output": "3",
+      "explain": "\"abc\" is a substring with no repeated character, and it has length 3. Every longer substring, like \"abca\", repeats a character ('a'). This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"bbbbb\"",
+      "output": "1",
+      "explain": "Any substring longer than one character here is just \"bb\" or more, which repeats 'b'. The longest substring with no repeat is a single character."
+    }
+  ],
+  "pattern": {
+    "name": "Sliding window with a set of the window's characters",
+    "summary": "Grow a window by moving r forward one character at a time, adding each new character to a set as it enters. If the character r just reached is already in the set, the window has a repeat in it, so shrink the window from the left: remove characters from the set one at a time, advancing l, until the repeat is gone. Only after the window is guaranteed to have no repeats, record its length if it beats the best seen.",
+    "recognize": [
+      "You're asked for the longest (or shortest) contiguous run of a sequence that satisfies some constraint, here \"no repeated character\".",
+      "Growing the window by one character at a time lets you check, with a quick membership test, whether the window just became invalid.",
+      "When the window becomes invalid, it's always the newly added character causing it, so only shrinking from the LEFT end can fix it. You never need to remove from the right.",
+      "The brute-force answer checks every substring (or every pair of start and end positions), and the problem hints that s can be long."
+    ],
+    "avoid_when": [
+      "Checking \"is the window still valid\" needs more than a yes/no membership test, like how many times each character appears. Longest Repeating Character Replacement needs counts, not just presence.",
+      "You need a window of a FIXED size instead of one that grows and shrinks to find the best length. That's a different sliding window shape.",
+      "The string is tiny, and checking every substring directly with a loop inside a loop is simple enough to read and just as fast at that size.",
+      "The order characters appear in matters to the answer, not just which ones are present. A set forgets both order and how many times something appeared."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Every character is handled through the same loop: either it's new to the window (grow by adding it), or it's a repeat that forces characters out of the window, through the while loop, until it's safe to add.",
+      "l only ever moves forward, never backward, and it never passes r. So even though there's a loop inside a loop, across the ENTIRE run l advances at most len(s) times in total, not once per r.",
+      "res is only updated AFTER the while loop has finished, which is the one moment the window is guaranteed to have no repeats. r - l + 1 at that point always measures a real, valid window's length.",
+      "charSet never holds anything outside the current window. Everything the while loop removes was added earlier, when its index first entered the window between l and r."
+    ],
+    "time": "O(n), linear time. n is the length of s. r makes exactly n passes, and although the while loop can run several times per pass, l only ever moves forward and never exceeds r, so across the whole run l takes at most n steps in total. Both pointers together do at most about 2n steps.",
+    "space": "O(m), where m is the number of distinct characters that can appear in s (for English letters, at most 26, no matter how long s gets). charSet never holds more than one entry per distinct character, so its size is capped by the alphabet, not by n.",
+    "edge_cases": [
+      "An empty string, s = \"\". range(len(s)) produces nothing, so the for loop body never runs, and the untouched res = 0 is returned.",
+      "All identical characters, like \"bbbb\". Every new r immediately triggers the while loop, shrinking the window right back down to size 1 each time, so res never grows past 1.",
+      "All distinct characters, like \"abcde\". The while loop's condition is never True, since nothing ever repeats, so the window just keeps growing and res ends up as the full length of s.",
+      "A repeat right near the end, like \"abcda\". The window grows to length 4 (\"abcd\") before the second 'a' forces a shrink back down, but by then res already holds 4 from just before the repeat appeared."
+    ]
+  },
+  "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        charSet = set()\n        l = 0\n        res = 0\n        for r in range(len(s)):\n            while s[r] in charSet:\n                charSet.remove(s[l])\n                l += 1\n            charSet.add(s[r])\n            res = max(res, r - l + 1)\n        return res\n",
+  "run": {
+    "prelude": "",
+    "call": "Solution().lengthOfLongestSubstring(\"abcabcbb\")",
+    "expected": 3,
+    "describe": "s = \"abcabcbb\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def lengthOfLongestSubstring would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named lengthOfLongestSubstring. It takes the string s and promises to give back a whole number: the length of the longest valid run.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "lengthOfLongestSubstring", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "s: str)", "meaning": "The input string, hinted as a str (text)." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a single whole number, a length." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. Returning just a length, not the substring itself, directly matches what the problem asks for.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def lengthOfLongestSubstring(self, s):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning the substring itself instead of its length. The problem asks for a number, not the text.",
+      "caption": "Python remembers the lengthOfLongestSubstring instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty set named charSet, which will hold exactly the characters currently inside the window, between l and r.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "charSet", "meaning": "A variable name we chose for the set of characters in the current window." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "set()", "meaning": "Calls the built-in set type with no arguments, making a new, empty set." }
+      ],
+      "why": "The window needs a fast way to answer \"is this character already inside me?\". A set checks membership instantly, no matter how many characters it holds, which is exactly the question line 7 asks on every pass.",
+      "if_removed": "Line 7 would crash with a NameError, since charSet wouldn't exist to check membership against.",
+      "alternatives": [
+        { "code": "charSet = set([])", "difference": "Passes an empty list to set(), building an empty set the long way. set() alone is simpler and does the same thing." }
+      ],
+      "mistake": "Writing charSet = {} instead. Curly braces with nothing inside make an empty dictionary, not an empty set, and dictionary methods like .add wouldn't exist on it.",
+      "caption": "Make an empty set called charSet. It will hold every character currently inside the window."
+    },
+    "4": {
+      "explain": "This creates l, the window's left edge, starting at position 0.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l", "meaning": "A variable name for the window's left boundary." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any string: the window starts as far left as possible." }
+      ],
+      "why": "The window needs two edges to track its current span. l starts at the very first character, since before any character has been read, the only possible window starts there.",
+      "if_removed": "Line 7 (and every line that reads s[l]) would crash with a NameError, since l wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l, res = 0, 0", "difference": "Combines this line and the next one into a single tuple-unpacking assignment. Identical result; purely a style choice." }
+      ],
+      "mistake": "Starting l at 1 instead of 0. That would skip ever considering the very first character of s as part of any window.",
+      "caption": "Make l = 0: the window's left edge starts at the first character."
+    },
+    "5": {
+      "explain": "This creates res, the best (longest) window length found so far, starting at 0 since no window has been checked yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for result." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The smallest possible answer: no characters examined yet." }
+      ],
+      "why": "The method needs to remember the longest valid window seen across the ENTIRE scan, not just the most recent one, since an earlier window might be longer than a later one.",
+      "if_removed": "Line 11 would crash with a NameError, since res wouldn't exist to compare against.",
+      "alternatives": [
+        { "code": "res = 0\nl = 0", "difference": "The same two assignments in the opposite order. Order doesn't matter here since neither line depends on the other." }
+      ],
+      "mistake": "Creating res inside the for loop on line 6 instead of before it. That would reset the best length back to 0 on every single character, losing track of anything found earlier.",
+      "caption": "Make res = 0: no window has been checked yet."
+    },
+    "6": {
+      "explain": "This loop moves r through every index of s, one at a time, from the first character to the last. Each pass tries to grow the window by including s[r].",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "r", "meaning": "The loop variable: the window's right edge, the newest character being added." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "range(len(s))", "meaning": "len(s) is how many characters s has. range of that produces 0, 1, ..., len(s) - 1: every valid index." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character needs a turn as the newest addition to the window, since the longest valid substring could end anywhere in s. This is what makes r sweep from left to right exactly once.",
+      "if_removed": "Without this loop, the body would run at most once (if written as a plain if), and only the very first character of s would ever be considered.",
+      "alternatives": [
+        { "code": "r = 0\nwhile r < len(s):\n    ...\n    r += 1", "difference": "A while loop doing the same sweep with an explicit counter. More typing for an identical result; the for loop is simpler here since r always advances by exactly 1." }
+      ],
+      "mistake": "Writing for r in range(1, len(s)): by accident. That would skip ever adding s[0] to the window, starting the scan one character too late.",
+      "caption": [
+        { "when": "r < len(s)", "text": "r moves to character {s[r]} at index {r}. Try to grow the window to include it." },
+        "Every character has had a turn as the window's right edge."
+      ]
+    },
+    "7": {
+      "explain": "This checks whether the character r just reached is already somewhere inside the current window. If it is, the window has a repeat, and it needs to shrink from the left before r's character can be added.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "while", "meaning": "A keyword that starts a loop which keeps repeating its block for as long as the condition stays True." },
+        { "token": "s[r]", "meaning": "The character at the window's right edge, the one just reached." },
+        { "token": "in", "meaning": "The membership operator. For a set, x in someSet is True exactly when x is already inside it." },
+        { "token": "charSet", "meaning": "The set of characters currently inside the window." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below runs as long as it's True." }
+      ],
+      "why": "A window with s[r] already inside it can't be a valid \"no repeats\" window anymore. The only character that could have caused this is s[r] itself (everything already in the window was already repeat-free before r arrived), so shrinking from the LEFT, removing the oldest characters, is guaranteed to eventually remove the exact duplicate and fix things.",
+      "if_removed": "charSet.add(s[r]) on line 10 would sometimes add a character that's already present, which a set simply ignores, silently letting the window grow past an actual repeat and producing a wrong, too-large res.",
+      "alternatives": [
+        { "code": "if s[r] in charSet:\n    while s[r] in charSet:\n        ...", "difference": "An outer if wrapping the same while loop. The if is redundant here, since the while loop's own condition already skips its body entirely when s[r] isn't in charSet; it would just run once and do nothing extra." }
+      ],
+      "mistake": "Writing if instead of while. A single removal might not be enough: if the SAME character appears more than once before l catches up, one if-check would only remove one copy's worth of window and still leave a repeat behind.",
+      "caption": [
+        { "when": "s[r] in charSet", "text": "{s[r]} is already in the window. Shrink from the left until it's gone." },
+        "{s[r]} isn't in the window yet. No need to shrink."
+      ]
+    },
+    "8": {
+      "explain": "Remove the character at the window's current left edge from the set, since that character is about to leave the window.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block, so it only runs when line 7's condition was True." },
+        { "token": "charSet.remove(", "meaning": ".remove is a set method that deletes one value from the set." },
+        { "token": "s[l])", "meaning": "The character currently at the window's left edge." }
+      ],
+      "why": "charSet is only supposed to hold characters that are actually inside the window right now. Before l moves forward on line 9, the character it's currently pointing at needs to be taken out of the set, or charSet would wrongly claim a character is in the window when it no longer is.",
+      "if_removed": "l would still advance on line 9, but charSet would keep holding a character that's no longer in the window, which could make a later, unrelated repeat check on line 7 wrongly return True.",
+      "alternatives": [
+        { "code": "charSet.discard(s[l])", "difference": ".discard does the same removal, but silently does nothing if the value isn't there instead of raising an error. Since s[l] is always guaranteed to be in charSet at this point, .remove and .discard behave identically here." }
+      ],
+      "mistake": "Removing s[r] instead of s[l]. That would remove the character causing the repeat instead of shrinking the window's left edge, and the while loop's condition would then still be True forever: an infinite loop.",
+      "caption": "Remove {s[l]} (the character leaving the window) from charSet."
+    },
+    "9": {
+      "explain": "Move the window's left edge one step to the right, since the character it was pointing at has just been removed from the set.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the while block from line 7." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Shrinking the window means moving its left edge forward. This is what actually narrows the window, one character at a time, until the duplicate causing line 7's condition is gone.",
+      "if_removed": "l would never advance, so charSet.remove(s[l]) on line 8 would try to remove the exact same character every pass, which after the first time would raise a KeyError, since that character is no longer in the set.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 here by accident instead of l += 1. That would move the wrong pointer and could even move r past the character still causing the repeat.",
+      "caption": "Shrink the window: l moves to {l + 1}."
+    },
+    "10": {
+      "explain": "Now that the window has no repeats left (the while loop has finished), add the character at r to the set: it officially becomes part of the window.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the while loop has finished." },
+        { "token": "charSet.add(", "meaning": ".add is a set method that inserts one value." },
+        { "token": "s[r])", "meaning": "The character at the window's right edge." }
+      ],
+      "why": "By the time this line runs, the while loop has already removed any character equal to s[r] that would have made it a duplicate, so it's now safe to add without breaking the \"no repeats\" rule.",
+      "if_removed": "charSet would never gain s[r], so line 7's membership check would stay False forever, no repeats would ever be detected, and l would never move, giving a wrong (too large) result.",
+      "alternatives": [
+        { "code": "charSet |= {s[r]}", "difference": "Uses the set union-update operator to add one value. Works the same; .add is the more direct, common way to add a single item." }
+      ],
+      "mistake": "Adding s[r] to charSet BEFORE the while loop on line 7, instead of after. Then line 7's own check, s[r] in charSet, would always immediately be True (the character checks against itself), making the while loop remove the whole window every single pass.",
+      "caption": "Add {s[r]} to the window: charSet now has no repeats."
+    },
+    "11": {
+      "explain": "Check whether the current window's length beats the best one found so far, and keep whichever is larger.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Still at for-loop level, right after charSet.add." },
+        { "token": "res", "meaning": "The best window length found so far." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces res's old value." },
+        { "token": "max(", "meaning": "A built-in function that returns the larger of its arguments." },
+        { "token": "res,", "meaning": "The best length found before this pass." },
+        { "token": "r - l + 1)", "meaning": "The current window's length: the distance from l to r, plus 1 since both ends are included." }
+      ],
+      "why": "This is the one moment in each pass where the window is guaranteed to have no repeats (the while loop above just finished), so r - l + 1 is a real, valid length worth comparing against the best seen.",
+      "if_removed": "res would stay 0 forever, and the method would always return 0, no matter how long any valid window actually was.",
+      "alternatives": [
+        { "code": "length = r - l + 1\nif length > res:\n    res = length", "difference": "Spells out the same comparison with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Writing r - l instead of r - l + 1. That undercounts the window's length by one, since both l and r are valid characters inside the window, not just the gap between them.",
+      "caption": "Window is {s[l:r + 1]}, length {r - l + 1}. Best so far: {max(res, r - l + 1)}."
+    },
+    "12": {
+      "explain": "Once every character has had a turn as the window's right edge, return the longest valid window length found.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the best length found." }
+      ],
+      "why": "res has been kept up to date after every character was added, so by the time the loop ends, it already holds the length of the longest substring with no repeated character.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the best length, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return max(res, 0)", "difference": "res can never go below 0, since it starts at 0 and is only ever replaced by a value from max(res, ...), so this extra safeguard has no effect here." }
+      ],
+      "mistake": "Putting this return statement inside the for loop. Then the method would stop after checking only the very first character, before the window had a chance to grow at all.",
+      "caption": "Every character has been checked. Return the longest valid window's length: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        res = 0\n        for i in range(len(s)):\n            seen = set()\n            for j in range(i, len(s)):\n                if s[j] in seen:\n                    break\n                seen.add(s[j])\n                res = max(res, j - i + 1)\n        return res",
+    "explain": "Try every possible starting position i for a substring. For each start, grow a second index j forward, adding characters to a fresh set, until a repeat is found (or the string ends), tracking the best length seen.",
+    "why_slow": "For n characters, this checks roughly n starting points, and for each one can scan up to n characters again, which is about n x n, O(n squared), quadratic time. It also throws away all the window information (the set, where the window started) every time i moves, instead of reusing what the previous start already discovered.",
+    "how_pattern_fixes": "The sliding window never restarts from scratch. Instead of trying every starting point i separately, it keeps one window alive and only moves its left edge forward just enough to fix an actual repeat, reusing all the work already done for the characters that stay in the window. That drops the work from about n x n down to about n.",
+    "time": "O(n squared): quadratic. Double the length of s, about four times the work.",
+    "space": "O(n): the inner seen set can grow to hold up to n characters in the worst case, one for nearly every start of the string."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "character": "A single unit of text, like 'a' or '5'. A string is a sequence of characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs.",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a string or list, counting from 0.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "KeyError": "The error Python raises when you look up or remove a key or value that isn't there.",
+    "keyword": "A word reserved by Python, like for, while, if, return.",
+    "len": "A built-in function that gives the number of items in something: len(\"abc\") is 3.",
+    "list": "An ordered collection written with square brackets. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "membership operator": "The in keyword used as a check: x in collection is True exactly when x is already inside collection.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a set or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, < compares.",
+    "parameter": "A name in a function's definition that receives an input. s is lengthOfLongestSubstring's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in a string or list. Here l and r are pointers.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "set (collection)": "A collection of unique values with instant membership checks. It is written set() when empty.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for text (a string).",
+    "string": "Text, written in quotes like \"cat\" or 'hello'. Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "A piece of data a variable can refer to, or that a dictionary entry holds.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of the string currently being considered, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "list(range(l, r + 1))",
+        "found": "list(range(l, r + 1)) if __line__ == 11 and (r - l + 1) > res else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "charSet  (characters in the window)",
+      "source": "[[c, True] for c in sorted(charSet)]"
+    }
+  ]
+}
