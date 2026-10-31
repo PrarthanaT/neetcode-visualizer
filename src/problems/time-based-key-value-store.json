@@ -1,0 +1,468 @@
+{
+  "slug": "time-based-key-value-store",
+  "title": "Time Based Key-Value Store",
+  "difficulty": "Medium",
+  "category": "Binary Search",
+  "leetcode": 981,
+  "statement": [
+    "Design a key-value store where every value is stamped with the time it was stored, and the same key can be stored at many different timestamps.",
+    "Implement the TimeMap class: TimeMap() creates the object with an empty store. set(key, value, timestamp) stores value for key at the given timestamp. get(key, timestamp) returns the value that was set for key at the LARGEST timestamp that is still <= the given timestamp. If no such timestamp exists, return an empty string.",
+    "For any one key, the timestamps passed to set are guaranteed to arrive in strictly increasing order."
+  ],
+  "examples": [
+    {
+      "input": "set(\"foo\", \"bar\", 1), get(\"foo\", 1), get(\"foo\", 3)",
+      "output": "null, \"bar\", \"bar\"",
+      "explain": "After storing \"bar\" for \"foo\" at timestamp 1, asking for timestamp 1 finds an exact match. Asking for timestamp 3 still returns \"bar\", since 1 is the largest stored timestamp that's <= 3. This is the sequence the visualizer runs."
+    },
+    {
+      "input": "set(\"foo\", \"bar2\", 4), get(\"foo\", 4), get(\"foo\", 5)",
+      "output": "null, \"bar2\", \"bar2\"",
+      "explain": "Storing a second value for \"foo\" at timestamp 4 gives get two candidates. Asking for timestamp 4 or 5 now finds timestamp 4 is the largest one <= either, so both return \"bar2\"."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search for the floor of a sorted list",
+    "summary": "Because timestamps for the same key always arrive in increasing order, appending each new one keeps that key's list already sorted by timestamp, for free. get then needs the LARGEST stored timestamp that's still <= the target timestamp: a \"floor\" search. Binary search for it by checking the middle timestamp; whenever it still qualifies (<= target), remember its value as the best answer so far and keep searching to the right for an even larger qualifying timestamp; whenever it's too big, search to the left instead.",
+    "recognize": [
+      "The data arrives already sorted (or, like here, is guaranteed to stay sorted as it's built), so no sorting step is needed before searching it.",
+      "The question isn't \"is X present\", but \"what's the closest value at or below X\" (or at or above X): a floor or ceiling search, not an exact match.",
+      "The required speed is O(log n) per lookup, ruling out scanning every stored timestamp.",
+      "The problem is described as \"design a data structure\" with several methods sharing state, rather than a single function with one answer."
+    ],
+    "avoid_when": [
+      "Values for the same key could arrive with timestamps out of order. Then a plain append wouldn't keep the list sorted, and it would need inserting in the correct sorted position, or sorting before each search.",
+      "You need the single most recent value only, not a lookup by an arbitrary past timestamp. Then just keeping one \"latest value\" per key would be simpler than storing every one.",
+      "There are only ever a handful of timestamps per key. A plain scan from the end backwards is just as fast and simpler to read.",
+      "You need to search across ALL keys at once rather than one key at a time. This pattern only ever binary searches within one key's own list."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "self.store maps each key to its OWN list of [timestamp, value] pairs. Because set's timestamps for a given key always increase, simply appending keeps that list sorted by timestamp without ever needing to sort it.",
+      "get isn't searching for an exact timestamp match. It's searching for the floor: the largest stored timestamp that doesn't exceed the one asked for. That's why the loop keeps going right even after finding a timestamp that qualifies, in case an even larger qualifying one is further along.",
+      "res only gets overwritten when values[m][0] <= timestamp. A too-large middle timestamp never touches res, so whatever was found on an earlier, smaller candidate survives if nothing better turns up.",
+      "If timestamp is smaller than every stored timestamp for that key, the loop never finds a qualifying middle, and res is returned exactly as it started: an empty string."
+    ],
+    "time": "set is O(1): appending to the end of a list. get is O(log n), where n is how many timestamps are stored for that one key: a binary search over just that key's list.",
+    "space": "O(n), linear. n is the total number of set calls made across every key, since each one adds exactly one [timestamp, value] pair somewhere.",
+    "edge_cases": [
+      "get called for a key that was never set, like get(\"missing\", 5). self.store.get(key, []) returns an empty list, so l = 0 and r = -1: the while loop never runs, and res is returned as \"\".",
+      "get called with a timestamp smaller than every timestamp stored for that key. Every values[m][0] <= timestamp check fails, so r keeps shrinking left, res is never written, and \"\" comes back.",
+      "get called with a timestamp exactly equal to a stored one. values[m][0] <= timestamp is true there, so that value is recorded; since every later timestamp for the same key is strictly bigger, none of them can also qualify, so the exact match survives as the final answer.",
+      "Two values are set for the same key at two different timestamps, and get is asked for a timestamp between them. The floor search correctly picks the earlier, smaller timestamp, since the later one is still bigger than what was asked for."
+    ]
+  },
+  "code": "class TimeMap:\n    def __init__(self):\n        self.store = {}\n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        if key not in self.store:\n            self.store[key] = []\n        self.store[key].append([timestamp, value])\n\n    def get(self, key: str, timestamp: int) -> str:\n        values = self.store.get(key, [])\n        res = \"\"\n        l, r = 0, len(values) - 1\n\n        while l <= r:\n            m = l + (r - l) // 2\n            if values[m][0] <= timestamp:\n                res = values[m][1]\n                l = m + 1\n            else:\n                r = m - 1\n\n        return res\n",
+  "run": {
+    "prelude": "def run_time_map_demo():\n    tm = TimeMap()\n    tm.set(\"foo\", \"bar\", 1)\n    r1 = tm.get(\"foo\", 1)\n    r2 = tm.get(\"foo\", 3)\n    tm.set(\"foo\", \"bar2\", 4)\n    r3 = tm.get(\"foo\", 4)\n    r4 = tm.get(\"foo\", 5)\n    return [r1, r2, r3, r4]\n",
+    "call": "run_time_map_demo()",
+    "expected": ["bar", "bar", "bar2", "bar2"],
+    "describe": "set(\"foo\", \"bar\", 1), get(\"foo\", 1), get(\"foo\", 3), set(\"foo\", \"bar2\", 4), get(\"foo\", 4), get(\"foo\", 5)"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named TimeMap. Unlike a one-off Solution class, a class you design yourself can hold its own data (here, a dictionary of lists) that lives for as long as the object does, across many separate method calls.",
+      "syntax": [
+        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
+        { "token": "TimeMap", "meaning": "The class name LeetCode's tester creates and calls methods on." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode creates one TimeMap object and then calls set and get on it many times in some order, so the object needs to remember everything stored so far between calls.",
+      "if_removed": "Without a class, there'd be nowhere to keep the stored data between separate calls to set and get.",
+      "alternatives": [
+        { "code": "class TimeMap(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+      ],
+      "mistake": "Naming it Solution out of habit. LeetCode calls this class TimeMap directly, with TimeMap() and then obj.set(...) / obj.get(...), not through a Solution wrapper.",
+      "caption": "Python reads the TimeMap blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines __init__, the method Python runs automatically every time someone writes TimeMap(). It sets up a brand new, empty object before anything else can use it.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "__init__", "meaning": "A special method name. Python calls it automatically right after creating a new object, to set it up." },
+        { "token": "(self)", "meaning": "The only parameter is self, the new object being built. No other inputs are needed to create an empty TimeMap." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "Every later set and get call will read and change self.store, so it needs to exist before the very first call ever happens.",
+      "if_removed": "TimeMap() would use Python's default object creation, with no store attribute at all, and line 3's self.store = {} would never run, so line 6's key not in self.store would crash with an AttributeError.",
+      "alternatives": [
+        { "code": "def __init__(self) -> None:", "difference": "Adds a return type hint saying __init__ gives back nothing. __init__ never returns a value in Python, so this changes nothing but the documentation." }
+      ],
+      "mistake": "Naming it init instead of __init__ (missing the double underscores on each side). Python only treats the exact name __init__ as automatic setup; anything else is just an ordinary method that's never called on its own.",
+      "caption": "Python remembers the __init__ instructions for later."
+    },
+    "3": {
+      "explain": "This gives the new object its own empty dictionary, stored as self.store. It will map each key to a list of every [timestamp, value] pair ever set for it.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "self.store", "meaning": "Creates an attribute named store on this object. Writing to self.something always stores it ON the object, not as a local variable that disappears when the method ends." },
+        { "token": "=", "meaning": "Assignment: the name on the left now refers to the value on the right." },
+        { "token": "{}", "meaning": "Curly brackets with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "A single list wouldn't work here, since different keys need to be searched independently. A dictionary keyed by key, where each value is its own sorted list of timestamps, keeps every key's history separate.",
+      "if_removed": "Any later self.store[key] = [] or self.store.get(key, []) would crash with an AttributeError, because the object wouldn't have a store attribute yet.",
+      "alternatives": [
+        { "code": "self.store = dict()", "difference": "Same empty dictionary, made by calling dict. {} is shorter." }
+      ],
+      "mistake": "Writing store = {} without self.. That creates a local variable that disappears the moment __init__ returns, leaving the object with no memory of it at all.",
+      "caption": "Give this TimeMap an empty store, ready to map keys to their own sorted timestamp lists."
+    },
+    "5": {
+      "explain": "This defines set, which records a new value for a key at a given timestamp.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "set", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self, key: str, value: str, timestamp: int)", "meaning": "The parameters: self, the object; key and value as strings; timestamp as an int." },
+        { "token": "-> None", "meaning": "Return type hint: set doesn't hand anything back, it just changes the object." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "LeetCode calls obj.set(key, value, timestamp) whenever a new value needs recording. -> None documents that set is only ever used for its side effect, not its return value.",
+      "if_removed": "Without self, Python would complain about the wrong number of arguments the moment set is called on an object.",
+      "alternatives": [
+        { "code": "def set(self, key, value, timestamp):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Forgetting self as the first parameter. Every method needs it, even ones that don't look like they use it directly in their own header.",
+      "caption": "Python remembers the set instructions for later."
+    },
+    "6": {
+      "explain": "This checks whether key has ever been seen before. If this is the very first value stored for it, there's no list to append to yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "if", "meaning": "Starts a condition." },
+        { "token": "key", "meaning": "The key being stored." },
+        { "token": "not in", "meaning": "A membership check: True when key is NOT already a key of self.store." },
+        { "token": "self.store", "meaning": "The dictionary of every key seen so far." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "self.store[key].append(...) on line 8 would fail on a brand new key, since there's nothing at self.store[key] yet to append to.",
+      "if_removed": "The very first set call for any key would crash with a KeyError on line 8, since self.store[key] wouldn't exist.",
+      "alternatives": [
+        { "code": "self.store.setdefault(key, []).append([timestamp, value])", "difference": "Combines the check and the append-or-create into one line using dict.setdefault. Same result, more compact, less explicit about the two separate steps." }
+      ],
+      "mistake": "Forgetting this check entirely and always appending straight to self.store[key], which crashes on the first ever value stored for any new key.",
+      "caption": [
+        { "when": "key not in self.store", "text": "{key} has never been stored before: it needs a fresh, empty list." },
+        "{key} already has a list of stored values: no new list needed."
+      ]
+    },
+    "7": {
+      "explain": "key is new, so give it an empty list to collect its [timestamp, value] pairs in.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Inside the if block." },
+        { "token": "self.store[key] = []", "meaning": "Creates a new empty list as the value for key in the store dictionary." }
+      ],
+      "why": "Every key's history has to start somewhere. An empty list is the natural starting point before the first [timestamp, value] pair is appended on line 8.",
+      "if_removed": "Line 8's self.store[key].append(...) would crash with a KeyError, since nothing would exist at self.store[key] yet.",
+      "alternatives": [
+        { "code": "self.store[key] = [[timestamp, value]]", "difference": "Skips the separate append on line 8 by building the list with its first pair already inside. Works, but duplicates the pair-building logic instead of sharing it with every later call." }
+      ],
+      "mistake": "Writing self.store[key] = [timestamp, value] without the extra brackets. That stores a single two-item list directly, not a list CONTAINING one [timestamp, value] pair, which breaks line 8's later appends.",
+      "caption": "Give {key} a fresh, empty list of its own."
+    },
+    "8": {
+      "explain": "This adds the new [timestamp, value] pair onto the end of key's list, whether that list was just created or already had earlier values in it.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method, outside the if block." },
+        { "token": "self.store[key]", "meaning": "The list of pairs stored so far for this key." },
+        { "token": ".append(", "meaning": "A list method that adds one item to the end." },
+        { "token": "[timestamp, value])", "meaning": "A two-item list pairing the timestamp with its value, built fresh for this call." }
+      ],
+      "why": "Because the problem guarantees timestamps for the same key only ever increase, appending always adds the new pair at the end, which is also exactly where it belongs to keep the list sorted by timestamp. No sorting step is ever needed.",
+      "if_removed": "The new value would never be recorded at all, and every later get for this key would miss it entirely.",
+      "alternatives": [
+        { "code": "self.store[key].append((timestamp, value))", "difference": "Appends a tuple instead of a list. get's values[m][0] and values[m][1] still work the same way on a tuple, since both support indexing." }
+      ],
+      "mistake": "Appending just value, forgetting to pair it with timestamp. get has no way to binary search by timestamp without it being stored alongside each value.",
+      "caption": "Store [{timestamp}, {value}] at the end of the list for {key}."
+    },
+    "10": {
+      "explain": "This defines get, which looks up the value stored for key at the largest timestamp that's still <= the one asked for.",
+      "syntax": [
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "get", "meaning": "The method name LeetCode's tester calls." },
+        { "token": "(self, key: str, timestamp: int)", "meaning": "The parameters: self, the object; key as a string; timestamp as an int." },
+        { "token": "-> str", "meaning": "Return type hint: get always hands back a string, possibly empty." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "-> str documents that get always returns a string: either a stored value, or \"\" when nothing qualifies.",
+      "if_removed": "Calling obj.get(key, timestamp) would fail with an AttributeError.",
+      "alternatives": [
+        { "code": "def get(self, key, timestamp):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Returning None instead of \"\" when nothing is found. The problem specifically asks for an empty string.",
+      "caption": "Python remembers the get instructions for later."
+    },
+    "11": {
+      "explain": "This reads key's list of stored [timestamp, value] pairs, or an empty list if key has never been set at all.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "values", "meaning": "A local variable for key's own list of pairs." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "self.store.get(", "meaning": "dict.get looks up a key, but unlike self.store[key], it doesn't crash if the key is missing." },
+        { "token": "key, [])", "meaning": "key to look up, and [] as the fallback value to use if key was never stored at all." }
+      ],
+      "why": "set is never guaranteed to have been called for every key get might be asked about. self.store.get(key, []) handles an unknown key gracefully, falling through to an empty search window instead of crashing.",
+      "if_removed": "self.store[key] would crash with a KeyError the first time get is called on a key that was never set.",
+      "alternatives": [
+        { "code": "values = self.store[key] if key in self.store else []", "difference": "Spells out the same fallback with an explicit membership check instead of dict.get's built-in default. Same result, more to read." }
+      ],
+      "mistake": "Writing self.store[key] directly, which crashes with a KeyError on any key that was never set.",
+      "caption": "Look up the stored list for {key}: {self.store.get(key, [])}."
+    },
+    "12": {
+      "explain": "This sets up res, the best answer found so far, starting as an empty string in case nothing in values ever qualifies.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name for the running best answer." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "\"\"", "meaning": "An empty string: two quote marks with nothing between them." }
+      ],
+      "why": "The problem asks for \"\" when no stored timestamp qualifies. Starting res here means that default is already in place before the search even begins, so a loop that never finds a match needs no extra code at the end.",
+      "if_removed": "Line 23's return res would crash with a NameError if the while loop's condition is never true, since res would never have been assigned.",
+      "alternatives": [
+        { "code": "res = None", "difference": "Starts as None instead of \"\". That's a common \"nothing found\" signal in Python generally, but not what this problem specifically asks for." }
+      ],
+      "mistake": "Forgetting to initialise res at all, which crashes on any get call whose while loop never finds a qualifying timestamp.",
+      "caption": "Start with no answer yet: res = \"\"."
+    },
+    "13": {
+      "explain": "This sets up the search window over the whole of values. l starts at the first index, 0, and r starts at the last index.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(values) - 1", "meaning": "len gives how many pairs values has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "The qualifying timestamp could be anywhere in values, so the search starts by considering every pair a candidate. If values is empty, r becomes -1, which safely skips the while loop on the next line altogether.",
+      "if_removed": "The while loop on line 15 would crash with a NameError.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(values) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Forgetting the - 1, so r points one past the end of values.",
+      "caption": "The qualifying timestamp could be anywhere: l = 0 and r = {len(values) - 1} cover every stored pair."
+    },
+    "15": {
+      "explain": "This loop keeps going as long as the window still has at least one pair left to check.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True. It re-checks the condition before every pass." },
+        { "token": "l <= r", "meaning": "<= means \"less than or equal to\". When l equals r, the window holds exactly one pair, which still needs checking." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "We don't know in advance how many halvings are needed, and an empty values list (r = -1) needs the loop to not run at all, which l <= r handles correctly from the very first check.",
+      "if_removed": "Only the very first middle pair would ever be checked, and the true floor timestamp might still be anywhere else in values.",
+      "alternatives": [
+        { "code": "while l < r:", "difference": "Misses the last single-pair window: with only one stored pair, l and r would both already be 0, and l < r would be False before ever checking it." }
+      ],
+      "mistake": "Writing l < r with these inclusive bounds. The single-pair case is exactly what this bug breaks.",
+      "caption": [
+        { "when": "l > r", "text": "l = {l} has passed r = {r}. The window is empty, so the loop stops." },
+        "The window from l = {l} to r = {r} holds {r - l + 1} pair(s). Keep searching."
+      ]
+    },
+    "16": {
+      "explain": "This finds the middle index of the current window, the same way plain binary search finds one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "m", "meaning": "The variable for the middle index." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "l +", "meaning": "Start from the left end." },
+        { "token": "(r - l)", "meaning": "How far it is from l to r." },
+        { "token": "// 2", "meaning": "Integer division: divide and round DOWN to a whole number. Indexes must be whole numbers." }
+      ],
+      "why": "Checking the middle splits the window into two equal halves. l + (r - l) // 2 also avoids overflow in languages where numbers have a maximum size; Python's integers never overflow, but the habit carries over to interviews in other languages.",
+      "if_removed": "values[m] on the next line would crash with a NameError.",
+      "alternatives": [
+        { "code": "m = (l + r) // 2", "difference": "Simpler and perfectly safe in Python; gives exactly the same m." }
+      ],
+      "mistake": "Using / instead of //, which gives a decimal like 4.5, and a decimal can't be used as a list index.",
+      "caption": "The middle of {l}..{r} is m = {l} + ({r} - {l}) // 2 = {l + (r - l) // 2}."
+    },
+    "17": {
+      "explain": "Compare the middle pair's timestamp with the one asked for. If it's still <= timestamp, this pair is a VALID candidate for the answer, though a later, larger timestamp might turn out to be even better.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "values[m][0]", "meaning": "The timestamp half of the middle pair: index 0 of the two-item [timestamp, value] list." },
+        { "token": "<=", "meaning": "\"Less than or equal to\" comparison." },
+        { "token": "timestamp", "meaning": "The timestamp asked for." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Unlike searching for an exact match, this search wants the LARGEST qualifying timestamp. A qualifying one at m doesn't end the search; it just becomes the best answer so far, while the search keeps moving right in case an even larger valid timestamp is waiting there.",
+      "if_removed": "Line 18 would never run, so res would stay \"\" forever, even when a perfectly good value was sitting right there in values.",
+      "alternatives": [
+        { "code": "if values[m][0] == timestamp:\n    return values[m][1]", "difference": "Would return immediately on an exact match, which happens to be correct here (nothing further right could also qualify, since timestamps only increase), but it skips the general floor logic that also handles timestamps that DON'T exactly match." }
+      ],
+      "mistake": "Writing values[m][1] <= timestamp by mistake, comparing the VALUE instead of the TIMESTAMP. values[m][0] is the timestamp; values[m][1] is the stored value.",
+      "caption": [
+        { "when": "values[m][0] <= timestamp", "text": "values[{m}] = {values[m]}: timestamp {values[m][0]} qualifies ({values[m][0]} <= {timestamp}). It's a candidate." },
+        "values[{m}] = {values[m]}: timestamp {values[m][0]} is too late ({values[m][0]} > {timestamp})."
+      ]
+    },
+    "18": {
+      "explain": "The middle timestamp qualifies, so record its value as the best answer found so far.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "res", "meaning": "The running best answer." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "values[m][1]", "meaning": "The value half of the middle pair: index 1 of the [timestamp, value] list." }
+      ],
+      "why": "Because the search keeps going right after this to look for an even larger qualifying timestamp, res has to be updated here so the current best candidate isn't lost if nothing better ever turns up.",
+      "if_removed": "res would never actually be set to a found value, and get would always return \"\", even when a qualifying timestamp existed.",
+      "alternatives": [
+        { "code": "res = values[m]", "difference": "Would store the whole [timestamp, value] pair instead of just the value, which doesn't match the str return type the problem expects." }
+      ],
+      "mistake": "Writing res = values[m][0], storing the timestamp instead of the value. The problem asks get to return the VALUE.",
+      "caption": "New best answer: res = {values[m][1]} (from timestamp {values[m][0]})."
+    },
+    "19": {
+      "explain": "Even though m qualified, search to the right for a possibly larger timestamp that also qualifies.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "l = m + 1", "meaning": "Make l one position to the right of the middle. The new window is m+1..r." }
+      ],
+      "why": "values is sorted by timestamp, so anything bigger than values[m][0] and still <= timestamp can only be further to the right. Moving l past m keeps the search progressing toward that larger candidate.",
+      "if_removed": "The window would never shrink from the left, and the loop could run forever once l stops advancing.",
+      "alternatives": [
+        { "code": "l = m", "difference": "Keeps re-checking the same middle pair that was already recorded on line 18. If r ever shrank to equal m, the loop would never move again." }
+      ],
+      "mistake": "Writing l = m, which would keep re-checking the same middle pair that was already recorded on line 18, freezing the loop once l and r converge on it.",
+      "caption": "Keep looking for a later qualifying timestamp: l moves from {l} to {m + 1}."
+    },
+    "20": {
+      "explain": "Otherwise, the middle timestamp is too late to qualify, so the floor timestamp must be somewhere to the left.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if above. It's the other branch of the same condition." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when the if above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Since values is sorted by timestamp, once values[m][0] is bigger than timestamp, every pair to the right of m is bigger still, so none of them can qualify either.",
+      "if_removed": "Line 21 would always run, even in the case where m qualified and the search should have moved right instead.",
+      "alternatives": [
+        { "code": "elif values[m][0] > timestamp:", "difference": "Spells out the condition again instead of relying on it being the only case left. Correct, but redundant here." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "values[{m}][0] = {values[m][0]} is too late: rule out m and everything to its right."
+    },
+    "21": {
+      "explain": "Discard m and everything to its right, since none of it can hold the floor timestamp.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "r = m - 1", "meaning": "Make r one position to the left of the middle. The new window is l..m-1." }
+      ],
+      "why": "m already failed the qualifying check, so excluding it with - 1 keeps the window shrinking every pass, which is what guarantees the loop eventually ends.",
+      "if_removed": "The window would never shrink from the right, so the loop could run forever on timestamps entirely too early for every stored pair.",
+      "alternatives": [
+        { "code": "r = m", "difference": "Keeps m in the window even though it already failed the check. If l ever caught up to equal m, the loop would never move again." }
+      ],
+      "mistake": "Writing r = m with these inclusive bounds. It's the classic infinite loop.",
+      "caption": "Discard index {m} and everything to its right: r moves from {r} to {m - 1}."
+    },
+    "23": {
+      "explain": "The loop ended because the window became empty. Give back res: either the value at the floor timestamp that was found, or \"\" if nothing ever qualified.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop. It only runs once the loop finishes." },
+        { "token": "return res", "meaning": "Give back whatever res was last set to." }
+      ],
+      "why": "Every pair outside the final empty window was either recorded as the best candidate at the time, or ruled out as too late. Whatever res ends up holding is the correct floor answer.",
+      "if_removed": "The method would reach the end without returning anything, giving back None instead of a string.",
+      "alternatives": [
+        { "code": "return res if res else \"\"", "difference": "Adds a redundant fallback: res already starts as \"\" on line 12 and is never set to anything falsy afterwards, so this changes nothing." }
+      ],
+      "mistake": "Returning values[r][1] or values[l][1] directly instead of res. By the time the loop ends, l and r no longer point at the pair that was actually recorded as the answer.",
+      "caption": "Return res = {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class TimeMap:\n    def __init__(self):\n        self.store = {}\n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        if key not in self.store:\n            self.store[key] = []\n        self.store[key].append([timestamp, value])\n\n    def get(self, key: str, timestamp: int) -> str:\n        res = \"\"\n        for ts, value in self.store.get(key, []):\n            if ts <= timestamp:\n                res = value\n            else:\n                break\n        return res",
+    "explain": "Walk key's list from the earliest timestamp to the latest, keeping track of the last value seen whose timestamp still qualifies. Stop as soon as a timestamp is too late, since every one after it would be too late as well.",
+    "why_slow": "In the worst case (timestamp is the largest one stored, or bigger), this walks every single one of the n pairs stored for that key before returning. That's O(n) per get call, when the problem expects O(log n).",
+    "how_pattern_fixes": "Since values is already sorted by timestamp, there's no need to check every pair in order. Binary search jumps straight toward the floor timestamp, checking only about log n pairs instead of all n of them.",
+    "time": "O(n) per get call, where n is how many timestamps are stored for that key. set stays O(1).",
+    "space": "O(n): linear, the same as the pattern solution, since both store every set pair exactly once."
+  },
+  "glossary": {
+    ".get": "A dictionary method, dict.get(key, fallback), that looks up key and returns fallback instead of crashing when key isn't there.",
+    "append": "A list method that adds an item to the end: [1, 2].append(3) makes [1, 2, 3]. It changes the list in place and returns None.",
+    "argument": "The actual value you pass into a function or method when you call it. In tm.set(\"foo\", \"bar\", 1), \"foo\", \"bar\" and 1 are arguments.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "attribute": "A named piece of data stored on an object, read or written with a dot, as in self.store.",
+    "AttributeError": "The error Python raises when you ask an object for an attribute or method it doesn't have.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(1) doesn't grow at all. O(log n) barely grows. O(n) grows in step with the input.",
+    "binary search": "Searching a sorted sequence by repeatedly checking the middle and discarding a half that can't contain the answer.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by brackets, like store.get(key, []).",
+    "class": "A blueprint that groups related functions (methods) and data (attributes) together.",
+    "colon": "The : character. At the end of a def, class, if or while line, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1). Appending to the end of a Python list is constant time.",
+    "default value": "A fallback used when something isn't otherwise provided, like the [] passed as dict.get's second argument.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {}. It stores key -> value pairs and finds any key instantly.",
+    "edge case": "An unusual input that's easy to get wrong, like an empty list or a key that was never stored.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if (or elif) above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "in place": "Changing an object directly instead of making a new one. append changes a list in place.",
+    "inclusive": "Including the end points. An inclusive window from 2 to 5 contains 2, 3, 4 and 5.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [1, \"bar\"], the string \"bar\" is at index 1.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -1, 0 or 24.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in TimeMap(). It sets up the object's attributes.",
+    "key": "In a dictionary, the name used to look up a stored value, as in self.store[key].",
+    "KeyError": "The error Python raises when you look up a dictionary key that doesn't exist with [], instead of using .get, which returns a fallback value instead.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return, class, def, in, not.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, \"bar\"]. Python lists can hold pairs of values, like a timestamp and a value together.",
+    "loop": "Code that repeats.",
+    "membership operator": "The in keyword used as a check, as in key not in self.store: True exactly when key is already inside self.store.",
+    "method": "A function that belongs to a class or an object, called with a dot: tm.set(...), tm.get(...).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data, created from a class. TimeMap() creates one object.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. key, value and timestamp are parameters of set and get.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "side effect": "A change a function makes beyond just returning a value, like modifying an attribute. set changes self.store instead of returning anything useful.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for the string type, used in type hints like value: str.",
+    "string": "Text data, written between quotes, like \"bar\". Python strings can use single or double quotes.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "type hint": "A label like timestamp: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "A piece of data, like a string or a number. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of a list that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "store[key] (timestamps, sorted as they arrive)",
+      "source": "[ts for ts, _ in self.store.get(key, [])]",
+      "pointers": {
+        "l": "l",
+        "r": "r",
+        "m": "m if __line__ not in (15, 16) else None"
+      },
+      "marks": {
+        "compared": "[m] if __line__ == 17 else []",
+        "found": "[m] if __line__ == 18 else ([i for i, pair in enumerate(values) if pair[1] == res] if __line__ == 23 and res else [])",
+        "done": "[i for i in range(len(values)) if i < l or i > r] if __line__ in (15, 16, 17, 18, 19, 20, 21) else []"
+      }
+    }
+  ]
+}
