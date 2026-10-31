@@ -1,0 +1,461 @@
+{
+  "slug": "find-minimum-in-rotated-sorted-array",
+  "title": "Find Minimum in Rotated Sorted Array",
+  "difficulty": "Medium",
+  "category": "Binary Search",
+  "leetcode": 153,
+  "statement": [
+    "You are given a list of whole numbers called nums, sorted from smallest to largest and then rotated some unknown number of times. Rotating means moving numbers from the front of the list to the back, in order, so the list is still made of two sorted pieces, just no longer starting at the smallest number.",
+    "For example, [1, 2, 3, 4, 5] rotated 3 times becomes [4, 5, 1, 2, 3].",
+    "All the numbers in nums are different, and the list has at least one number.",
+    "Return the smallest number in nums.",
+    "Your solution must be fast: it has to run in O(log n) time. That rules out checking every number one by one."
+  ],
+  "examples": [
+    {
+      "input": "nums = [4, 5, 6, 7, 0, 1, 2]",
+      "output": "0",
+      "explain": "[0, 1, 2, 4, 5, 6, 7] rotated so it starts at 4. This is the example the visualizer runs. Watch the window l..r shrink toward the rotation point."
+    },
+    {
+      "input": "nums = [3, 4, 5, 1, 2]",
+      "output": "1",
+      "explain": "[1, 2, 3, 4, 5] rotated so it starts at 3. The rotation point sits right before the minimum, 1."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search on a rotated sorted list",
+    "summary": "A rotated sorted list is really two sorted runs glued together, with every number in the first run bigger than every number in the second. Comparing the middle number, nums[m], with the LAST number, nums[r], reveals which run m is in: if nums[m] is bigger than nums[r], the rotation point (and the minimum) is strictly to the right of m; otherwise, m is already inside the smaller, second run, so the minimum is at m or somewhere to its left. Narrowing the window with l < r until l and r meet lands exactly on the minimum.",
+    "recognize": [
+      "The input is sorted but then rotated: not sorted start-to-finish, but made of exactly two sorted runs.",
+      "You're looking for a single boundary value, like where the rotation happened or the smallest/largest number, not a specific target to match.",
+      "The required speed is O(log n), ruling out a plain scan."
+    ],
+    "avoid_when": [
+      "The list isn't guaranteed to be a rotated sorted list. Plain binary search assumptions, like comparing against one end, don't hold on genuinely unsorted data.",
+      "The list could contain duplicate values. A duplicate can make nums[m] == nums[r] without revealing which half the minimum is in, which needs extra handling this version doesn't cover.",
+      "The list is tiny. A plain scan is just as fast and simpler."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A rotated sorted list is two sorted runs end to end. Comparing nums[m] against nums[r], the right edge of the window, tells you which run m belongs to, which is enough to know which half can't hold the minimum.",
+      "This uses l < r, not l <= r, and the else branch sets r = m rather than r = m - 1: the minimum could BE at m, so m always has to stay a candidate instead of being thrown away.",
+      "The loop stops exactly when l == r: the window has shrunk to one index, and it must be the minimum.",
+      "Comparing against nums[r] (not nums[l]) is the standard choice: nums[m] > nums[r] cleanly means \"the minimum is to the right of m\", with no extra edge case for where the rotation point happens to land."
+    ],
+    "time": "O(log n), logarithmic time. n is the length of nums. Each pass throws away half of what's left, so a billion items need only about 30 passes.",
+    "space": "O(1), constant. Only three number variables, l, r and m, however long the list is.",
+    "edge_cases": [
+      "Not rotated at all, like nums = [1, 2, 3, 4, 5]. nums[m] is never bigger than nums[r], so r keeps moving to m and the window shrinks down to l = 0, the true minimum.",
+      "Rotated by one position, like nums = [2, 1]. l = 0, r = 1, m = 0; nums[0] = 2 is bigger than nums[1] = 1, so l becomes 1, and the loop stops with l = r = 1.",
+      "A single number, like nums = [7]. l and r both start at 0, so l < r is False immediately, and nums[0] is returned without the loop running at all.",
+      "The minimum sits right at index 0. The window still narrows correctly down to l = r = 0, since nums[m] is only ever bigger than nums[r] when the rotation point is strictly inside l..m."
+    ]
+  },
+  "code": "class Solution:\n    def findMin(self, nums: List[int]) -> int:\n        l, r = 0, len(nums) - 1\n\n        while l < r:\n            m = l + (r - l) // 2\n\n            if nums[m] > nums[r]:\n                l = m + 1\n            else:\n                r = m\n\n        return nums[l]\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().findMin([4, 5, 6, 7, 0, 1, 2])",
+    "expected": 0,
+    "describe": "nums = [4, 5, 6, 7, 0, 1, 2]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Capitalization matters to Python.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method findMin. It takes the rotated, sorted list nums and promises to give back a whole number: the smallest value in it.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def findMin",
+          "meaning": "def starts a method definition. findMin is the name LeetCode calls."
+        },
+        {
+          "token": "(self,",
+          "meaning": "self is the Solution object, required as the first parameter of every method."
+        },
+        {
+          "token": "nums: List[int])",
+          "meaning": "The rotated sorted list, hinted as a List of int."
+        },
+        {
+          "token": "-> int",
+          "meaning": "Return type hint: the answer is a whole number."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. Returning the number itself, not its index, is what this problem asks for.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def findMin(self, nums):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Returning the index of the minimum instead of the minimum itself. The problem asks for the value.",
+      "caption": "Python remembers the findMin instructions for later."
+    },
+    "3": {
+      "explain": "This sets up the search window over the whole list. l starts at the first index, 0, and r starts at the last index.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "l, r",
+          "meaning": "Two variable names, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0",
+          "meaning": "The first index of any list."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates the two values: the first goes to l, the second to r."
+        },
+        {
+          "token": "len(nums) - 1",
+          "meaning": "len gives how many items nums has. Indexes start at 0, so the last index is one less than the length."
+        }
+      ],
+      "why": "The minimum could be anywhere in the rotated list, so the search starts by considering every index a candidate.",
+      "if_removed": "The while loop on line 5 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "l = 0\nr = len(nums) - 1",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Forgetting the - 1, so r points one past the end of the list.",
+      "caption": "The minimum could be anywhere: l = 0 and r = {len(nums) - 1} cover the whole list."
+    },
+    "5": {
+      "explain": "This loop keeps narrowing the window until l and r meet at a single index, which has to be the minimum.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "l < r",
+          "meaning": "< means \"strictly less than\". Once l and r are equal, there's nothing left to narrow."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Unlike searching for a target, m is never excluded from the window on both sides here (the else branch keeps it with r = m), so the loop has to stop the moment l == r, rather than letting l pass r.",
+      "if_removed": "Without the loop, only the very first middle index would ever be checked, and the true minimum might still be elsewhere.",
+      "alternatives": [
+        {
+          "code": "while l <= r:",
+          "difference": "Would run one extra, do-nothing pass once l == r (comparing nums[m] against itself), and needs the else branch changed to avoid ever moving r below l. l < r reaches the same answer without that complication."
+        }
+      ],
+      "mistake": "Writing while l <= r: but still keeping r = m in the else branch. Once l == r == m, neither l nor r would ever move again, freezing the loop.",
+      "caption": [
+        {
+          "when": "l < r",
+          "text": "The window from l = {l} to r = {r} still has {r - l + 1} candidate(s). Keep narrowing."
+        },
+        "l has caught up to r: l = r = {l} is the only index left, so it's the minimum."
+      ]
+    },
+    "6": {
+      "explain": "This finds the middle index of the current window, the same way plain binary search finds a middle index.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "m",
+          "meaning": "The variable for the middle index."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l +",
+          "meaning": "Start from the left end."
+        },
+        {
+          "token": "(r - l)",
+          "meaning": "How far it is from l to r."
+        },
+        {
+          "token": "// 2",
+          "meaning": "Integer division: divide and round DOWN to a whole number. Indexes must be whole numbers."
+        }
+      ],
+      "why": "Checking the middle splits the window into two equal halves. l + (r - l) // 2 also avoids overflow in languages where numbers have a maximum size; Python's integers never overflow, but the habit carries over.",
+      "if_removed": "Line 8 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "m = (l + r) // 2",
+          "difference": "Simpler and perfectly safe in Python; gives exactly the same m."
+        }
+      ],
+      "mistake": "Using / instead of //, which gives a decimal like 4.5, and a decimal can't be used as a list index.",
+      "caption": "The middle of {l}..{r} is m = {l + (r - l) // 2}."
+    },
+    "8": {
+      "explain": "Compare the middle number with the LAST number in the window. Because a rotated sorted list is two sorted runs, this single comparison reveals which run m belongs to.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "Starts a condition. The block below runs only if it's True."
+        },
+        {
+          "token": "nums[m]",
+          "meaning": "The number at the middle index."
+        },
+        {
+          "token": ">",
+          "meaning": "\"Greater than\" comparison."
+        },
+        {
+          "token": "nums[r]",
+          "meaning": "The number at the right edge of the current window."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "If nums[m] is bigger than nums[r], m must be in the FIRST, bigger run, so the rotation point, and the minimum, is strictly to the right of m. Otherwise, m is already in the SECOND, smaller run, which starts at the minimum, so the minimum is at m or somewhere to its left.",
+      "if_removed": "Line 11 would always run, moving r to m on every pass. That happens to work if nums isn't actually rotated, but on a genuinely rotated list it can shrink r past the true minimum.",
+      "alternatives": [
+        {
+          "code": "if nums[m] > nums[l]:",
+          "difference": "Comparing against the LEFT edge instead looks similar but breaks: when the rotation point sits at l itself, nums[m] can be smaller than nums[l] even though the minimum is still to the right of m."
+        }
+      ],
+      "mistake": "Comparing nums[m] with nums[l] instead of nums[r]. The left-edge comparison has an edge case that silently gives the wrong half on some rotations.",
+      "caption": [
+        {
+          "when": "nums[m] > nums[r]",
+          "text": "nums[{m}] = {nums[m]} is bigger than nums[{r}] = {nums[r]}: m is in the bigger run, so the minimum is to the right of m."
+        },
+        "nums[{m}] = {nums[m]} isn't bigger than nums[{r}] = {nums[r]}: m is already in the smaller run, so the minimum is at m or to its left."
+      ]
+    },
+    "9": {
+      "explain": "m can't be the minimum here, so exclude it and search only to its right.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the if block."
+        },
+        {
+          "token": "l = m + 1",
+          "meaning": "Make l one index to the right of m. The new window is m+1..r."
+        }
+      ],
+      "why": "nums[m] being bigger than nums[r] proves the minimum sits strictly after m, so m itself is safe to drop from the window.",
+      "if_removed": "l would never move right, and the loop would never finish narrowing the window from the left.",
+      "alternatives": [
+        {
+          "code": "l = m",
+          "difference": "Would keep m in the window even though it's already been ruled out. Since l < r guarantees m < r here, the loop would still make progress, but it wastes a step re-checking a position already known not to be the answer."
+        }
+      ],
+      "mistake": "Writing l = m instead of l = m + 1. It happens not to freeze the loop here, only because m is always strictly less than r inside this branch, but it's not a safe habit.",
+      "caption": "m = {m} is ruled out: l moves from {l} to {m + 1}."
+    },
+    "10": {
+      "explain": "Otherwise, m is already inside the smaller, second run, so it might be the minimum itself.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Lines up with the if above. It's the other branch of the same condition."
+        },
+        {
+          "token": "else",
+          "meaning": "\"Otherwise\": runs when the if above was False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the line."
+        }
+      ],
+      "why": "nums[m] not being bigger than nums[r] means m is in the same sorted run as nums[r], the run that starts at the true minimum.",
+      "if_removed": "Line 11 would always run unconditionally, which would wrongly discard m even in the if branch's case.",
+      "alternatives": [
+        {
+          "code": "elif nums[m] <= nums[r]:",
+          "difference": "Spells out the condition again. Correct, but redundant: it's the only case left once the if above was False."
+        }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "nums[{m}] = {nums[m]} could be the minimum, or the minimum is somewhere to its left."
+    },
+    "11": {
+      "explain": "Keep m in the window, since it might be the minimum, but drop everything to its right.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the else block."
+        },
+        {
+          "token": "r = m",
+          "meaning": "Make r equal to m. The new window is l..m."
+        }
+      ],
+      "why": "Unlike the l = m + 1 case, m can't be excluded here: it's still a live candidate for the minimum, so the new window has to be l..m, not l..m - 1.",
+      "if_removed": "r would never move left to m, and the search would never zero in past this point.",
+      "alternatives": [
+        {
+          "code": "r = m - 1",
+          "difference": "Would wrongly throw away m even when it might BE the minimum. On nums = [2, 1], this would skip right over the real answer, 1, at index 1."
+        }
+      ],
+      "mistake": "Writing r = m - 1 here, copying the habit from plain binary search. That version always excludes m; this one must not.",
+      "caption": "Keep m = {m} as a candidate: r moves from {r} to {m}."
+    },
+    "13": {
+      "explain": "l and r have converged on a single index, and the loop's logic guarantees it's the minimum. Return the number there.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after the loop. Only runs once the loop finishes."
+        },
+        {
+          "token": "return nums[l]",
+          "meaning": "Give back the number at index l, the minimum."
+        }
+      ],
+      "why": "Every index outside the final l..r window was ruled out, one comparison at a time, so whatever index is left must hold the minimum.",
+      "if_removed": "The method would reach the end without returning anything, giving back None instead of the minimum.",
+      "alternatives": [
+        {
+          "code": "return nums[r]",
+          "difference": "Works too, but only because by this point l always equals r. Returning nums[l] reads more clearly, since l is the variable the loop was narrowing toward the answer."
+        }
+      ],
+      "mistake": "Returning l (the index) instead of nums[l] (the value). The problem asks for the smallest NUMBER, not its position.",
+      "caption": "l and r have met at index {l}: nums[{l}] = {nums[l]} is the minimum."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def findMin(self, nums: List[int]) -> int:\n        smallest = nums[0]\n        for n in nums:\n            if n < smallest:\n                smallest = n\n        return smallest",
+    "explain": "Walk through every number and keep track of the smallest one seen so far. This works whether or not the list is rotated, or even sorted at all.",
+    "why_slow": "It has to look at every one of the n numbers, even though being rotated-sorted means almost all of that scanning is unnecessary. That's O(n), and the problem asks for O(log n).",
+    "how_pattern_fixes": "Because a rotated sorted list is just two sorted runs, one comparison against the right edge rules out an entire half on every step, the same way plain binary search rules out half of a sorted list.",
+    "time": "O(n): every number may need checking.",
+    "space": "O(1): just the running smallest value."
+  },
+  "glossary": {
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(log n) barely grows. O(1) doesn't grow at all.",
+    "binary search": "Searching a sorted (or rotated sorted) sequence by repeatedly checking the middle and discarding the half that can't contain the answer.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(nums).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "edge case": "An unusual input that's easy to get wrong, like an empty list or a list with just one item.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -1, 0 or 24.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "keyword": "A word reserved by Python, like while, if, else, return, for, class, def.",
+    "len": "A built-in function that gives the number of items in a list: len([4, 5, 6, 7, 0, 1, 2]) is 7.",
+    "list": "An ordered collection written with square brackets, like [4, 5, 6, 7, 0, 1, 2]. You reach items by their index.",
+    "logarithm": "How many times you can halve a number before reaching 1. log2 of 1,024 is 10. That's why halving algorithms are so fast.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, // divides and rounds down, = assigns, < and > compare.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. nums is findMin's only parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "rotated": "Moved from the front of a sequence to the back (or back to front), in order, without changing the relative order of the rest.",
+    "rotation point": "The single spot in a rotated sorted list where a bigger number is immediately followed by a smaller one; the minimum is the number right after it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type.",
+    "value": "The part of a dictionary entry you get back, or more generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of the list that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "l": "l",
+        "r": "r",
+        "m": "m if __line__ not in (3, 5) else None"
+      },
+      "marks": {
+        "compared": "[m, r] if __line__ == 8 else []",
+        "found": "[l] if __line__ == 13 else []",
+        "done": "[k for k in range(len(nums)) if k < l or k > r]"
+      }
+    }
+  ]
+}
