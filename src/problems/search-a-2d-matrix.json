@@ -1,0 +1,606 @@
+{
+  "slug": "search-a-2d-matrix",
+  "title": "Search a 2D Matrix",
+  "difficulty": "Medium",
+  "category": "Binary Search",
+  "leetcode": 74,
+  "statement": [
+    "You are given a 2D grid of whole numbers called matrix, with ROWS rows and COLS columns, and a number called target.",
+    "Every row is sorted from left to right. The first number of each row is also bigger than the last number of the row above it, so reading left-to-right, row after row, the whole grid is one long sorted sequence.",
+    "Return True if target is anywhere in matrix, and False otherwise.",
+    "Your solution must be fast: it has to run in O(log(ROWS * COLS)) time. That rules out checking every cell one by one."
+  ],
+  "examples": [
+    {
+      "input": "matrix = [[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], target = 3",
+      "output": "True",
+      "explain": "3 sits at row 0, column 1. This is the example the visualizer runs. Watch the flat window l..r shrink, and its middle cell m jump around the grid."
+    },
+    {
+      "input": "matrix = [[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], target = 13",
+      "output": "False",
+      "explain": "13 falls in the gap between 11 and 16, so it's never in the grid and the window shrinks until it's empty."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search over a flattened grid",
+    "summary": "Because every row's first number is bigger than the row above's last number, reading matrix left-to-right, row after row, gives one sorted sequence, even though it's stored as rows. Pretend matrix is a single flattened list of length ROWS * COLS, binary search that list exactly like plain binary search, and convert whichever flat position you land on back into a real row and column with // and %.",
+    "recognize": [
+      "A 2D grid where each row is sorted AND the rows are chained together: the last number of one row is smaller than the first number of the next.",
+      "The question only asks whether target exists somewhere in the grid, a single yes/no answer, not every matching cell or its exact position.",
+      "The required speed is O(log(ROWS * COLS)) or similar, ruling out checking every cell.",
+      "You could flatten the 2D structure into a 1D one mentally, without actually copying it, and binary search would still work on it."
+    ],
+    "avoid_when": [
+      "Rows are individually sorted but NOT chained together (a number in row 2 could be smaller than a number in row 1). Then the grid isn't one sorted sequence, and plain binary search on it breaks; a row-by-row or staircase search is needed instead, like in Search a 2D Matrix II.",
+      "The grid is tiny. A plain nested loop is just as fast and harder to get wrong.",
+      "You need every matching cell, not just whether one exists.",
+      "The grid isn't sorted at all. There's nothing for binary search to use."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "The grid being sorted AND chained row-to-row is the only reason binary search applies: it's what makes the whole grid act like one long sorted list.",
+      "row, col = m // COLS, m % COLS is the standard way to turn a flat position back into a real grid position. m // COLS counts how many full rows come before m; m % COLS is how far into its own row m sits.",
+      "Everything else, the l <= r window, the m - 1 / m + 1 updates, is identical to plain binary search on a 1D list: this is the same algorithm, just with one extra conversion step.",
+      "This finishes in about log2(ROWS * COLS) steps: a grid with a million cells needs only about 20."
+    ],
+    "time": "O(log(ROWS * COLS)), logarithmic in the total number of cells. ROWS and COLS are the grid's dimensions. Doubling the grid's size adds just one more step.",
+    "space": "O(1), constant. Only ROWS, COLS, l, r, m, row and col, however big the grid is.",
+    "edge_cases": [
+      "A 1x1 grid, like matrix = [[5]]. ROWS = COLS = 1, so l = r = 0 and the one cell is checked.",
+      "target not present but inside the overall range, like a number in the gap between two rows. The window shrinks all the way to empty and we return False, exactly like plain binary search with a missing target.",
+      "target smaller than every cell, or bigger than every cell. r ends at -1, or l ends at ROWS * COLS, and the loop exits cleanly without ever reading outside the grid.",
+      "A single row or a single column. COLS or ROWS is 1, and the flattening still works correctly either way."
+    ]
+  },
+  "code": "class Solution:\n    def searchMatrix(self, matrix: List[List[int]], target: int) -> bool:\n        ROWS, COLS = len(matrix), len(matrix[0])\n        l, r = 0, ROWS * COLS - 1\n\n        while l <= r:\n            m = l + (r - l) // 2\n            row, col = m // COLS, m % COLS\n\n            if matrix[row][col] > target:\n                r = m - 1\n            elif matrix[row][col] < target:\n                l = m + 1\n            else:\n                return True\n\n        return False\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().searchMatrix([[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], 3)",
+    "expected": true,
+    "describe": "matrix = [[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], target = 3"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Capitalization matters to Python.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method searchMatrix. It takes the 2D grid matrix and the number target, and promises to give back a boolean: True if target is somewhere in the grid, False otherwise.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def searchMatrix",
+          "meaning": "def starts a method definition. searchMatrix is the name LeetCode calls."
+        },
+        {
+          "token": "(self,",
+          "meaning": "self is the Solution object, required as the first parameter of every method."
+        },
+        {
+          "token": "matrix: List[List[int]],",
+          "meaning": "The grid, hinted as a List of List of int: a list of rows, each row itself a list of whole numbers."
+        },
+        {
+          "token": "target: int)",
+          "meaning": "The number to find, hinted as an int."
+        },
+        {
+          "token": "-> bool",
+          "meaning": "Return type hint: the answer is True or False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. A True/False answer fits a yes/no question like \"is target in the grid\".",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def searchMatrix(self, matrix, target):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Returning 1 or 0 instead of True or False. LeetCode expects an actual boolean here.",
+      "caption": "Python remembers the searchMatrix instructions for later."
+    },
+    "3": {
+      "explain": "This measures the grid. ROWS is how many rows matrix has, and COLS is how many numbers are in one row, read from matrix[0], the first row. Every row has the same length.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "ROWS, COLS",
+          "meaning": "Two variable names, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "len(matrix)",
+          "meaning": "len gives how many items a list has. matrix is a list of rows, so this counts the rows."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates the two values: the first goes to ROWS, the second to COLS."
+        },
+        {
+          "token": "len(matrix[0])",
+          "meaning": "matrix[0] is the first row, itself a list of numbers. Its length is how many columns every row has."
+        }
+      ],
+      "why": "Knowing ROWS and COLS lets the rest of the method treat the grid as one flattened list of ROWS * COLS numbers, without ever actually building that list.",
+      "if_removed": "Line 4 would crash with a NameError, since ROWS and COLS wouldn't exist yet.",
+      "alternatives": [
+        {
+          "code": "ROWS = len(matrix)\nCOLS = len(matrix[0])",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Writing len(matrix[0]) as len(matrix[1]), which breaks the moment the grid has only one row.",
+      "caption": "matrix has {len(matrix)} row(s) and {len(matrix[0])} column(s) each."
+    },
+    "4": {
+      "explain": "This sets up the search window as if matrix were one long sorted list. l starts at the first flat position, 0, and r starts at the last one, ROWS * COLS - 1.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "l, r",
+          "meaning": "Two variable names for the left and right ends of the flat window, assigned together."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0",
+          "meaning": "The first flat position of any grid."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates the two values: the first goes to l, the second to r."
+        },
+        {
+          "token": "ROWS * COLS - 1",
+          "meaning": "The total number of cells, minus 1, since flat positions start counting at 0."
+        }
+      ],
+      "why": "Both ends are INCLUSIVE, exactly like plain binary search on a list: l and r are real flat positions that are still candidates.",
+      "if_removed": "The while loop on line 6 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "l = 0\nr = ROWS * COLS - 1",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Forgetting the - 1, so r points one past the last real cell.",
+      "caption": "The answer could be any of the {ROWS * COLS} cells: l = 0 and r = {ROWS * COLS - 1} cover all of them, read left-to-right, row after row."
+    },
+    "6": {
+      "explain": "This loop keeps going as long as the flat window still has at least one candidate position left.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "l <= r",
+          "meaning": "<= means \"less than or equal to\". When l equals r, one cell is still left to check."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Just like plain binary search on a 1D list, we don't know in advance how many halvings we need, so a while loop fits better than a for loop.",
+      "if_removed": "Without the loop, only the very first middle position would ever be checked.",
+      "alternatives": [
+        {
+          "code": "while l < r:",
+          "difference": "Misses a one-cell window: searchMatrix([[5]], 5) would never check the only cell."
+        }
+      ],
+      "mistake": "Writing l < r with these inclusive bounds. The single-cell case is exactly what this bug breaks.",
+      "caption": [
+        {
+          "when": "l > r",
+          "text": "l = {l} has passed r = {r}. The flat window is empty, so target isn't anywhere in the grid."
+        },
+        "The flat window from l = {l} to r = {r} covers {r - l + 1} cell(s). Keep searching."
+      ]
+    },
+    "7": {
+      "explain": "This finds the middle flat position of the current window, the same way plain binary search finds the middle index of a list.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "m",
+          "meaning": "The variable for the middle flat position."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l +",
+          "meaning": "Start from the left end."
+        },
+        {
+          "token": "(r - l)",
+          "meaning": "How far it is from l to r."
+        },
+        {
+          "token": "// 2",
+          "meaning": "Integer division: divide and round DOWN to a whole number, since a flat position must be a whole number."
+        }
+      ],
+      "why": "l + (r - l) // 2 never overflows in languages where numbers have a maximum size, unlike (l + r) // 2. Python's integers never overflow, but the habit carries over to other languages.",
+      "if_removed": "Line 8 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "m = (l + r) // 2",
+          "difference": "Simpler and perfectly safe in Python; gives exactly the same m."
+        }
+      ],
+      "mistake": "Using / instead of //, which gives a decimal like 4.5 and later crashes when used as part of an index.",
+      "caption": "The middle flat position of {l}..{r} is m = {l + (r - l) // 2}."
+    },
+    "8": {
+      "explain": "This converts the flat position m back into a real cell: row is which row m falls in, and col is how far along that row m sits.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "row, col",
+          "meaning": "Two variable names for the real grid position, assigned together."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "m // COLS",
+          "meaning": "Integer division: how many full rows of COLS cells fit before m, which is exactly m's row."
+        },
+        {
+          "token": "m % COLS",
+          "meaning": "The remainder left over after those full rows: how far into that row m sits."
+        }
+      ],
+      "why": "Flattening the grid into one long list is only conceptual; matrix is still really a list of rows. // and % together are the standard way to turn a flat position back into (row, col).",
+      "if_removed": "matrix[row][col] on the lines below would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "row, col = divmod(m, COLS)",
+          "difference": "divmod does the // and % in one call and returns both as a pair. Exactly the same result, one built-in instead of two operators."
+        }
+      ],
+      "mistake": "Swapping the two: row = m % COLS, col = m // COLS puts almost every position in the wrong cell.",
+      "caption": "Flat position m = {m} is row {m // COLS}, column {m % COLS}."
+    },
+    "10": {
+      "explain": "Compare the number at this cell with target. If the cell is BIGGER, target must come earlier in the flattened order, because the whole grid reads as one sorted sequence.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "Starts a condition. The block below runs only if it's True."
+        },
+        {
+          "token": "matrix[row][col]",
+          "meaning": "matrix[row] is that row (a list); adding [col] reaches into it for one number."
+        },
+        {
+          "token": ">",
+          "meaning": "\"Greater than\" comparison."
+        },
+        {
+          "token": "target",
+          "meaning": "The number we're looking for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Because every row continues where the row above left off, the flattened grid is sorted. A too-big cell rules out every cell that comes after it too.",
+      "if_removed": "Line 12's check would run on every pass, always shrinking the window in the same direction.",
+      "alternatives": [
+        {
+          "code": "if target < matrix[row][col]:",
+          "difference": "The same comparison written the other way round. Identical behaviour."
+        }
+      ],
+      "mistake": "Getting the direction backwards: moving l when the cell is too big. The window then moves away from target.",
+      "caption": [
+        {
+          "when": "matrix[row][col] > target",
+          "text": "matrix[{row}][{col}] = {matrix[row][col]} is bigger than {target}, so target must come earlier in the grid."
+        },
+        "matrix[{row}][{col}] = {matrix[row][col]} isn't bigger than {target}."
+      ]
+    },
+    "11": {
+      "explain": "The cell was too big, so throw away flat position m and everything after it: move r to just before m.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the if block."
+        },
+        {
+          "token": "r = m - 1",
+          "meaning": "Make r one flat position before m. The new window is l..m-1."
+        }
+      ],
+      "why": "matrix[row][col] has already been ruled out as too big, so m itself is excluded too, with m - 1.",
+      "if_removed": "The window never shrinks from the right, so the loop can run forever when target is earlier in the grid.",
+      "alternatives": [
+        {
+          "code": "r = m",
+          "difference": "Keeps m in the window. With inclusive bounds and l <= r, this can loop forever."
+        }
+      ],
+      "mistake": "Writing r = m. The classic infinite loop, same bug as in plain binary search.",
+      "caption": "Discard flat position {m} (row {row}, col {col}) and everything after it: r moves from {r} to {m - 1}."
+    },
+    "12": {
+      "explain": "Otherwise, check whether the cell is SMALLER than target. If so, target must come later in the flattened order.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Lines up with the if on line 10, so this elif belongs to it."
+        },
+        {
+          "token": "elif",
+          "meaning": "Short for \"else if\". Checked only if the if above was False."
+        },
+        {
+          "token": "matrix[row][col] < target",
+          "meaning": "< means \"less than\". Is this cell too small?"
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "The mirror image of line 10. A too-small cell means every cell before it is even smaller, so they're ruled out too.",
+      "if_removed": "Without this branch, a too-small cell would fall into else and wrongly be treated as a match.",
+      "alternatives": [
+        {
+          "code": "if matrix[row][col] < target:",
+          "difference": "A separate if instead of elif. Risky here, since it would still run its own check even after line 10's branch already changed r."
+        }
+      ],
+      "mistake": "Using if instead of elif here, which can let both branches' logic interact in the wrong order.",
+      "caption": [
+        {
+          "when": "matrix[row][col] < target",
+          "text": "matrix[{row}][{col}] = {matrix[row][col]} is smaller than {target}, so target must come later in the grid."
+        },
+        "matrix[{row}][{col}] = {matrix[row][col]} isn't smaller than {target} either."
+      ]
+    },
+    "13": {
+      "explain": "The cell was too small, so throw away flat position m and everything before it: move l to just after m.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the elif block."
+        },
+        {
+          "token": "l = m + 1",
+          "meaning": "Make l one flat position after m. The new window is m+1..r."
+        }
+      ],
+      "why": "m has already been ruled out as too small, so it's excluded with + 1, guaranteeing the window shrinks.",
+      "if_removed": "The window never shrinks from the left, so the loop runs forever when target is later in the grid.",
+      "alternatives": [
+        {
+          "code": "l = m",
+          "difference": "Keeps m in the window. Can freeze the loop on a two-cell window."
+        }
+      ],
+      "mistake": "Forgetting the + 1. It looks harmless but can freeze the method on a small window.",
+      "caption": "Discard flat position {m} (row {row}, col {col}) and everything before it: l moves from {l} to {m + 1}."
+    },
+    "14": {
+      "explain": "else catches the only remaining case: the cell is neither bigger nor smaller than target, so it must be EQUAL. We found it.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Lines up with the if and elif above. It's the last branch of the same chain."
+        },
+        {
+          "token": "else",
+          "meaning": "\"Otherwise\": runs when every condition above was False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the line."
+        }
+      ],
+      "why": "Not bigger and not smaller means equal, so there's no need to write the == check out.",
+      "if_removed": "Without else, return True would run on every pass, whether the cell matched or not.",
+      "alternatives": [
+        {
+          "code": "elif matrix[row][col] == target:",
+          "difference": "Spells out the equality. Clearer for some readers, but the check can never be False here, so it's redundant."
+        }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "matrix[{row}][{col}] = {matrix[row][col]} equals {target}: found it!"
+    },
+    "15": {
+      "explain": "Give back True: target is somewhere in the grid, and we just found the exact cell.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the else block."
+        },
+        {
+          "token": "return True",
+          "meaning": "End the method now, handing back True."
+        }
+      ],
+      "why": "The question only asks whether target is in the grid, not where, so True is enough to answer it.",
+      "if_removed": "The loop would keep going after finding target; since the else branch never changes l or r, it would loop forever.",
+      "alternatives": [
+        {
+          "code": "return (row, col)",
+          "difference": "Would hand back the position instead of a yes/no answer. Not what this problem asks for."
+        }
+      ],
+      "mistake": "Returning matrix[row][col] instead of True. That's the number itself, not the yes/no answer.",
+      "caption": "Return True: target {target} was found at row {row}, column {col}."
+    },
+    "17": {
+      "explain": "The loop ended because the flat window became empty, so target is nowhere in the grid. Give back False.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after the loop. Only runs if the loop finished without returning."
+        },
+        {
+          "token": "return False",
+          "meaning": "Give back False, since no cell matched target."
+        }
+      ],
+      "why": "Every cell was ruled out by the time l passes r, so target truly isn't anywhere in the grid.",
+      "if_removed": "The method returns None when target is missing, which LeetCode marks wrong.",
+      "alternatives": [
+        {
+          "code": "return None",
+          "difference": "Another common \"nothing found\" signal in Python, but not what this problem asks for."
+        }
+      ],
+      "mistake": "Putting return False inside the loop, where it would run after the very first comparison instead of after the search is over.",
+      "caption": "The flat window is empty, so {target} isn't anywhere in the grid. Return False."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def searchMatrix(self, matrix: List[List[int]], target: int) -> bool:\n        for row in matrix:\n            for val in row:\n                if val == target:\n                    return True\n        return False",
+    "explain": "Check every cell, one row at a time, left to right, until target turns up. This works even if the grid weren't sorted at all.",
+    "why_slow": "In the worst case (target missing, or in the very last cell) this checks all ROWS * COLS cells. That's O(ROWS * COLS), and it completely ignores that every row continues where the row above left off.",
+    "how_pattern_fixes": "Because the flattened grid is sorted, binary search rules out half the remaining cells with a single comparison, finishing in O(log(ROWS * COLS)) steps instead of up to ROWS * COLS of them.",
+    "time": "O(ROWS * COLS): every cell may need checking.",
+    "space": "O(1): just the two loop variables."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(log n) barely grows. O(1) doesn't grow at all.",
+    "binary search": "Searching a sorted sequence by repeatedly checking the middle and discarding the half that can't contain the target.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A True or False value.",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(matrix).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "divmod": "A built-in function, divmod(a, b), that gives both a // b and a % b at once, as a pair.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if or elif above it was False.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "flattened": "Treated as if a multi-row structure were laid out as one single long list, read in order.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "inclusive": "Including the end points. An inclusive window from 2 to 5 contains 2, 3, 4 and 5.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -1, 0 or 24.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return, for.",
+    "len": "A built-in function that gives the number of items in a list: len([4, 8, 15]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 3, 5]. You reach items by their index.",
+    "logarithm": "How many times you can halve a number before reaching 1. log2 of 1,024 is 10. That's why halving algorithms are so fast.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, // divides and rounds down, % gives the remainder, = assigns, < compares.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. matrix and target are searchMatrix's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "pointer": "A variable holding a position (here, a flat position) rather than the value stored there.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Sorting takes about O(n log n) time for a plain list.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "type hint": "A label like target: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type.",
+    "value": "The part of a dictionary entry you get back, or more generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of the search space that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "grid",
+      "title": "matrix",
+      "source": "matrix",
+      "cursor": "[row, col] if 'row' in globals() else None",
+      "marks": {
+        "compared": "[[row, col]] if __line__ in (10, 12) else []",
+        "found": "[[row, col]] if __line__ in (14, 15) else []",
+        "done": "[[k // COLS, k % COLS] for k in range(ROWS * COLS) if k < l or k > r] if 'COLS' in globals() else []"
+      }
+    }
+  ]
+}
