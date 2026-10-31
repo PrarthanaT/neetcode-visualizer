@@ -1,0 +1,620 @@
+{
+  "slug": "koko-eating-bananas",
+  "title": "Koko Eating Bananas",
+  "difficulty": "Medium",
+  "category": "Binary Search",
+  "leetcode": 875,
+  "statement": [
+    "You are given a list of whole numbers called piles, one entry per pile of bananas, and a whole number h: the hours before the guards come back.",
+    "Every hour, Koko picks one pile and eats up to speed bananas from it, where speed is a whole number she chooses once and uses every hour. If the pile she picks has fewer bananas left than speed, she finishes that pile and does nothing else that hour; she never starts a second pile in the same hour.",
+    "She wants to eat every pile before the guards return.",
+    "Return the smallest whole number speed that lets her finish all the piles within h hours."
+  ],
+  "examples": [
+    {
+      "input": "piles = [3, 6, 7, 11], h = 8",
+      "output": "4",
+      "explain": "At speed 4, the piles take ceil(3/4) + ceil(6/4) + ceil(7/4) + ceil(11/4) = 1 + 2 + 2 + 3 = 8 hours, exactly the deadline. This is the example the visualizer runs. Watch the speed window l..r shrink, and the hours total change with each guess m."
+    },
+    {
+      "input": "piles = [30, 11, 23, 4, 20], h = 5",
+      "output": "30",
+      "explain": "With only 5 hours for 5 piles, Koko gets exactly one hour per pile, so speed has to clear the biggest pile, 30, in that single hour."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search on the answer (minimum feasible speed)",
+    "summary": "speed can be any whole number from 1 to max(piles): eating faster than the biggest pile never helps, since every pile still costs at least one hour. As speed goes up, the hours needed to finish goes down (or stays the same): every speed slower than a working one needs even more hours, and every speed at or above a working one still finishes in time. That one-way shape, fails below some point, works from that point on, is exactly what binary search needs, even though there's no array to search: it searches the range of possible speeds directly.",
+    "recognize": [
+      "You're asked for the smallest (or largest) whole number that makes some yes/no condition true, not for a value already sitting in a list.",
+      "Trying one candidate answer is cheap, here, one pass over piles to total the hours, even though there's no array to binary search.",
+      "The condition is monotonic: once a candidate speed works, every faster speed also works; once a candidate fails, every slower speed also fails.",
+      "Brute force would try every candidate speed one at a time, from slowest to fastest, and stop at the first one that works."
+    ],
+    "avoid_when": [
+      "The condition isn't monotonic: some slow candidates pass but a faster one fails. Binary search can't find a clean cutoff in that case.",
+      "The range of possible answers is tiny; a plain loop over every candidate is just as fast and simpler.",
+      "Checking a single candidate is itself expensive enough that trying O(log range) of them is still too slow."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "This never binary searches a real list; it binary searches the range of possible speeds, 1 to max(piles), directly.",
+      "Feasibility is monotonic: once a guessed speed finishes in time, every faster speed does too, so there's no need to check them, shrink r and look for something slower. If a guess is too slow, every slower speed fails too, so shrink l.",
+      "math.ceil rounds UP, because Koko can't carry leftover time from one pile into the next: a pile of 7 bananas at speed 6 still costs a full second hour for the last banana.",
+      "res tracks the best (smallest) feasible speed found so far, updated every time a guess succeeds."
+    ],
+    "time": "O(n log m), where n is the number of piles and m is max(piles). Each of the O(log m) guesses costs O(n) to total the hours across every pile.",
+    "space": "O(1), constant. Only a handful of number variables, however many piles there are.",
+    "edge_cases": [
+      "A single pile, like piles = [7]. l and r both range over 1..7, and the search still lands on the smallest speed that clears it in h hours.",
+      "h much bigger than needed: even the slowest speed, 1, finishes in time, and the search settles on res = 1.",
+      "h exactly equal to len(piles): the tightest possible deadline, since each hour can only touch one pile; the answer becomes max(piles), the only speed fast enough to clear every pile in a single hour each.",
+      "A pile exactly divisible by the guessed speed, like 6 bananas at speed 6. math.ceil(6 / 6) is 1, not 2: no hour is wasted when the division comes out even."
+    ]
+  },
+  "code": "class Solution:\n    def minEatingSpeed(self, piles: List[int], h: int) -> int:\n        l, r = 1, max(piles)\n        res = r\n\n        while l <= r:\n            m = l + (r - l) // 2\n\n            hours = 0\n            for i, p in enumerate(piles):\n                hours += math.ceil(p / m)\n\n            if hours <= h:\n                res = m\n                r = m - 1\n            else:\n                l = m + 1\n\n        return res\n",
+  "run": {
+    "prelude": "from typing import List\nimport math",
+    "call": "Solution().minEatingSpeed([3, 6, 7, 11], 8)",
+    "expected": 4,
+    "describe": "piles = [3, 6, 7, 11], h = 8"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for, with a capital S."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:. Capitalization matters to Python.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method minEatingSpeed. It takes the list piles and the hour limit h, and promises to give back a whole number: the slowest speed Koko can get away with.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def minEatingSpeed",
+          "meaning": "def starts a method definition. minEatingSpeed is the name LeetCode calls."
+        },
+        {
+          "token": "(self,",
+          "meaning": "self is the Solution object, required as the first parameter of every method."
+        },
+        {
+          "token": "piles: List[int],",
+          "meaning": "The pile sizes, hinted as a List of int."
+        },
+        {
+          "token": "h: int)",
+          "meaning": "The hour limit, hinted as an int."
+        },
+        {
+          "token": "-> int",
+          "meaning": "Return type hint: the answer is a whole number."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode chooses the name and inputs. Returning a speed, rather than a yes/no answer, is what \"find the smallest value that works\" problems ask for.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def minEatingSpeed(self, piles, h):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Returning the hours needed instead of the speed. The problem asks for speed, not how long it took.",
+      "caption": "Python remembers the minEatingSpeed instructions for later."
+    },
+    "3": {
+      "explain": "This sets up the search over possible speeds. l starts at the slowest speed that could ever work, 1 banana an hour. r starts at the fastest speed worth trying, the size of the biggest pile, since eating faster than that never saves any more time on it.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "l, r",
+          "meaning": "Two variable names for the slow and fast ends of the speed window, assigned together."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "1",
+          "meaning": "The slowest possible speed: one banana an hour."
+        },
+        {
+          "token": ",",
+          "meaning": "Separates the two values: the first goes to l, the second to r."
+        },
+        {
+          "token": "max(piles)",
+          "meaning": "A built-in that gives the biggest number in piles: the fastest speed worth considering."
+        }
+      ],
+      "why": "Both ends are INCLUSIVE, exactly like plain binary search over a list: l and r are real candidate speeds that are still in play.",
+      "if_removed": "The while loop on line 6 would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "l = 1\nr = max(piles)",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Starting r at sum(piles) instead of max(piles). It would still work, just search a much bigger, mostly pointless range.",
+      "caption": "Any speed from 1 to {max(piles)} (the biggest pile) could be the answer: l = 1, r = {max(piles)}."
+    },
+    "4": {
+      "explain": "res will hold the best (smallest) feasible speed found so far. It starts at r, the fastest speed, which always finishes in time, since it clears even the biggest pile in a single hour.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "res",
+          "meaning": "A variable name, short for \"result\"."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "r",
+          "meaning": "The current value of r: the fastest speed being considered."
+        }
+      ],
+      "why": "Starting from a speed that's guaranteed to work means res always holds a valid answer, even before the search narrows it down any further.",
+      "if_removed": "Line 19 would crash with a NameError if the loop somehow never ran, though with l = 1 and r = max(piles) it always runs at least once.",
+      "alternatives": [
+        {
+          "code": "res = max(piles)",
+          "difference": "The same value, spelled out again instead of reusing r. Identical result."
+        }
+      ],
+      "mistake": "Starting res at 1 instead of a known-working speed. If the very first guess failed, there would be no fallback value that's actually proven to work.",
+      "caption": "Start res at the fastest speed, {r}, which always finishes every pile in time."
+    },
+    "6": {
+      "explain": "This loop keeps going as long as the speed window still has at least one candidate left to try.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "l <= r",
+          "meaning": "<= means \"less than or equal to\". When l equals r, one speed is still left to try."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "We don't know in advance how many halvings the speed search needs, so a while loop fits better than a for loop over a fixed range.",
+      "if_removed": "Without the loop, only the very first guessed speed would ever be tried.",
+      "alternatives": [
+        {
+          "code": "while l < r:",
+          "difference": "Misses the case where only one candidate speed is left: it would stop one guess too early."
+        }
+      ],
+      "mistake": "Writing l < r with these inclusive bounds. The single-candidate case is exactly what this bug breaks.",
+      "caption": [
+        {
+          "when": "l > r",
+          "text": "l = {l} has passed r = {r}: every speed has been checked. The smallest one that worked is res = {res}."
+        },
+        "The speed window from l = {l} to r = {r} still has {r - l + 1} candidate speed(s) to try."
+      ]
+    },
+    "7": {
+      "explain": "This picks the middle speed of the current window to try next, the same way plain binary search picks the middle index of a list.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "m",
+          "meaning": "The variable for the speed being guessed this round."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l +",
+          "meaning": "Start from the slow end."
+        },
+        {
+          "token": "(r - l)",
+          "meaning": "How far it is from l to r."
+        },
+        {
+          "token": "// 2",
+          "meaning": "Integer division: divide and round DOWN to a whole number, since speed must be a whole number."
+        }
+      ],
+      "why": "Guessing the middle speed splits the window into two equal halves, so whichever half turns out to be wrong, it's as big as possible.",
+      "if_removed": "Line 9 onward would crash with a NameError.",
+      "alternatives": [
+        {
+          "code": "m = (l + r) // 2",
+          "difference": "Simpler and perfectly safe in Python; gives exactly the same m. The l + (r - l) // 2 form only matters in languages where l + r could overflow."
+        }
+      ],
+      "mistake": "Using / instead of //, which gives a decimal speed like 4.5, and a non-whole speed doesn't make sense here.",
+      "caption": "Try the middle speed of {l}..{r}: m = {l + (r - l) // 2}."
+    },
+    "9": {
+      "explain": "Before totaling how long speed m would take, reset the hour counter to 0.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "hours",
+          "meaning": "A variable name to accumulate the total hours needed at speed m."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0",
+          "meaning": "No piles have been counted yet this round."
+        }
+      ],
+      "why": "Every guessed speed needs its own fresh total; reusing a leftover total from a previous guess would give the wrong answer.",
+      "if_removed": "Line 11's += would crash with a NameError on the very first pile.",
+      "alternatives": [
+        {
+          "code": "hours: int = 0",
+          "difference": "Adds a type hint to a local variable. Allowed, but unusual; locals don't normally need one."
+        }
+      ],
+      "mistake": "Declaring hours = 0 outside the while loop instead of inside it, which would let hours keep growing across every guessed speed instead of restarting each time.",
+      "caption": "Start counting hours needed at speed {m}: hours = 0 so far."
+    },
+    "10": {
+      "explain": "Go through every pile, one at a time, to add up how many hours speed m would need for all of them.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "for",
+          "meaning": "Starts a loop that runs its block once per item."
+        },
+        {
+          "token": "i, p",
+          "meaning": "Two loop variables: i is the pile's position, p is the pile's size."
+        },
+        {
+          "token": "in enumerate(piles)",
+          "meaning": "enumerate pairs each item in piles with its index, so both are available each pass."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Checking one candidate speed means totaling the hours across every pile; there's no shortcut around visiting each one.",
+      "if_removed": "hours would stay 0, and every guessed speed would look like it finishes instantly.",
+      "alternatives": [
+        {
+          "code": "for p in piles:",
+          "difference": "Skips the index. Works exactly the same here, since i is only used to highlight the current pile, not in any calculation."
+        }
+      ],
+      "mistake": "Forgetting enumerate and writing for p in piles: i, p, which is a SyntaxError, not valid unpacking.",
+      "caption": [
+        "Done with pile[{i}] = {p}. Move on to the next pile.",
+        "Start adding up hours for speed {m}, one pile at a time."
+      ]
+    },
+    "11": {
+      "explain": "Add this pile's hours onto the running total: how many hours speed m needs to clear a pile of p bananas.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the for loop."
+        },
+        {
+          "token": "hours",
+          "meaning": "The running total being built up."
+        },
+        {
+          "token": "+=",
+          "meaning": "Augmented assignment: hours += x means hours = hours + x."
+        },
+        {
+          "token": "math.ceil(",
+          "meaning": "A function from the math module that rounds UP to the next whole number."
+        },
+        {
+          "token": "p / m",
+          "meaning": "True division: p / m always gives a decimal result, like 1.166..., never rounded for you."
+        },
+        {
+          "token": ")",
+          "meaning": "Closes the math.ceil call."
+        }
+      ],
+      "why": "Koko can't carry leftover eating time from one pile into the next, so any fraction of an hour still costs a whole hour. math.ceil(p / m) is exactly \"how many hours at speed m, rounding any leftover up to a full hour\".",
+      "if_removed": "Using regular division without math.ceil would undercount hours whenever a pile doesn't divide evenly by m, making some speeds look faster than they really are.",
+      "alternatives": [
+        {
+          "code": "hours += -(-p // m)",
+          "difference": "A common trick for ceiling division using only integers: negate, floor-divide, negate again. Gives the same result as math.ceil(p / m) without importing math, but it's harder to read."
+        }
+      ],
+      "mistake": "Using p // m (floor division) instead of math.ceil(p / m). Floor division rounds DOWN, which would undercount hours for any pile that doesn't divide evenly.",
+      "caption": "At speed {m}, pile[{i}] ({p} banana(s)) needs math.ceil({p} / {m}) = {math.ceil(p / m)} hour(s). Running total: {hours} + {math.ceil(p / m)} = {hours + math.ceil(p / m)}."
+    },
+    "13": {
+      "explain": "Once every pile has been counted, check whether speed m finishes within the h-hour deadline.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "Starts a condition. The block below runs only if it's True."
+        },
+        {
+          "token": "hours <= h",
+          "meaning": "<= means \"less than or equal to\". Finishing exactly on the deadline still counts."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "This is the yes/no test that makes speed m feasible or not, the one binary search needs to decide which half of the window to keep.",
+      "if_removed": "Line 14 and 15 would never run, so res would never improve past its starting value.",
+      "alternatives": [
+        {
+          "code": "if hours > h:",
+          "difference": "The opposite condition. Would need the if/else bodies swapped too; otherwise it reverses which half gets kept."
+        }
+      ],
+      "mistake": "Writing hours < h instead of hours <= h, which would wrongly treat a speed that finishes exactly on time as too slow.",
+      "caption": [
+        {
+          "when": "hours <= h",
+          "text": "Speed {m} finishes in {hours} hour(s), within the {h}-hour deadline: it works."
+        },
+        "Speed {m} needs {hours} hour(s), more than the {h} allowed: too slow."
+      ]
+    },
+    "14": {
+      "explain": "Speed m worked, and since the search always tries slower speeds after a success, it's the best (smallest) one found so far.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the if block."
+        },
+        {
+          "token": "res = m",
+          "meaning": "Record m as the best feasible speed seen so far."
+        }
+      ],
+      "why": "The search keeps trying to beat a working speed with something slower, so the most recent success is always the best one found up to this point.",
+      "if_removed": "res would stay stuck at its very first value and never reflect a better speed the search actually found.",
+      "alternatives": [
+        {
+          "code": "res = min(res, m)",
+          "difference": "Equally correct, and safer in general, but unnecessary here: m is only reached once it's strictly smaller than every previously recorded res."
+        }
+      ],
+      "mistake": "Writing res = m outside the if, which would overwrite res with failing speeds too.",
+      "caption": "Speed {m} works, and it's the slowest feasible guess tried so far: res becomes {m}."
+    },
+    "15": {
+      "explain": "Since m already works, there's no reason to try it or anything faster again: narrow the window to look for an even slower speed that might also work.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the if block."
+        },
+        {
+          "token": "r = m - 1",
+          "meaning": "Make r one speed slower than m. The new window is l..m-1."
+        }
+      ],
+      "why": "Because feasibility is monotonic, every speed from m up to the old r also works, so they're safe to drop; only speeds slower than m are still worth checking.",
+      "if_removed": "The window never shrinks from the fast end, so the loop can run forever searching for a slower working speed.",
+      "alternatives": [
+        {
+          "code": "r = m",
+          "difference": "Keeps m in the window. With inclusive bounds and l <= r, this can loop forever once l catches up to m."
+        }
+      ],
+      "mistake": "Writing r = m, the classic infinite loop, same bug as in plain binary search.",
+      "caption": "Since {m} already works, look for something slower: r moves from {r} to {m - 1}."
+    },
+    "16": {
+      "explain": "else catches the only other case: speed m needed more than h hours, so it's too slow.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Lines up with the if above. It's the other branch of the same condition."
+        },
+        {
+          "token": "else",
+          "meaning": "\"Otherwise\": runs when the if above was False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the line."
+        }
+      ],
+      "why": "A speed that's too slow is never worth recording in res, and every speed slower than it would be even worse, so the search should move the other direction.",
+      "if_removed": "Without else, line 17 would run after every guess, even the ones that already succeeded, breaking the search.",
+      "alternatives": [
+        {
+          "code": "elif hours > h:",
+          "difference": "Spells out the condition again. Correct, but redundant: it's the only case left once the if above was False."
+        }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "Speed {m} doesn't finish within {h} hours."
+    },
+    "17": {
+      "explain": "Speed m was too slow, so throw it away and everything slower than it: move l to just faster than m.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Inside the else block."
+        },
+        {
+          "token": "l = m + 1",
+          "meaning": "Make l one speed faster than m. The new window is m+1..r."
+        }
+      ],
+      "why": "Because feasibility is monotonic, every speed from the old l up to m also fails, so they're safe to drop; only speeds faster than m could still work.",
+      "if_removed": "The window never shrinks from the slow end, so the loop can run forever on a speed that's never fast enough.",
+      "alternatives": [
+        {
+          "code": "l = m",
+          "difference": "Keeps m in the window. Can freeze the loop on a two-candidate window."
+        }
+      ],
+      "mistake": "Forgetting the + 1, which can freeze the search instead of making progress.",
+      "caption": "Speed {m} is too slow, so only faster speeds are worth trying: l moves from {l} to {m + 1}."
+    },
+    "19": {
+      "explain": "The loop ended because the speed window became empty, meaning every candidate has been tried. Give back the best one found.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after the loop. Only runs once the loop finishes."
+        },
+        {
+          "token": "return res",
+          "meaning": "Give back res, the smallest speed that finished within h hours."
+        }
+      ],
+      "why": "res was only ever updated by a speed that actually finished in time, and it's always the smallest one found, since the search keeps trying slower speeds after every success.",
+      "if_removed": "The method would reach the end without returning anything, giving back None instead of the answer.",
+      "alternatives": [
+        {
+          "code": "return l",
+          "difference": "Also correct: once the loop ends, l ends up equal to res. Returning res reads more clearly, since it's the variable that was actually tracking the answer."
+        }
+      ],
+      "mistake": "Returning m instead of res. By the time the loop ends, m holds whichever speed was checked last, not necessarily the best one found.",
+      "caption": "Every speed has been checked. Return the smallest one that worked, res = {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def minEatingSpeed(self, piles: List[int], h: int) -> int:\n        for speed in range(1, max(piles) + 1):\n            hours = 0\n            for p in piles:\n                hours += math.ceil(p / speed)\n            if hours <= h:\n                return speed",
+    "explain": "Try every possible speed, starting at 1 and counting up. For each one, total up how many hours it would take to finish every pile, and stop at the very first speed that fits within h hours.",
+    "why_slow": "In the worst case the right speed is close to max(piles), so this tries nearly max(piles) candidate speeds, each one costing O(n) to total the hours. That's O(n * max(piles)) overall, far slower than binary search once the piles get big.",
+    "how_pattern_fixes": "Because feasibility is monotonic, every speed at or above a working one also works, checking the middle speed rules out half of the remaining candidates every time, the same shortcut plain binary search takes on a sorted list.",
+    "time": "O(n * max(piles)): up to max(piles) candidate speeds, each costing O(n) to check.",
+    "space": "O(1): just the loop variables."
+  },
+  "glossary": {
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "augmented assignment": "A shorthand that combines an operation with assignment, like hours += 1, which means the same thing as hours = hours + 1.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(log n) barely grows. O(1) doesn't grow at all.",
+    "binary search": "Searching a sorted sequence, or a monotonic range of candidate answers, by repeatedly checking the middle and discarding the half that can't contain the answer.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like max(piles).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "elif": "Short for \"else if\". It isn't used in this solution, but it means \"check another condition, only if the if above it was False\".",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "enumerate": "A built-in that pairs each item in a collection with its index, so a for loop can use both at once.",
+    "float": "A number with a decimal point, like 1.75. True division (/) always gives one.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "inclusive": "Including the end points. An inclusive window from 2 to 5 contains 2, 3, 4 and 5.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like 1, 4 or 11.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "keyword": "A word reserved by Python, like while, if, else, return, for, class, def.",
+    "len": "A built-in function that gives the number of items in a list: len([3, 6, 7, 11]) is 4.",
+    "list": "An ordered collection written with square brackets, like [3, 6, 7, 11]. You reach items by their index.",
+    "logarithm": "How many times you can halve a range before reaching 1. log2 of 1,024 is 10. That's why halving search ranges is so fast.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that gives the biggest value in a collection: max([3, 6, 7, 11]) is 11.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, // divides and rounds down, / divides exactly, += adds and assigns, = assigns, < compares.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. piles and h are minEatingSpeed's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "range": "A built-in function that produces whole numbers. range(1, 4) gives 1, 2, 3.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example invalid unpacking.",
+    "true division": "Division with / that always gives a decimal result in Python 3, like 7 / 2 == 3.5, unlike // which rounds down to a whole number.",
+    "type hint": "A label like h: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type.",
+    "value": "The part of a dictionary entry you get back, or more generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The range of candidate answers that could still be correct, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "bars",
+      "title": "piles",
+      "source": "piles",
+      "marks": {
+        "compared": "[i] if __line__ == 11 else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "search over eating speed",
+      "source": "[['l', l], ['r', r]] + ([['m', m]] if 'm' in globals() else []) + ([['hours needed at speed m', hours]] if 'hours' in globals() else [])"
+    }
+  ]
+}
