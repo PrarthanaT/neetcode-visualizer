@@ -1,0 +1,597 @@
+{
+  "slug": "minimum-window-substring",
+  "title": "Minimum Window Substring",
+  "difficulty": "Hard",
+  "category": "Sliding Window",
+  "leetcode": 76,
+  "statement": [
+    "You are given two strings s and t.",
+    "Return the shortest substring of s that contains every character of t, including repeats: if t has two 'a's, the substring needs at least two 'a's too. Characters can appear in any order inside the substring.",
+    "If no substring of s contains all of t's characters, return the empty string \"\". If there's more than one shortest substring, returning any one of them is fine."
+  ],
+  "examples": [
+    {
+      "input": "s = \"ADOBECODEBANC\", t = \"ABC\"",
+      "output": "\"BANC\"",
+      "explain": "\"BANC\" (indexes 9-12) contains one 'A', one 'B' and one 'C', exactly what t asks for, and no shorter substring of s manages that. This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"a\", t = \"aa\"",
+      "output": "\"\"",
+      "explain": "t needs two 'a's, but s only has one character total, so no substring of s can ever contain two of them."
+    }
+  ],
+  "pattern": {
+    "name": "Variable-size sliding window, grown until valid then shrunk while still valid, tracked by a have/need match count",
+    "summary": "Build countT: how many of each character t requires. Grow the window with r, counting every character it passes into window, and bump have each time a character's count in window newly reaches what countT requires for it. The moment have == need (every one of t's requirements is currently met), the window is valid: record it if it beats the shortest one seen so far, then shrink it from the left with l, giving back one character at a time (dropping have the moment a requirement stops being met) for as long as it's still valid. Then let r grow the window again.",
+    "recognize": [
+      "You need the shortest contiguous window of one sequence that satisfies a constraint shaped like \"contains at least this many of each of these items\".",
+      "The window's size isn't fixed in advance; it has to grow and shrink based on whether it currently satisfies the requirement.",
+      "Checking the requirement with a direct dictionary comparison on every step would work, but a running have/need count turns that into an O(1) check instead.",
+      "Once a window becomes valid, shrinking it (never growing it further) is the only way to find a SHORTER valid window, since adding more characters can only make a window bigger."
+    ],
+    "avoid_when": [
+      "The window's size is fixed in advance, known directly from one of the inputs' lengths. That's Permutation in String's shape instead.",
+      "The requirement is \"no repeated characters\" or \"at most k changes\" rather than \"at least this many of each\". Those need a different validity check (a set, or a running highest-frequency count).",
+      "You need every valid window, not just the shortest one, or the longest window rather than the shortest.",
+      "t is tiny and fixed, where directly re-checking the whole window against t on each step is simple enough and just as fast at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "have only ever changes for characters that are also in countT, since both line 19 and line 28 guard their checks with in countT. A character t doesn't care about can never nudge have.",
+      "The while loop's condition (have == need) is re-checked after every single character leaves the window, not just once, since removing one character can only ever break one requirement at a time, but each removal still needs its own fresh check before shrinking further.",
+      "resLen only updates on a STRICT < comparison on line 23, so when two windows tie for shortest, the one found first while scanning left to right is kept, and a later tie is silently skipped.",
+      "The moment have first reaches need, the while loop runs at least once immediately, recording that window as a candidate before it even tries to shrink. The very first valid window is never missed."
+    ],
+    "time": "O(n + m), linear time. m = len(t) builds countT once; n = len(s) then scans with r, and l only ever moves forward, never past r, so across the entire run l takes at most n steps in total; both pointers together do at most about 2n steps.",
+    "space": "O(m), where m is the number of distinct characters in t. countT never holds more entries than that; window can hold more (one per distinct character of s), but that's still bounded by a fixed alphabet, not by n.",
+    "edge_cases": [
+      "No valid window exists at all, like s = \"a\", t = \"aa\": have never reaches need, so resL and resR stay -1, resLen stays float(\"infinity\"), and the final line correctly returns \"\".",
+      "s itself is the only valid window, like s = \"a\", t = \"a\": have reaches need exactly when r finishes reading the last needed character, and the method still tries to shrink from the left afterward, even though l has nowhere left to go without breaking validity.",
+      "Repeated characters in t, like t = \"AABC\": countT['A'] becomes 2, so window needs two A's inside it before have credits that requirement at all, exactly mirroring how two A's are required in a real answer.",
+      "A character appears in s but never in t, like the 'O' in \"ADOBECODEBANC\": it's still counted into window on line 17, but the in countT guards on lines 19 and 28 mean it can never affect have, so it just takes up space inside whatever window contains it."
+    ]
+  },
+  "code": "class Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        if t == \"\":\n            return \"\"\n\n        countT = {}\n        for c in t:\n            countT[c] = 1 + countT.get(c, 0)\n\n        window = {}\n        have, need = 0, len(countT)\n        resLen = float(\"infinity\")\n        resL, resR = -1, -1\n        l = 0\n\n        for r in range(len(s)):\n            window[s[r]] = 1 + window.get(s[r], 0)\n\n            if s[r] in countT and window[s[r]] == countT[s[r]]:\n                have += 1\n\n            while have == need:\n                if (r - l + 1) < resLen:\n                    resL, resR = l, r\n                    resLen = r - l + 1\n\n                window[s[l]] -= 1\n                if s[l] in countT and window[s[l]] < countT[s[l]]:\n                    have -= 1\n                l += 1\n\n        return s[resL:resR + 1] if resLen != float(\"infinity\") else \"\"\n",
+  "run": {
+    "prelude": "",
+    "call": "Solution().minWindow(\"ADOBECODEBANC\", \"ABC\")",
+    "expected": "BANC",
+    "describe": "s = \"ADOBECODEBANC\", t = \"ABC\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def minWindow would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named minWindow. It takes the strings s and t, and promises to give back a string: the shortest substring of s containing every character of t.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "minWindow", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "s: str,", "meaning": "The text to search inside, hinted as a str." },
+        { "token": "t: str)", "meaning": "The characters that must be covered, hinted as a str." },
+        { "token": "-> str", "meaning": "Return type hint: the answer is itself a piece of text, not a length or a boolean." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The names and parameter order are chosen by LeetCode: s first (the text to search), t second (what it must contain). Returning the actual substring, not just its length, matches exactly what the problem asks for.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def minWindow(self, s, t):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Swapping the parameter order to (self, t, s). LeetCode calls this method with s first, so swapping would build countT from the text being searched instead of the characters that must be covered.",
+      "caption": "Python remembers the minWindow instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This checks whether t is the empty string, meaning there's nothing it needs covered.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "t ==", "meaning": "Compares t for equality." },
+        { "token": "\"\"", "meaning": "The empty string: zero characters." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "An empty t has no characters to require, so technically the empty substring of s already contains everything t asks for (nothing), and there's nothing left for the rest of the method to compute.",
+      "if_removed": "countT would stay empty regardless (the loop on line 7 would simply never run), need would be 0, and have == need would already be True before r even moved, so the method would still behave correctly without this line for this particular case.",
+      "alternatives": [
+        { "code": "if not t:", "difference": "Checks for an empty (or falsy) string instead of comparing to \"\" directly. Both behave identically for a str input." }
+      ],
+      "mistake": "Writing if s == \"\": instead, checking the wrong string. An empty s with a non-empty t genuinely has no valid window, which the rest of the method already handles correctly on its own.",
+      "caption": [
+        { "when": "t == ''", "text": "t is empty: there's nothing to cover. Return \"\" right away." },
+        "t has characters to cover. Keep going."
+      ]
+    },
+    "4": {
+      "explain": "Once t is known to be empty, immediately return the empty string.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Inside the if block, so it only runs when line 3's condition was True." },
+        { "token": "return \"\"", "meaning": "Ends the method immediately, handing back an empty string." }
+      ],
+      "why": "There's nothing left to compute: with no characters required, the empty substring already satisfies the request.",
+      "if_removed": "Execution would fall through to the rest of the method, which (as line 3's if_removed explains) would still reach the same answer here, just by doing unnecessary work first.",
+      "alternatives": [
+        { "code": "return s[0:0]", "difference": "Slices zero characters out of s instead of writing \"\" directly. Produces the exact same empty string." }
+      ],
+      "mistake": "Forgetting this return and only writing the if's condition. Without a return inside the block, the method would keep running on an input it already knows the answer to.",
+      "caption": "Return \"\" immediately: t has nothing that needs covering."
+    },
+    "6": {
+      "explain": "This creates an empty dictionary named countT, which will map each character in t to how many times it appears there.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "countT", "meaning": "A variable name we chose for t's required character counts." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "A window covers t exactly when it has at least as many of each character as countT requires. countT is the fixed target every candidate window is measured against.",
+      "if_removed": "Line 8 would crash with a NameError, since countT wouldn't exist to be updated.",
+      "alternatives": [
+        { "code": "from collections import Counter\ncountT = Counter(t)", "difference": "Counter builds the same character counts in one call. It needs an extra import; a plain dictionary built with a loop works just as well here." }
+      ],
+      "mistake": "Writing countT = dict() instead. It makes the same empty dictionary; {} is just shorter.",
+      "caption": "Make an empty dictionary called countT. It will hold how many of each character t requires."
+    },
+    "7": {
+      "explain": "This loop moves through every character of t, one at a time, so each one can be counted.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "c", "meaning": "The loop variable: the character currently being counted." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "t", "meaning": "Looping directly over a string yields its characters, one per pass." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character of t needs to be tallied exactly once to build countT, the target counts every window of s gets measured against.",
+      "if_removed": "countT would stay empty forever, so need (line 11) would be 0, and have == need would already be True before any character of s was even read.",
+      "alternatives": [
+        { "code": "for i in range(len(t)):\n    c = t[i]\n    ...", "difference": "Loops over indexes and looks up the character manually. Looping directly over the string is simpler since the index itself is never needed." }
+      ],
+      "mistake": "Writing for c in s: by accident. That would count characters from the wrong string, building countT from the text being searched instead of the characters that must be covered.",
+      "caption": [
+        { "when": "__visits__[7] > len(t)", "text": "Every character of t has been counted." },
+        { "when": "__visits__[7] > 1", "text": "Count {c} toward countT, the target t asks for." },
+        "Start counting t's characters with the first one, {t[0]}."
+      ]
+    },
+    "8": {
+      "explain": "This adds one to c's running tally inside countT: either creating its entry (starting at 1) or increasing an existing one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "countT[c]", "meaning": "Square brackets on the left of = mean \"the slot for key c\". If the key is new, Python creates it; if it already exists, its value is replaced." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "1 +", "meaning": "Add 1 for the character just seen." },
+        { "token": "countT.get(c, 0)", "meaning": ".get looks up c in countT, returning its current count, or 0 if c hasn't appeared in t yet." }
+      ],
+      "why": "countT has to end up holding exactly how many times each character appears in t, since that's the minimum every window of s has to meet.",
+      "if_removed": "countT would stay empty forever, need would be 0, and have == need would already be True before any character of s was even read, making the window on the very first character look valid when it isn't.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\ncountT = defaultdict(int)\n...\ncountT[c] += 1", "difference": "A defaultdict treats a missing key as 0 automatically, so += 1 works directly without .get. It needs an extra import; a plain dictionary with .get works just as well here." }
+      ],
+      "mistake": "Writing countT[c] = 1 instead of countT[c] = 1 + countT.get(c, 0). That would forget any earlier copies of c, so a character appearing twice in t (like the 'A' in \"AABC\") would only ever require one copy in a window.",
+      "caption": "countT[{c}] becomes {1 + countT.get(c, 0)}."
+    },
+    "10": {
+      "explain": "This creates an empty dictionary named window, which will map every character currently inside the sliding window of s to how many times it appears there.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "window", "meaning": "A variable name we chose for the window's current character counts." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "window needs its own running counts to compare against countT. Unlike countT, it tracks every character the window passes through, even ones t doesn't care about, since s isn't limited to t's alphabet.",
+      "if_removed": "Line 17 would crash with a NameError, since window wouldn't exist to be updated.",
+      "alternatives": [
+        { "code": "window = dict()", "difference": "Makes the same empty dictionary; {} is shorter." }
+      ],
+      "mistake": "Writing window = countT by accident, trying to reuse countT's dictionary. That would make window and countT point to the exact same dictionary object, so updating one would corrupt the other instead of tracking two independent counts.",
+      "caption": "Make an empty dictionary called window. It will hold the character counts of s's current window."
+    },
+    "11": {
+      "explain": "This creates have (how many of countT's requirements are currently fully met) and need (the total number of requirements, one per distinct character of t), in the same line.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "have, need", "meaning": "Two names, assigned together: tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0, len(countT)", "meaning": "have starts at 0 (nothing checked yet); need is fixed at countT's distinct character count." }
+      ],
+      "why": "Comparing window to countT one character at a time on every single step would cost time proportional to the number of distinct characters. have instead tracks a running total that changes by at most one per update, so have == need is a cheap stand-in for \"does the window currently cover all of t\".",
+      "if_removed": "Line 19 and line 22 would both crash with a NameError, since have and need wouldn't exist.",
+      "alternatives": [
+        { "code": "have = 0\nneed = len(countT)", "difference": "The same two assignments written as separate lines instead of one tuple unpacking. Identical result." }
+      ],
+      "mistake": "Writing have, need = len(countT), 0, swapping which name gets which value. Then need would always be 0, making have == need True immediately, before any real character was checked.",
+      "caption": "Make have = 0 and need = {len(countT)}: no requirement has been checked yet, out of {len(countT)} total."
+    },
+    "12": {
+      "explain": "This creates resLen, the length of the shortest valid window found so far, starting at infinity since none has been found yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "resLen", "meaning": "A variable name we chose, short for result length." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "float(\"infinity\")", "meaning": "Python's way of writing a number bigger than any real length, used here so the very first valid window is guaranteed to look shorter than it." }
+      ],
+      "why": "Starting resLen at infinity means the very first valid window found will always pass the < resLen check on line 23, no matter how long it is, so it's guaranteed to get recorded.",
+      "if_removed": "Line 23's (r - l + 1) < resLen comparison would crash with a NameError.",
+      "alternatives": [
+        { "code": "resLen = len(s) + 1", "difference": "Any number bigger than every possible window length works the same way. len(s) + 1 is guaranteed too big since no window can exceed len(s); float(\"infinity\") just makes that guarantee obvious without reasoning about s's length." }
+      ],
+      "mistake": "Starting resLen at 0 instead. Then (r - l + 1) < resLen would be False for every real window (since every window has a positive length), and no window would ever be recorded.",
+      "caption": "Make resLen = infinity: no valid window has been found yet, so anything would beat it."
+    },
+    "13": {
+      "explain": "This creates resL and resR, the left and right indexes of the best window found so far, both starting at -1 since none has been found yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "resL, resR", "meaning": "Two names, assigned together: tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "-1, -1", "meaning": "Not a valid index into s, used as a placeholder meaning \"nothing found yet\"." }
+      ],
+      "why": "The final answer is built from s[resL:resR + 1], so the best window's actual position has to be remembered, not just its length.",
+      "if_removed": "The final return statement (line 32) would crash with a NameError, since resL and resR wouldn't exist.",
+      "alternatives": [
+        { "code": "resL = resR = -1", "difference": "Chains an assignment to set two names to the same value at once. Identical result to tuple unpacking here, since both start at the same placeholder." }
+      ],
+      "mistake": "Starting resL and resR at 0 instead of -1. If no valid window is ever found, s[0:1] would wrongly slice out s's first character instead of leaving the final answer empty.",
+      "caption": "Make resL = resR = -1: no window's position has been recorded yet."
+    },
+    "14": {
+      "explain": "This creates l, the window's left edge, starting at position 0.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l", "meaning": "A variable name for the window's left boundary." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any string: the window starts as far left as possible." }
+      ],
+      "why": "The window needs two edges to track its current span. l starts at the very first character, since before any character has been read, the only possible window starts there.",
+      "if_removed": "Line 27 (and every line that reads s[l]) would crash with a NameError, since l wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = r = 0", "difference": "Chains an assignment to set two names at once. r is reassigned by the for loop on line 16 anyway, so this would only save a line, not change behaviour." }
+      ],
+      "mistake": "Starting l at 1 instead of 0. That would skip ever considering the very first character of s as part of any window.",
+      "caption": "Make l = 0: the window's left edge starts at the first character of s."
+    },
+    "16": {
+      "explain": "This loop moves r through every index of s, one at a time. Each pass grows the window by adding s[r], then tries to shrink it while it's still valid.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "r", "meaning": "The loop variable: the window's right edge, the newest character being added." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "range(len(s))", "meaning": "range of len(s) produces every valid index of s, 0 through len(s) - 1." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character needs a turn as the window's newest addition, since the shortest valid window could end anywhere in s. This is what sweeps r from left to right exactly once.",
+      "if_removed": "Without this loop, the body would run at most once, and only the very first character of s would ever be considered.",
+      "alternatives": [
+        { "code": "r = 0\nwhile r < len(s):\n    ...\n    r += 1", "difference": "A while loop doing the same sweep with an explicit counter. More typing for an identical result; the for loop is simpler here since r always advances by exactly 1." }
+      ],
+      "mistake": "Writing for r in range(1, len(s)): by accident. That would skip ever adding s[0] to the window, starting the scan one character too late.",
+      "caption": [
+        { "when": "r < len(s)", "text": "r moves to {s[r]} at index {r}. Add it to the window." },
+        "Every character of s has had a turn as the window's right edge."
+      ]
+    },
+    "17": {
+      "explain": "This adds one to s[r]'s running tally inside the window, since it just entered.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "window[s[r]]", "meaning": "The slot for key s[r] inside window." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "1 +", "meaning": "Add 1 for the copy just added." },
+        { "token": "window.get(s[r], 0)", "meaning": ".get looks up s[r] in window, returning its current count, or 0 if this is its first appearance in the window." }
+      ],
+      "why": "window has to track every character currently inside it, even ones t doesn't ask for, since s can contain characters outside t's alphabet entirely.",
+      "if_removed": "The have check on line 19 would compare against a stale count, one lower than what's actually in the window, which could delay detecting a window that's genuinely already valid.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\nwindow = defaultdict(int)\n...\nwindow[s[r]] += 1", "difference": "A defaultdict lets you write += 1 directly without .get. Needs an extra import; functionally identical here." }
+      ],
+      "mistake": "Writing window[s[r]] = 1 + window.get(s[l], 0) by accident, reading s[l] instead of s[r] on the right-hand side. That bases the new count on the wrong character's old tally.",
+      "caption": "{s[r]} now appears {1 + window.get(s[r], 0)} time(s) in the window."
+    },
+    "19": {
+      "explain": "This checks two things together: is s[r] even a character t cares about, and if so, has its count in window just reached exactly what countT requires?",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "s[r] in countT", "meaning": "The membership operator. True exactly when s[r] is one of the keys countT has." },
+        { "token": "and", "meaning": "Both sides must be True for the whole condition to be True." },
+        { "token": "window[s[r]] == countT[s[r]]", "meaning": "True exactly when the window's count for this character equals countT's requirement." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "have should only count a requirement as met once its count is EXACTLY right, and only for characters t actually requires. The and short-circuits: window[s[r]] == countT[s[r]] is never even evaluated for a character outside countT, so it can't raise a KeyError.",
+      "if_removed": "have would never increase, so have == need on line 22 would stay False even once the window genuinely contains everything t requires.",
+      "alternatives": [
+        { "code": "if s[r] in countT and window[s[r]] >= countT[s[r]]:", "difference": "Would also fire every time the count overshoots countT, counting the same requirement as newly met over and over. have would then climb past need, making the final check meaningless." }
+      ],
+      "mistake": "Writing window[s[r]] == countT[s[r]] and s[r] in countT, checking the equality first. Python evaluates left to right, so for a character outside countT this order would try countT[s[r]] before the membership check ever runs, crashing with a KeyError.",
+      "caption": [
+        { "when": "s[r] in countT and window[s[r]] == countT[s[r]]", "text": "The count for {s[r]} just reached exactly what countT requires: a new requirement met." },
+        "Either {s[r]} isn't in t at all, or its count doesn't exactly match countT yet."
+      ]
+    },
+    "20": {
+      "explain": "Record the newly met requirement: one more of t's characters now has exactly the right count in the window.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 19's condition was True." },
+        { "token": "have", "meaning": "The running count of countT's requirements that are currently fully met." },
+        { "token": "+=", "meaning": "Shorthand for have = have + 1." },
+        { "token": "1", "meaning": "Exactly one requirement just became met." }
+      ],
+      "why": "have needs to climb by exactly one for each character whose count newly becomes exact, so that have == need exactly tracks \"every character t needs is now covered\".",
+      "if_removed": "have would never rise above 0 through this path, and the window could never be detected as covering t, so the method would always return \"\".",
+      "alternatives": [
+        { "code": "have = have + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing have = 1 instead of have += 1. That would throw away every requirement met on earlier characters, leaving only this one counted.",
+      "caption": "have becomes {have + 1}."
+    },
+    "22": {
+      "explain": "This checks whether every one of t's requirements is currently met. While it is, the window is valid, so this loop tries shrinking it smaller without breaking that.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the if block above has had its chance to run." },
+        { "token": "while", "meaning": "A keyword that starts a loop which keeps repeating its block for as long as the condition stays True." },
+        { "token": "have == need", "meaning": "True exactly when every requirement countT has is currently satisfied by window." },
+        { "token": ":", "meaning": "Ends the condition. The indented block below runs as long as it's True." }
+      ],
+      "why": "A window can only get SHORTER by shrinking, never by growing, so the moment one becomes valid is exactly the moment to start trimming it from the left, for as long as it stays valid.",
+      "if_removed": "A valid window would be recognized but never recorded or shrunk, so resLen would stay infinity forever and the method would always return \"\".",
+      "alternatives": [
+        { "code": "if have == need:\n    ...\n    # then repeat this check manually in a loop of its own", "difference": "A while loop already repeats its block for as long as the condition holds, which is exactly \"keep shrinking while still valid\". An if would only try shrinking once per value of r, missing any further shrinking that's still possible after the first step." }
+      ],
+      "mistake": "Writing if instead of while. A single shrink step might not be the ONLY shrink possible: after removing one character, the window could still be valid and able to shrink again, which only a while loop keeps checking for.",
+      "caption": [
+        { "when": "have == need", "text": "have ({have}) equals need ({need}): the window from {l} to {r} covers t. Try to shrink it." },
+        "have ({have}) hasn't reached need ({need}) yet: keep growing the window."
+      ]
+    },
+    "23": {
+      "explain": "This checks whether the current, valid window is shorter than the best one recorded so far.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block, so it only runs while the window is valid." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "(r - l + 1)", "meaning": "The current window's length: the distance from l to r, plus 1 since both ends are included." },
+        { "token": "< resLen", "meaning": "True when this window beats the shortest one recorded so far." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Every window reached inside this loop is guaranteed valid (that's the loop's own condition), so its length is a genuine candidate for the answer, worth comparing against the best seen.",
+      "if_removed": "resLen, resL and resR would never update, staying at infinity and -1 forever, so the method would always return \"\" even when valid windows exist.",
+      "alternatives": [
+        { "code": "if (r - l + 1) <= resLen:", "difference": "Using <= instead of < would also \"update\" on a tie, overwriting the earlier shortest window with a later one of the exact same length. The answer's length would be identical either way, just a different valid window of that length." }
+      ],
+      "mistake": "Writing resLen < (r - l + 1), flipping the comparison. That would record a window only when it's WORSE (longer) than the best found, the opposite of what's needed.",
+      "caption": [
+        { "when": "(r - l + 1) < resLen", "text": "Window size {r - l + 1} beats the best so far. Record it." },
+        "Window size {r - l + 1} doesn't beat the best so far. Keep the earlier one."
+      ]
+    },
+    "24": {
+      "explain": "Remember this window's position: its left edge l and right edge r.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 23's condition was True." },
+        { "token": "resL, resR", "meaning": "Two names, assigned together: tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "l, r", "meaning": "The current window's left and right edges." }
+      ],
+      "why": "The final answer is built from s[resL:resR + 1], so the new best window's actual position has to be saved, not just its length.",
+      "if_removed": "resLen would still shrink correctly on line 25, but resL and resR would keep pointing at an earlier, longer window's position, making the final slice wrong even though its length check passed.",
+      "alternatives": [
+        { "code": "resL = l\nresR = r", "difference": "The same two assignments written as separate lines instead of one tuple unpacking. Identical result." }
+      ],
+      "mistake": "Writing resL, resR = r, l, swapping which edge goes where. The final slice s[resL:resR + 1] would then use a left bound bigger than its right bound, slicing out an empty string instead of the real window.",
+      "caption": "Record this window's position: resL = {l}, resR = {r}."
+    },
+    "25": {
+      "explain": "Update resLen to this window's length, now that it's confirmed to be the new shortest valid window found.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 23's condition was True." },
+        { "token": "resLen", "meaning": "The length of the shortest valid window found so far." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "r - l + 1", "meaning": "The current window's length." }
+      ],
+      "why": "resLen has to reflect the best length found so far, so that line 23's comparison on the NEXT valid window is measured against the right benchmark.",
+      "if_removed": "resLen would stay at infinity forever, so line 23's < resLen check would keep succeeding for every valid window found afterward, and resL/resR would end up pointing at whichever valid window happened to be found LAST, not the shortest one.",
+      "alternatives": [
+        { "code": "resLen = resR - resL + 1", "difference": "Computes the same length from resL and resR right after they're set on line 24, instead of directly from r and l. Identical result, since resL, resR = l, r just happened." }
+      ],
+      "mistake": "Updating resLen before checking it on line 23, instead of after. That would always make the check (r - l + 1) < resLen compare a value against itself, which can never be True, so no window would ever be recorded.",
+      "caption": "resLen becomes {r - l + 1}: the new shortest window found."
+    },
+    "27": {
+      "explain": "This subtracts one from s[l]'s count, since that copy of it is about to leave the window as it shrinks.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the while block, so it only runs while the window is valid." },
+        { "token": "window[s[l]]", "meaning": "The slot for key s[l] inside window." },
+        { "token": "-=", "meaning": "Shorthand for window[s[l]] = window[s[l]] - 1." },
+        { "token": "1", "meaning": "One copy of this character is leaving the window." }
+      ],
+      "why": "window must only ever reflect characters currently inside the window; once l moves past this character, its count there needs to drop by exactly one.",
+      "if_removed": "window[s[l]] would stay one too high for the rest of the scan, which could make line 28's check wrongly think a requirement is still met after the window has actually shrunk past it.",
+      "alternatives": [
+        { "code": "window[s[l]] = window[s[l]] - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing window[s[r]] -= 1 by accident, decrementing the character that just entered the window instead of the one leaving it. That corrupts the newly added character's count instead of retiring the one actually leaving.",
+      "caption": "The count for {s[l]} drops to {window[s[l]] - 1}."
+    },
+    "28": {
+      "explain": "This checks whether s[l] is a character t cares about, and if so, whether removing it just dropped its count below what countT requires.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the while block, right after window is updated on line 27." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "s[l] in countT", "meaning": "The membership operator. True exactly when s[l] is one of the keys countT has." },
+        { "token": "and", "meaning": "Both sides must be True for the whole condition to be True." },
+        { "token": "window[s[l]] < countT[s[l]]", "meaning": "True exactly when the window's count for this character has fallen short of countT's requirement." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "have must only drop when a genuinely required character no longer has enough copies in the window. Checking AFTER the decrement on line 27 (not before) is what correctly catches the exact moment that requirement breaks.",
+      "if_removed": "have would stay too high after a required character's count drops below countT, letting have == need on line 22 stay True for a window that no longer actually covers t, which could record a wrong, too-short answer.",
+      "alternatives": [
+        { "code": "if s[l] in countT and window[s[l]] + 1 == countT[s[l]]:", "difference": "Written in terms of the count BEFORE this decrement instead of after. Since window[s[l]] was already decremented on line 27, this is exactly the same comparison, just phrased the other way." }
+      ],
+      "mistake": "Writing window[s[l]] <= countT[s[l]] instead of <. Since the window was valid right before this removal, window[s[l]] could only have been at or above countT[s[l]]; using <= would also fire while the count is still exactly enough, taking back a requirement that's still genuinely met.",
+      "caption": [
+        { "when": "s[l] in countT and window[s[l]] < countT[s[l]]", "text": "The count for {s[l]} just dropped below countT: lose that requirement." },
+        "Either {s[l]} isn't in t, or it still has enough copies in the window."
+      ]
+    },
+    "29": {
+      "explain": "Record the lost requirement: the window no longer has enough of s[l] to cover what t needs.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 28's condition was True." },
+        { "token": "have", "meaning": "The running count of countT's requirements that are currently fully met." },
+        { "token": "-=", "meaning": "Shorthand for have = have - 1." },
+        { "token": "1", "meaning": "Exactly one requirement just stopped being met." }
+      ],
+      "why": "have has to drop by one the moment a required character's count falls short, or the while loop on line 22 would keep treating an invalid window as valid and shrink it even further.",
+      "if_removed": "The while loop would keep running past the point where the window genuinely stopped covering t, shrinking it down further and recording windows that don't actually contain everything t requires.",
+      "alternatives": [
+        { "code": "have = have - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing have += 1 by accident instead of -=. That would credit a requirement as met right as it's actually breaking, the opposite of what just happened.",
+      "caption": "have becomes {have - 1}."
+    },
+    "30": {
+      "explain": "Move the window's left edge one step to the right, since the character it pointed at has just been fully retired from the window's counts.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the while block." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "This is what actually shrinks the window: every character given up on lines 27-29 has to be followed by moving l past it, or the window's recorded span would never actually get smaller.",
+      "if_removed": "l would never advance, so window[s[l]] on the next pass through the while loop would try to remove the exact same character's count again, eventually driving it negative and corrupting the comparison against countT.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 here by accident instead of l += 1. The for loop already advances r on its own; manually bumping it again would skip a character of s entirely.",
+      "caption": "Shrink the window: l moves to {l + 1}."
+    },
+    "32": {
+      "explain": "Once every character of s has had a turn growing the window, build and return the shortest valid window found, or \"\" if none ever was.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return", "meaning": "Ends the method and hands back a value." },
+        { "token": "s[resL:resR + 1]", "meaning": "Slices out the characters from index resL up to and including resR." },
+        { "token": "if resLen != float(\"infinity\")", "meaning": "True exactly when at least one valid window was found and recorded." },
+        { "token": "else \"\"", "meaning": "The fallback used when no valid window was ever found." }
+      ],
+      "why": "resL and resR only ever get meaningful values on line 24, which only runs once a valid window is found. Checking resLen against infinity is how the method tells \"a window was found\" apart from \"resL and resR are still their placeholder -1\".",
+      "if_removed": "s[resL:resR + 1] would be evaluated unconditionally; when no valid window was ever found, resL and resR would still be -1, and s[-1:0] slices out an empty string by coincidence here, but relying on that coincidence instead of checking resLen directly would be fragile and easy to get wrong.",
+      "alternatives": [
+        { "code": "return s[resL:resR + 1] if resL != -1 else \"\"", "difference": "Checks resL's placeholder value directly instead of resLen's. Behaves identically, since resL only ever leaves -1 at the same moment resLen leaves infinity." }
+      ],
+      "mistake": "Writing s[resL:resR] without the + 1. Python slicing excludes its end index, so this would always leave out the very last character of the real answer.",
+      "caption": [
+        { "when": "resLen != float('infinity')", "text": "Return s[{resL}:{resR + 1}] = {s[resL:resR + 1]}, the shortest window covering t." },
+        "No window of s ever covered every character of t. Return \"\"."
+      ]
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        if t == \"\":\n            return \"\"\n        countT = {}\n        for c in t:\n            countT[c] = 1 + countT.get(c, 0)\n\n        resL, resR = -1, -1\n        resLen = float(\"infinity\")\n        for i in range(len(s)):\n            for j in range(i, len(s)):\n                window = {}\n                for k in range(i, j + 1):\n                    window[s[k]] = 1 + window.get(s[k], 0)\n                if all(window.get(c, 0) >= countT[c] for c in countT) and (j - i + 1) < resLen:\n                    resL, resR, resLen = i, j, j - i + 1\n                    break\n        return s[resL:resR + 1] if resLen != float(\"infinity\") else \"\"",
+    "explain": "Try every possible starting index i and ending index j for a window. For each one, count its characters from scratch and check whether it covers every requirement in countT; keep the shortest window that does.",
+    "why_slow": "For n = len(s), this checks roughly n squared windows, and building each window's counts from scratch costs up to O(n) more, for a total around O(n cubed). It also throws away all the counting work done for one window and starts over for the next, even though neighbouring windows mostly overlap.",
+    "how_pattern_fixes": "The sliding window keeps one window and its counts alive the whole time, moving l and r by one step at a time instead of restarting from every possible i and j. A single have/need match count turns the \"does this window cover t\" check into O(1) as well, dropping the work from about n cubed down to about n.",
+    "time": "O(n cubed): for n = len(s), about n squared windows, each costing up to O(n) to count from scratch.",
+    "space": "O(m): countT and each window dictionary hold at most m entries, where m is the number of distinct characters involved."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n cubed) means doubling the input gives eight times the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A True or False value.",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "character": "A single unit of text, like 'A' or '5'. A string is a sequence of characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "Counter": "A ready-made dictionary from Python's collections module that counts things for you: Counter(\"ab\") gives {'a': 1, 'b': 1}.",
+    "defaultdict": "A dictionary from Python's collections module that fills in a default value automatically for a missing key, instead of raising a KeyError.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds a key almost instantly.",
+    "expression": "Any piece of code that produces a value, like r - l + 1 or have == need.",
+    "frequency": "How many times something appears. Here, how many times a character shows up inside the current window.",
+    "float": "Python's name for a decimal number, like 2.5 or 2.0, and also the name of the built-in function that creates one, like float(\"infinity\").",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or a default you choose (d.get(key, 0)) if key is missing, without crashing.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a string, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "key": "The part of a dictionary entry you look things up by. In {7: 2}, the key is 7.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there.",
+    "keyword": "A word reserved by Python, like for, if, while, return.",
+    "len": "A built-in function that gives the number of items in something: len(\"abc\") is 3.",
+    "loop": "Code that repeats.",
+    "membership operator": "The in keyword used as a check: x in collection is True exactly when x is already inside collection.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, < compares.",
+    "parameter": "A name in a function's definition that receives an input. s and t are minWindow's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in a string. Here l and r are pointers.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for text (a string).",
+    "string": "Text, written in quotes like \"cat\" or 'hello'. Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "tally": "A running count of how many times something has occurred, kept up to date as you go.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once, as in resL, resR = -1, -1.",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of s currently being considered, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "list(range(l, r + 1)) if 'r' in globals() else []",
+        "found": "list(range(resL, resR + 1)) if resL != -1 else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "countT  (need, from t)",
+      "source": "countT"
+    },
+    {
+      "type": "hashmap",
+      "title": "window  (counts inside the current window)",
+      "source": "window",
+      "lookup": "s[r] if __line__ in (17, 19, 20) else (s[l] if __line__ in (27, 28, 29, 30) else None)"
+    },
+    {
+      "type": "hashmap",
+      "title": "progress",
+      "source": "[['have', have], ['need', need], ['best length', resLen if resLen != float('infinity') else None]] if 'r' in globals() else []"
+    }
+  ]
+}
