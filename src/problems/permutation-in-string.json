@@ -1,0 +1,653 @@
+{
+  "slug": "permutation-in-string",
+  "title": "Permutation in String",
+  "difficulty": "Medium",
+  "category": "Sliding Window",
+  "leetcode": 567,
+  "statement": [
+    "You are given two strings s1 and s2, made of lowercase English letters.",
+    "Return True if some contiguous stretch of s2 (a substring) uses exactly the same characters as s1, the same number of times each, just possibly in a different order. That's called a permutation of s1.",
+    "Return False if no such stretch exists anywhere in s2."
+  ],
+  "examples": [
+    {
+      "input": "s1 = \"ab\", s2 = \"eidbaooo\"",
+      "output": "true",
+      "explain": "\"ba\" sits inside s2 at indexes 3-4, using exactly one 'a' and one 'b', the same counts as s1. This is the example the visualizer runs."
+    },
+    {
+      "input": "s1 = \"ab\", s2 = \"eidboaoo\"",
+      "output": "false",
+      "explain": "No contiguous stretch of s2 ever has exactly one 'a' and one 'b' together; whenever both letters are present in a window, something else sits between them, pushing the window too wide or crowding out the right counts."
+    }
+  ],
+  "pattern": {
+    "name": "Fixed-size sliding window compared by a running match count between two count dictionaries",
+    "summary": "Build need, a dictionary of how many times each character appears in s1. Slide a window of that exact length across s2, keeping window, the matching dictionary of counts for characters currently inside it. Track matches: how many of need's characters currently have an EXACT count match in window. Nudge matches up or down by one whenever a character's count crosses exactly onto, or off of, its target as the window's right edge grows and its left edge shrinks in lockstep. The window is a permutation of s1 exactly when matches reaches len(need).",
+    "recognize": [
+      "You need a yes/no answer for whether some contiguous stretch of one string has the exact same character counts as another, not just the same set of characters.",
+      "The window you're looking for always has a fixed, known size (len(s1)) decided before you even start, rather than growing and shrinking to find the best length.",
+      "Comparing two whole dictionaries of counts on every single step would work, but the problem hints s2 can be long, so some O(1)-per-step shortcut (a running match count) is worth looking for.",
+      "Only two entries of the running counts ever change per step, one entering the window and one leaving it, so there's no need to rebuild or fully re-compare anything."
+    ],
+    "avoid_when": [
+      "The window's size should grow and shrink based on some other condition, instead of being pinned to a fixed, known length. That's Minimum Window Substring's shape instead.",
+      "You need the actual starting index of a match, or every matching window, not just whether at least one exists.",
+      "Order matters to the question, not just counts: \"same characters, same order\" is substring matching, not permutation matching.",
+      "s1 is tiny and fixed, where directly comparing sorted(s1) against each window is easy to read and fast enough at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "window only ever holds keys that are also in need, since lines 15 and 23 both guard every update with in need. That keeps window always directly comparable to need, with no risk of a KeyError.",
+      "Each slide touches exactly two character counts: one entering at r, one leaving at l. matches is nudged by at most one in each direction per touch, which is what makes every step O(1) instead of comparing whole dictionaries.",
+      "Checking window[s2[l]] against need AFTER decrementing it (not before) is what lets an overshooting character's count recover into an exact match once its extra copy slides out of the window, the same idea the growth side uses in reverse.",
+      "The window's size never actually changes once it first reaches len(s1): from then on r and l move together, one step each, so r - l + 1 stays pinned at len(s1) for the rest of the scan."
+    ],
+    "time": "O(n + m), linear time. m = len(s1) builds need once; n = len(s2) then scans the window once, doing O(1) dictionary work per character, since at most one entry of need and window is ever touched per step.",
+    "space": "O(m), where m is the number of distinct characters in s1. need and window never hold more entries than that, no matter how long s2 is.",
+    "edge_cases": [
+      "s1 longer than s2: caught immediately on line 3, before any counting happens.",
+      "s1 and s2 are equal: the very first full-size window is s2 itself, so matches reaches len(need) and the method returns True as soon as r reaches len(s2) - 1.",
+      "s1 made of one repeated character, like \"aaa\": need has only a single entry, so matches can only ever be 0 or 1, and any window with enough copies of that character returns True right away.",
+      "A character repeats near the window's edges, like s1 = \"adc\", s2 = \"dcda\": window['d'] briefly overshoots need before the earliest 'd' slides out of the window, and the elif on lines 19 and 27 are exactly what let matches recover once that overshoot leaves."
+    ]
+  },
+  "code": "class Solution:\n    def checkInclusion(self, s1: str, s2: str) -> bool:\n        if len(s1) > len(s2):\n            return False\n\n        need = {}\n        for c in s1:\n            need[c] = 1 + need.get(c, 0)\n\n        window = {}\n        matches = 0\n        l = 0\n\n        for r in range(len(s2)):\n            if s2[r] in need:\n                window[s2[r]] = 1 + window.get(s2[r], 0)\n                if window[s2[r]] == need[s2[r]]:\n                    matches += 1\n                elif window[s2[r]] == need[s2[r]] + 1:\n                    matches -= 1\n\n            if r - l + 1 > len(s1):\n                if s2[l] in need:\n                    window[s2[l]] -= 1\n                    if window[s2[l]] == need[s2[l]]:\n                        matches += 1\n                    elif window[s2[l]] == need[s2[l]] - 1:\n                        matches -= 1\n                l += 1\n\n            if matches == len(need):\n                return True\n\n        return False\n",
+  "run": {
+    "prelude": "",
+    "call": "Solution().checkInclusion(\"ab\", \"eidbaooo\")",
+    "expected": true,
+    "describe": "s1 = \"ab\", s2 = \"eidbaooo\""
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def checkInclusion would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named checkInclusion. It takes the two strings s1 and s2, and promises to give back True or False: whether some contiguous stretch of s2 uses exactly s1's characters.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "checkInclusion", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "s1: str,", "meaning": "The string whose character counts define what to look for, hinted as a str (text)." },
+        { "token": "s2: str)", "meaning": "The string to search inside, hinted as a str." },
+        { "token": "-> bool", "meaning": "Return type hint: the answer is a single True/False value." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The names and parameter order are chosen by LeetCode: s1 first (the pattern to match), s2 second (the text to search). Returning True/False directly matches what the problem asks.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def checkInclusion(self, s1, s2):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Swapping the parameter order to (self, s2, s1). LeetCode calls this method with s1 first, so swapping would build need from the wrong string entirely.",
+      "caption": "Python remembers the checkInclusion instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This checks whether s1 is longer than s2. If it is, no contiguous stretch of s2 can possibly be as long as s1, so there's no permutation to find.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "len(s1)", "meaning": "The number of characters in s1." },
+        { "token": "> len(s2)", "meaning": "True when s1 has more characters than s2 does." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "A window the size of s1 can't fit inside a shorter s2, even once, so checking this upfront avoids the rest of the method ever running on an input where the answer is trivially False.",
+      "if_removed": "The main loop below would simply never find a window of size len(s1) that matches, so the method would still return False eventually, just after a pointless pass over all of s2 first.",
+      "alternatives": [
+        { "code": "if len(s2) < len(s1):", "difference": "The same comparison written the other way around. Identical result." }
+      ],
+      "mistake": "Writing len(s1) >= len(s2) instead of >. That would also return False when the two strings are exactly the same length, even when s2 itself happens to be a permutation of s1.",
+      "caption": [
+        { "when": "len(s1) > len(s2)", "text": "s1 has {len(s1)} characters and s2 has {len(s2)}. s1 can't fit, so the answer is False." },
+        "s1 can fit inside s2 at least once. Keep going."
+      ]
+    },
+    "4": {
+      "explain": "Once it's known s1 can't fit anywhere in s2, immediately return False.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Inside the if block, so it only runs when line 3's condition was True." },
+        { "token": "return False", "meaning": "Ends the method immediately, handing back False." }
+      ],
+      "why": "There's nothing left to check: a string longer than s2 can never be matched as a contiguous stretch of it.",
+      "if_removed": "Execution would fall through to the rest of the method and eventually still return False the slow way, after scanning all of s2 for a window size it could never actually reach.",
+      "alternatives": [
+        { "code": "raise ValueError(\"s1 is too long\")", "difference": "Would crash instead of answering the question LeetCode asks. The problem wants a clean False here, not an error." }
+      ],
+      "mistake": "Forgetting this return and only writing the if's condition. Without a return inside the block, the method would keep running on an input it already knows the answer to.",
+      "caption": "Return False immediately: s1 is too long to ever fit inside s2."
+    },
+    "6": {
+      "explain": "This creates an empty dictionary named need, which will map each character in s1 to how many times it appears there.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "need", "meaning": "A variable name we chose for s1's required character counts." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "A permutation of s1 is defined entirely by how many of each character it has. need is the fixed target every window of s2 gets compared against.",
+      "if_removed": "Line 8 would crash with a NameError, since need wouldn't exist to be updated.",
+      "alternatives": [
+        { "code": "from collections import Counter\nneed = Counter(s1)", "difference": "Counter builds the same character counts in one call. It needs an extra import; a plain dictionary built with a loop works just as well here and doesn't require knowing Counter." }
+      ],
+      "mistake": "Writing need = dict() instead. It makes the same empty dictionary; {} is just shorter.",
+      "caption": "Make an empty dictionary called need. It will hold how many of each character s1 requires."
+    },
+    "7": {
+      "explain": "This loop moves through every character of s1, one at a time, so each one can be counted.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "c", "meaning": "The loop variable: the character currently being counted." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "s1", "meaning": "Looping directly over a string yields its characters, one per pass." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character of s1 needs to be tallied exactly once to build need, the target counts every window of s2 gets compared against.",
+      "if_removed": "need would stay empty forever, so len(need) would be 0, which would make matches == len(need) on line 31 trivially True before any character of s2 was even examined.",
+      "alternatives": [
+        { "code": "for i in range(len(s1)):\n    c = s1[i]\n    ...", "difference": "Loops over indexes and looks up the character manually. Looping directly over the string is simpler since the index itself is never needed." }
+      ],
+      "mistake": "Writing for c in s2: by accident. That would count characters from the wrong string, building need from the text being searched instead of the pattern being searched for.",
+      "caption": [
+        { "when": "__visits__[7] > len(s1)", "text": "Every character of s1 has been counted." },
+        { "when": "__visits__[7] > 1", "text": "Count {c} toward need, the target s1 asks for." },
+        "Start counting s1's characters with the first one, {s1[0]}."
+      ]
+    },
+    "8": {
+      "explain": "This adds one to c's running tally inside need: either creating its entry (starting at 1) or increasing an existing one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "need[c]", "meaning": "Square brackets on the left of = mean \"the slot for key c\". If the key is new, Python creates it; if it already exists, its value is replaced." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "1 +", "meaning": "Add 1 for the character just seen." },
+        { "token": "need.get(c, 0)", "meaning": ".get looks up c in need, returning its current count, or 0 if c hasn't appeared in s1 yet." }
+      ],
+      "why": "need has to end up holding exactly how many times each character appears in s1, since that's the target every window of s2 is measured against.",
+      "if_removed": "need would stay empty forever, len(need) would be 0, and matches == len(need) on line 31 would be True immediately, on the very first character of s2.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\nneed = defaultdict(int)\n...\nneed[c] += 1", "difference": "A defaultdict treats a missing key as 0 automatically, so += 1 works directly without .get. It needs an extra import; a plain dictionary with .get works just as well here." }
+      ],
+      "mistake": "Writing need[c] = 1 instead of need[c] = 1 + need.get(c, 0). That would forget any earlier copies of c, so a character appearing twice in s1 (like the 'a' in \"caa\") would only ever require one copy in a window.",
+      "caption": "need[{c}] becomes {1 + need.get(c, 0)}."
+    },
+    "10": {
+      "explain": "This creates an empty dictionary named window, which will map each character of s1 to how many times it currently appears inside the sliding window of s2.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "window", "meaning": "A variable name we chose for the window's current character counts." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "window needs its own running counts to compare against need. It only ever holds entries for characters that are also in need (lines 15 and 23 guard this), so it stays directly comparable to need.",
+      "if_removed": "Line 16 would crash with a NameError, since window wouldn't exist to be updated.",
+      "alternatives": [
+        { "code": "window = dict()", "difference": "Makes the same empty dictionary; {} is shorter." }
+      ],
+      "mistake": "Writing window = need by accident, trying to reuse need's dictionary. That would make window and need point to the exact same dictionary object, so updating one would corrupt the other instead of tracking two independent counts.",
+      "caption": "Make an empty dictionary called window. It will hold the character counts of s2's current window."
+    },
+    "11": {
+      "explain": "This creates matches, how many of need's characters currently have EXACTLY the right count inside the window, starting at 0 since the window is empty.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "matches", "meaning": "A variable name we chose for the running count of exactly-matching characters." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "No character's count has been compared to need yet." }
+      ],
+      "why": "Comparing window to need one character at a time on every single step would cost time proportional to the number of distinct characters. matches instead tracks a running total that changes by at most one per update, so matches == len(need) is a cheap stand-in for \"is window currently a permutation of s1\".",
+      "if_removed": "Line 31's matches == len(need) check would crash with a NameError.",
+      "alternatives": [
+        { "code": "matches = 0\nwindow = {}", "difference": "The same two assignments in the opposite order. Order doesn't matter here since neither line depends on the other." }
+      ],
+      "mistake": "Creating matches inside the for loop on line 14 instead of before it. That would reset the running match count back to 0 on every single character, throwing away everything learned so far.",
+      "caption": "Make matches = 0: no character's count has been checked against need yet."
+    },
+    "12": {
+      "explain": "This creates l, the window's left edge, starting at position 0.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l", "meaning": "A variable name for the window's left boundary." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any string: the window starts as far left as possible." }
+      ],
+      "why": "The window needs two edges to track its current span. l starts at the very first character, since before any character has been read, the only possible window starts there.",
+      "if_removed": "Line 22 (and every line that reads s2[l]) would crash with a NameError, since l wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = r = 0", "difference": "Chains an assignment to set two names at once. r is reassigned by the for loop on line 14 anyway, so this would only save a line, not change behaviour." }
+      ],
+      "mistake": "Starting l at 1 instead of 0. That would skip ever considering the very first character of s2 as part of any window.",
+      "caption": "Make l = 0: the window's left edge starts at the first character of s2."
+    },
+    "14": {
+      "explain": "This loop moves r through every index of s2, one at a time. Each pass tries to add s2[r] to the window, then keeps the window pinned at size len(s1).",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "r", "meaning": "The loop variable: the window's right edge, the newest character being added." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "range(len(s2))", "meaning": "range of len(s2) produces every valid index of s2, 0 through len(s2) - 1." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character needs a turn as the window's newest addition, since a matching permutation could end anywhere in s2. This is what sweeps r from left to right exactly once.",
+      "if_removed": "Without this loop, the body would run at most once, and only the very first character of s2 would ever be considered.",
+      "alternatives": [
+        { "code": "r = 0\nwhile r < len(s2):\n    ...\n    r += 1", "difference": "A while loop doing the same sweep with an explicit counter. More typing for an identical result; the for loop is simpler here since r always advances by exactly 1." }
+      ],
+      "mistake": "Writing for r in range(len(s1), len(s2)): to skip straight to a full window. NeetCode's own solutions often do exactly this as an optimization, but it needs a separate loop beforehand to count s2's first len(s1) characters into window first, which this method doesn't have, so skipping ahead here would leave window empty for that whole stretch.",
+      "caption": [
+        { "when": "r < len(s2)", "text": "r moves to {s2[r]} at index {r}. Try to add it to the window." },
+        "Every character of s2 has had a turn as the window's right edge."
+      ]
+    },
+    "15": {
+      "explain": "This checks whether the character r just reached is even one that s1 cares about. Characters outside need can never help build a permutation of s1, so they're skipped entirely.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "s2[r]", "meaning": "The character at the window's right edge, the one just reached." },
+        { "token": "in need", "meaning": "The membership operator. True exactly when s2[r] is one of the keys need already has." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "window is only meant to hold counts for characters that are in need. Skipping characters outside need keeps window directly comparable to need and avoids it ever needing a key that doesn't exist there.",
+      "if_removed": "window[s2[r]] on line 16 could create an entry for a character that isn't in need at all, and need[s2[r]] on line 17 would then crash with a KeyError the moment that happens.",
+      "alternatives": [
+        { "code": "window[s2[r]] = 1 + window.get(s2[r], 0)\nif s2[r] in need and window[s2[r]] == need[s2[r]]:\n    matches += 1", "difference": "Tracks every character, even ones outside need, then only checks matches for ones that matter. Works, but window ends up holding useless entries for characters s1 never asked for." }
+      ],
+      "mistake": "Checking if s2[r] in window instead of if s2[r] in need. Early on, window might not yet contain a character that need does, so that check would wrongly skip a character that actually matters.",
+      "caption": [
+        { "when": "s2[r] in need", "text": "{s2[r]} is one of the characters s1 needs. Count it." },
+        "{s2[r]} isn't a character s1 needs at all. Skip it."
+      ]
+    },
+    "16": {
+      "explain": "This adds one to s2[r]'s running tally inside the window, since it just entered.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 15's condition was True." },
+        { "token": "window[s2[r]]", "meaning": "The slot for key s2[r] inside window." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "1 +", "meaning": "Add 1 for the copy just added." },
+        { "token": "window.get(s2[r], 0)", "meaning": ".get looks up s2[r] in window, returning its current count, or 0 if this is its first appearance in the window." }
+      ],
+      "why": "window's count for this character has to climb by exactly one every time a fresh copy enters the window, so it can be compared against need's target count.",
+      "if_removed": "matches on line 17 would be compared against a stale count, one lower than what's actually in the window, which could make the algorithm miss a real match or misjudge one.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\nwindow = defaultdict(int)\n...\nwindow[s2[r]] += 1", "difference": "A defaultdict lets you write += 1 directly without .get. Needs an extra import; functionally identical here." }
+      ],
+      "mistake": "Writing window[s2[r]] = 1 + window.get(s2[l], 0) by accident, reading s2[l] instead of s2[r] on the right-hand side. That bases the new count on the wrong character's old tally.",
+      "caption": "{s2[r]} now appears {1 + window.get(s2[r], 0)} time(s) in the window."
+    },
+    "17": {
+      "explain": "This checks whether s2[r]'s count inside the window just reached exactly the amount need requires, for the first time.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the if block from line 15, right after window is updated." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "window[s2[r]]", "meaning": "The current count for the character just added, fresh from line 16." },
+        { "token": "== need[s2[r]]", "meaning": "True exactly when that count equals the amount need requires." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "matches should only count a character once it has EXACTLY the right amount, not merely \"at least one\". This is the moment that becomes true: right before this increment, the count was one short; now it's exact.",
+      "if_removed": "matches would never increase through this path, so matches == len(need) on line 31 could stay False even once the window genuinely becomes a permutation of s1.",
+      "alternatives": [
+        { "code": "if window[s2[r]] >= need[s2[r]]:", "difference": "Would also fire every time the count overshoots need, counting the same character as a match over and over. matches would then climb past len(need), making the final check meaningless." }
+      ],
+      "mistake": "Using >= instead of ==. Since window[s2[r]] only ever changes by 1 at a time, == is enough to catch the exact moment it matches, without double-counting once it's already matching.",
+      "caption": [
+        { "when": "window[s2[r]] == need[s2[r]]", "text": "The count for {s2[r]} just reached exactly what need requires: a new match." },
+        "The count for {s2[r]} still doesn't exactly match need (or already overshoots it)."
+      ]
+    },
+    "18": {
+      "explain": "Record the new match: one more of need's characters now has exactly the right count in the window.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 17's condition was True." },
+        { "token": "matches", "meaning": "The running count of characters that currently match exactly." },
+        { "token": "+=", "meaning": "Shorthand for matches = matches + 1." },
+        { "token": "1", "meaning": "Exactly one character's count just became exact." }
+      ],
+      "why": "matches needs to climb by exactly one for each character whose count newly becomes exact, so that matches == len(need) exactly tracks \"every character s1 needs now has the right count\".",
+      "if_removed": "matches would never rise above 0 through this path, and the window could never be detected as a full permutation of s1.",
+      "alternatives": [
+        { "code": "matches = matches + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing matches = 1 instead of matches += 1. That would throw away every match found on earlier characters, leaving only this one counted.",
+      "caption": "matches becomes {matches + 1}."
+    },
+    "19": {
+      "explain": "If the count didn't just become exact, this checks the opposite case: did it just overshoot need by exactly one, meaning it used to match exactly and just lost that status?",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still at the same level as line 17, since this elif belongs to it." },
+        { "token": "elif", "meaning": "Short for \"else if\". It's checked only because the if on line 17 was False." },
+        { "token": "window[s2[r]]", "meaning": "The current count for the character just added." },
+        { "token": "== need[s2[r]] + 1", "meaning": "True exactly when the count is now one MORE than need requires." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Only reached when line 17 was False, so the count didn't land exactly on need. This catches the one remaining case that matters: the count was exactly need a moment ago (one less than now) and has just overshot it.",
+      "if_removed": "matches would stay too high after a character's count overshoots its target, since the match recorded earlier would never be taken back, inflating matches above the number of characters that are genuinely correct.",
+      "alternatives": [
+        { "code": "if window[s2[r]] > need[s2[r]]:\n    matches -= 1", "difference": "Fires on every overshoot, not just the step it first happens. Since window[s2[r]] only grows by 1 at a time, it can only ever be exactly one above need the step it overshoots, so this behaves identically here, but it checks a broader condition than what's actually guaranteed." }
+      ],
+      "mistake": "Writing == need[s2[r]] - 1 instead of + 1. That checks the wrong direction, a count one BELOW need, which can never be true right after window[s2[r]] was just grown by 1.",
+      "caption": [
+        { "when": "window[s2[r]] == need[s2[r]] + 1", "text": "{s2[r]} just overshot need by one: lose that match." },
+        "The count for {s2[r]} isn't exactly need, and didn't just overshoot it either: no change to matches."
+      ]
+    },
+    "20": {
+      "explain": "Record the lost match: one of need's characters no longer has exactly the right count, since it just overshot.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the elif block, so it only runs when line 19's condition was True." },
+        { "token": "matches", "meaning": "The running count of characters that currently match exactly." },
+        { "token": "-=", "meaning": "Shorthand for matches = matches - 1." },
+        { "token": "1", "meaning": "Exactly one character's count just stopped matching." }
+      ],
+      "why": "matches has to drop by one the moment a character's count overshoots need, or it would keep crediting a match that no longer actually holds.",
+      "if_removed": "matches would stay inflated by one stale match for the rest of the window's life, risking a wrong True later on a window that isn't really a permutation of s1.",
+      "alternatives": [
+        { "code": "matches = matches - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing matches += 1 by accident instead of -=. That would double-count an overshoot as though it were a new match, instead of correcting for one lost.",
+      "caption": "matches becomes {matches - 1}."
+    },
+    "22": {
+      "explain": "This checks whether the window has grown one character past len(s1), which only happens right after adding s2[r] when the window was already full.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the if/elif above has had its chance to run." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "r - l + 1", "meaning": "The window's current size: the distance from l to r, plus 1 since both ends are included." },
+        { "token": "> len(s1)", "meaning": "True when the window has grown one character bigger than s1's length." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "The window must stay pinned at exactly len(s1) characters to ever represent a genuine permutation candidate; once it's one too big, the oldest character (at l) has to leave before matches is checked.",
+      "if_removed": "The window would just keep growing forever without ever shrinking, so after the first len(s1) characters it would never again be exactly len(s1) wide, and matches == len(need) could only ever reflect a window of the wrong size.",
+      "alternatives": [
+        { "code": "if r >= len(s1):", "difference": "Since l only ever increases once r reaches len(s1), r - l + 1 stays in lockstep with r, so this comparison against r alone behaves identically here, but it hides WHY the shrink happens (because the window got too big) behind a check that looks like it's only about r." }
+      ],
+      "mistake": "Using >= instead of >. That would start shrinking one character too early, before the window had actually grown to size len(s1) for the first time, so the very first full-size window would never get checked.",
+      "caption": [
+        { "when": "r - l + 1 > len(s1)", "text": "Window size {r - l + 1} is bigger than s1's length {len(s1)}. Shrink from the left." },
+        "Window size {r - l + 1} still fits within s1's length {len(s1)}. No need to shrink yet."
+      ]
+    },
+    "23": {
+      "explain": "This checks whether the character about to leave the window (at l) is one s1 cares about. If it never counted toward need, there's nothing to undo.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 22's condition was True." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "s2[l]", "meaning": "The character currently at the window's left edge, about to leave." },
+        { "token": "in need", "meaning": "True exactly when s2[l] is one of the keys need has." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Only characters that are in need were ever added to window in the first place (line 15's guard), so window[s2[l]] would raise a KeyError for any character that isn't in need.",
+      "if_removed": "window[s2[l]] on line 24 would crash with a KeyError the first time a character outside need reaches the window's left edge.",
+      "alternatives": [
+        { "code": "window[s2[l]] = window.get(s2[l], 0) - 1", "difference": ".get with a default sidesteps the KeyError directly, but it still subtracts one from a character that was never added in the first place, drifting window negative for characters that were never actually there." }
+      ],
+      "mistake": "Checking if s2[l] in window instead of if s2[l] in need. Both happen to agree here since window only ever holds keys from need, but need is the clearer, intended check: it directly answers \"does s1 care about this character?\".",
+      "caption": [
+        { "when": "s2[l] in need", "text": "{s2[l]}, which is leaving the window, is one of s1's characters. Update its count." },
+        "{s2[l]}, which is leaving the window, isn't one s1 needs. Nothing to update."
+      ]
+    },
+    "24": {
+      "explain": "This subtracts one from s2[l]'s count, since that copy of it is about to leave the window.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, so it only runs when line 23's condition was True." },
+        { "token": "window[s2[l]]", "meaning": "The slot for key s2[l] inside window." },
+        { "token": "-=", "meaning": "Shorthand for window[s2[l]] = window[s2[l]] - 1." },
+        { "token": "1", "meaning": "One copy of this character is leaving the window." }
+      ],
+      "why": "window must only ever reflect characters currently inside the window; once l moves past this character, its count there needs to drop by exactly one.",
+      "if_removed": "window[s2[l]] would stay one too high for the rest of the scan, which could make line 25's exact-match check fire for a count that's no longer actually in the window.",
+      "alternatives": [
+        { "code": "window[s2[l]] = window[s2[l]] - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing window[s2[r]] -= 1 by accident, decrementing the character that just ENTERED the window instead of the one leaving it. That corrupts the newly added character's count instead of retiring the one actually leaving.",
+      "caption": "The count for {s2[l]} drops to {window[s2[l]] - 1}."
+    },
+    "25": {
+      "explain": "This checks whether, after removing one copy, s2[l]'s count has dropped exactly down to what need requires, for the first time.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the if block, right after window is updated on line 24." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "window[s2[l]]", "meaning": "The current count for the character just removed, fresh from line 24." },
+        { "token": "== need[s2[l]]", "meaning": "True exactly when that count equals the amount need requires." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Checking AFTER the decrement (not before) is what correctly catches a count sliding back down from an overshoot to exactly matching, the mirror image of how the growth side recovers on lines 17 and 19.",
+      "if_removed": "A count that drops from one-too-many down to exactly right (recovering a match) would never be credited, understating matches and potentially missing a real permutation.",
+      "alternatives": [
+        { "code": "if window[s2[l]] + 1 == need[s2[l]]:", "difference": "Written in terms of the count BEFORE this decrement instead of after. Since window[s2[l]] was already decremented on line 24, this is exactly the same comparison, just phrased the other way." }
+      ],
+      "mistake": "Checking this before decrementing window[s2[l]] on line 24 instead of after. That would compare the stale, pre-removal count, and could wrongly credit a match for a character that hasn't actually dropped to the right count yet.",
+      "caption": [
+        { "when": "window[s2[l]] == need[s2[l]]", "text": "After leaving, the count for {s2[l]} is now exactly what need requires: a new match." },
+        "After leaving, the count for {s2[l]} still isn't exactly need's amount."
+      ]
+    },
+    "26": {
+      "explain": "Record the match gained by removing the extra copy of s2[l]: its count has settled exactly onto need.",
+      "syntax": [
+        { "token": "                        (24 spaces)", "meaning": "Inside the if block, so it only runs when line 25's condition was True." },
+        { "token": "matches", "meaning": "The running count of characters that currently match exactly." },
+        { "token": "+=", "meaning": "Shorthand for matches = matches + 1." },
+        { "token": "1", "meaning": "Exactly one character's count just became exact." }
+      ],
+      "why": "matches needs to climb by one whenever a character's count newly becomes exact, whether that happens by growing into it (line 18) or, here, by shrinking down into it.",
+      "if_removed": "A count that recovers into an exact match by shrinking would never be credited, which could make the method miss a real permutation like s1 = \"adc\", s2 = \"dcda\".",
+      "alternatives": [
+        { "code": "matches = matches + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing matches = 1 instead of matches += 1. That would throw away every match found earlier, leaving only this one counted.",
+      "caption": "matches becomes {matches + 1}."
+    },
+    "27": {
+      "explain": "If the removal didn't just create a new match, this checks the opposite case: did s2[l]'s count just drop BELOW need, from a count that used to be exactly right?",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Still at the same level as line 25, since this elif belongs to it." },
+        { "token": "elif", "meaning": "Short for \"else if\". It's checked only because the if on line 25 was False." },
+        { "token": "window[s2[l]]", "meaning": "The current count for the character just removed." },
+        { "token": "== need[s2[l]] - 1", "meaning": "True exactly when the count is now one LESS than need requires." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Only reached when line 25 was False. This is the one remaining case that matters: the count was exactly need one copy ago (one more than it is now) and just dropped under it.",
+      "if_removed": "matches would stay too high after a genuinely matching character's count drops below need, since the earlier match would never be taken back.",
+      "alternatives": [
+        { "code": "if window[s2[l]] < need[s2[l]]:", "difference": "Fires every time the count is below need, not just the step it first drops below. Since window[s2[l]] only ever changes by 1 at a time, it can only cross from exactly-need to one-below on this exact step, so this behaves identically here, but it checks a broader condition than what's guaranteed." }
+      ],
+      "mistake": "Writing == need[s2[l]] + 1 instead of - 1. That checks the wrong direction, an overshoot rather than an undershoot, which can't happen from decrementing.",
+      "caption": [
+        { "when": "window[s2[l]] == need[s2[l]] - 1", "text": "The count for {s2[l]} just dropped below need: lose that match." },
+        "The count for {s2[l]} didn't just drop below need: no change to matches."
+      ]
+    },
+    "28": {
+      "explain": "Record the lost match: one of need's characters no longer has exactly the right count, since it just dropped below it.",
+      "syntax": [
+        { "token": "                        (24 spaces)", "meaning": "Inside the elif block, so it only runs when line 27's condition was True." },
+        { "token": "matches", "meaning": "The running count of characters that currently match exactly." },
+        { "token": "-=", "meaning": "Shorthand for matches = matches - 1." },
+        { "token": "1", "meaning": "Exactly one character's count just stopped matching." }
+      ],
+      "why": "matches has to drop by one the moment a character's count falls below need, or it would keep crediting a match that no longer holds.",
+      "if_removed": "matches would stay inflated by a stale match, risking a wrong True on a window that no longer actually has the right counts.",
+      "alternatives": [
+        { "code": "matches = matches - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing matches += 1 by accident instead of -=. That would credit a match for a character that just stopped matching.",
+      "caption": "matches becomes {matches - 1}."
+    },
+    "29": {
+      "explain": "Move the window's left edge one step to the right, since the character it pointed at has just been fully retired from the window's counts.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Back at the level of line 22's if block, after its contents have run." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "This is what actually keeps the window pinned at size len(s1): every time r grows the window one character too big, l advances by exactly one to bring it back down.",
+      "if_removed": "l would never advance, so a later pass would try to remove the exact same character's count again and again, eventually driving window negative and corrupting the comparison against need.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 here by accident instead of l += 1. The for loop already advances r on its own; manually bumping it again would skip a character of s2 entirely.",
+      "caption": "Shrink the window: l moves to {l + 1}."
+    },
+    "31": {
+      "explain": "This checks whether EVERY character s1 needs currently has exactly the right count inside the window, which is exactly what it means for the window to be a permutation of s1.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the shrink check above has had its chance to run." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "matches", "meaning": "How many of need's characters currently have an exact count match." },
+        { "token": "== len(need)", "meaning": "True exactly when matches equals the total number of distinct characters s1 has." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "matches only ever counts characters with an exact match, and len(need) is the total number of distinct characters s1 has. The two being equal means none of need's requirements are unmet or overshot.",
+      "if_removed": "The method would never report success, always falling through to return False no matter how the window actually looked.",
+      "alternatives": [
+        { "code": "if window == need:", "difference": "Compares the two dictionaries directly for full equality. Gives the same answer, but takes time proportional to the number of distinct characters on every single step, instead of a single O(1) integer comparison." }
+      ],
+      "mistake": "Checking this before the window and matches updates above (lines 15-29) ran for this r, instead of after. Then the window wouldn't yet reflect the character that was just supposed to enter it, checking matches one step too early.",
+      "caption": [
+        { "when": "matches == len(need)", "text": "matches ({matches}) equals need's distinct characters ({len(need)}): the window is a permutation of s1." },
+        "matches ({matches}) is still short of need's {len(need)} distinct characters."
+      ]
+    },
+    "32": {
+      "explain": "Once the window is confirmed to be a permutation of s1, stop immediately and report success.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 31's condition was True." },
+        { "token": "return True", "meaning": "Ends the method immediately, handing back True." }
+      ],
+      "why": "Finding just one matching window is enough; the problem only asks whether one exists anywhere in s2.",
+      "if_removed": "The method would keep scanning past a genuine match without ever reporting it, and would eventually return False once the loop ran out, which would be wrong.",
+      "alternatives": [
+        { "code": "res = True  # then restructure the rest of the method to stop checking and return res later", "difference": "Would require reshaping the method to stop updating the window once a match is found. return True here is simpler: it exits on the spot." }
+      ],
+      "mistake": "Putting this return outside the for loop by mistake. Then it could only run after every character of s2 had been checked, by which point r and l would no longer meaningfully point at the window that matched.",
+      "caption": "A permutation of s1 was found. Return True."
+    },
+    "34": {
+      "explain": "If the loop finishes without ever finding a window where matches reached len(need), no permutation of s1 exists anywhere in s2.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return False", "meaning": "Ends the method and hands back False." }
+      ],
+      "why": "Every possible window of size len(s1) in s2 got a turn, and none of them matched, so the honest answer is no.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of False, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return matches == len(need)", "difference": "Re-checks the final window's match count instead of using a plain False. By the time the loop ends without returning True, this is guaranteed to already be False, since every window already got checked inside the loop." }
+      ],
+      "mistake": "Putting this return statement inside the for loop. Then the method would stop after checking only the very first character, before the window had a chance to grow at all.",
+      "caption": "Every window of size len(s1) in s2 was checked, and none matched. Return False."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def checkInclusion(self, s1: str, s2: str) -> bool:\n        target = sorted(s1)\n        for i in range(len(s2) - len(s1) + 1):\n            if sorted(s2[i:i + len(s1)]) == target:\n                return True\n        return False",
+    "explain": "Try every possible starting index i for a window the length of s1. For each one, sort the characters of that window and compare them to s1's own sorted characters: if they match exactly, that window is a permutation of s1.",
+    "why_slow": "For n = len(s2) and m = len(s1), this checks roughly n starting points, and sorting each window of length m costs O(m log m), for a total around O(n * m log m). It also throws away all the counting work done for one window and starts from scratch for the very next one, even though only one character actually changes between them.",
+    "how_pattern_fixes": "The sliding window keeps running counts (need and window) alive the whole time, plus a single match count that only shifts by one per character touched. Moving the window by one character updates O(1) worth of state instead of re-sorting and re-comparing a whole new window, dropping the work from about n * m log m down to about n + m.",
+    "time": "O(n * m log m): for n = len(s2) and m = len(s1), about n windows, each costing O(m log m) to sort.",
+    "space": "O(m): sorted(s1) and each sorted window copy hold m characters."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "character": "A single unit of text, like 'a' or '5'. A string is a sequence of characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "Counter": "A ready-made dictionary from Python's collections module that counts things for you: Counter(\"ab\") gives {'a': 1, 'b': 1}.",
+    "defaultdict": "A dictionary from Python's collections module that fills in a default value automatically for a missing key, instead of raising a KeyError.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds a key almost instantly.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if (or elif) above it was False.",
+    "expression": "Any piece of code that produces a value, like r - l + 1 or matches == len(need).",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or a default you choose (d.get(key, 0)) if key is missing, without crashing.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a string, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "key": "The part of a dictionary entry you look things up by. In {7: 2}, the key is 7.",
+    "KeyError": "The error Python raises when you look up or remove a dictionary key that isn't there.",
+    "keyword": "A word reserved by Python, like for, if, elif, return.",
+    "len": "A built-in function that gives the number of items in something: len(\"ab\") is 2.",
+    "loop": "Code that repeats.",
+    "membership operator": "The in keyword used as a check: x in collection is True exactly when x is already inside collection.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, > compares.",
+    "parameter": "A name in a function's definition that receives an input. s1 and s2 are checkInclusion's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in a string. Here l and r are pointers.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Python's sorted() function returns a new sorted list.",
+    "sorting": "Putting items in order. Python's sorted() rearranges items by comparing them to each other, which takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for text (a string).",
+    "string": "Text, written in quotes like \"cat\" or 'hello'. Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "tally": "A running count of how many times something has occurred, kept up to date as you go.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "type hint": "A label like s1: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "ValueError": "The error Python raises when a value has the right type but an invalid value for what you're trying to do.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of s2 currently being considered, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s2",
+      "source": "list(s2)",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "list(range(l, r + 1)) if 'r' in globals() else []",
+        "found": "list(range(l, r + 1)) if __line__ == 31 and matches == len(need) else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "need  (from s1, stays fixed)",
+      "source": "need"
+    },
+    {
+      "type": "hashmap",
+      "title": "window  (counts inside the current window)",
+      "source": "window",
+      "lookup": "s2[r] if __line__ in (15, 16, 17, 18, 19, 20) else (s2[l] if __line__ in (22, 23, 24, 25, 26, 27, 28, 29) else None)"
+    },
+    {
+      "type": "hashmap",
+      "title": "progress",
+      "source": "[['matches', matches], ['need (distinct chars)', len(need)]] if 'r' in globals() else []"
+    }
+  ]
+}
