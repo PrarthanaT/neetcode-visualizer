@@ -1,0 +1,554 @@
+{
+  "slug": "median-of-two-sorted-arrays",
+  "title": "Median of Two Sorted Arrays",
+  "difficulty": "Hard",
+  "category": "Binary Search",
+  "leetcode": 4,
+  "statement": [
+    "You are given two lists of whole numbers, nums1 and nums2, each already sorted from smallest to largest.",
+    "Return the median of the single sorted list you'd get by merging the two together, without actually merging them.",
+    "Your solution must run in O(log(m + n)) time, where m and n are the lengths of nums1 and nums2."
+  ],
+  "examples": [
+    {
+      "input": "nums1 = [1, 2], nums2 = [3, 4]",
+      "output": "2.5",
+      "explain": "Merged, the two lists give [1, 2, 3, 4]. With 4 items, the median is the average of the two middle ones: (2 + 3) / 2 = 2.5. This is the example the visualizer runs. Watch the cut marker in each list move until the four boundary values line up correctly."
+    },
+    {
+      "input": "nums1 = [1, 3], nums2 = [2]",
+      "output": "2",
+      "explain": "Merged, the two lists give [1, 2, 3]. With 3 items, the median is the single middle one: 2. Since nums2 is the shorter list here, the algorithm swaps them first, so the search runs over nums2's single element instead of nums1's two."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search for a partition, not a value",
+    "summary": "Picture the merged, sorted combination of both lists, without ever actually building it. A partition splits each list into a left part and a right part, chosen so the two lists' left parts together hold exactly half of the combined items. A partition is correctly placed exactly when the biggest value on either left part is no bigger than the smallest value on either right part, which only takes checking FOUR numbers: the two values straddling each list's own cut. Binary search over where to cut the SHORTER list; the cut point in the longer list is then forced, since the two left parts always have to add up to the same fixed size.",
+    "recognize": [
+      "Two sequences that are each already sorted on their own, asked for something about their merged order (a specific rank, a median), without needing to build the full merge.",
+      "The required speed is logarithmic in the COMBINED size, ruling out actually merging or scanning both lists.",
+      "A yes/no \"is this split correctly placed\" question can be answered by comparing just a handful of values, rather than looking at everything on either side of it."
+    ],
+    "avoid_when": [
+      "Either list isn't already sorted. The whole method relies on each list being in order on its own, so a cut point has a genuine \"everything before is smaller\" meaning.",
+      "You only need to know whether a specific value exists in either list, not an ordering statistic like the median. A plain binary search on whichever list to check directly answers that.",
+      "m + n is small. Actually merging the two sorted lists in O(m + n), or even just sorting the concatenation, is simpler to write correctly and still plenty fast."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Swapping so A always refers to the SHORTER list keeps the binary search's range small, and guarantees B's matching cut point always lands inside B's own valid indexes.",
+      "A whole partition is described by a single number, i, A's cut point. B's cut point, j, is then forced: both left parts together must always add up to half the combined length.",
+      "Four boundary values, Aleft, Aright, Bleft and Bright, are all a partition ever needs to be checked or fixed. Using float(\"-infinity\") and float(\"infinity\") for \"nothing on this side\" means a cut that puts an entire list on one side needs no special-casing at all.",
+      "Once Aleft <= Bright and Bleft <= Aright both hold, the two sides are correctly balanced, and the median reads directly off those four boundary values: no merging, sorting or scanning of either list ever happens."
+    ],
+    "time": "O(log(min(m, n))), logarithmic in the SHORTER list's length. The binary search only ever runs over A's possible cut points, 0 to len(A); B's cut point is computed directly from A's, never searched on its own.",
+    "space": "O(1), constant. Only a handful of number variables, however long nums1 and nums2 are.",
+    "edge_cases": [
+      "One list is empty, like nums1 = [] and nums2 = [1, 2, 3]. The empty one is swapped into A, where it has only one possible cut point (i = -1, nothing on the left), so the search really just locates B's correct cut on its own.",
+      "The two lists don't overlap in value at all, like nums1 = [1, 2] and nums2 = [3, 4]. The very first guess at a cut can already balance, once enough of the smaller-valued list sits on the left.",
+      "The combined length is odd, like 1 + 2 = 3 items. The median is a single value: whichever of Aright or Bright is smaller once the partition balances.",
+      "The combined length is even, like 2 + 2 = 4 items. The median is the average of the two values straddling the exact middle: the bigger of the two left boundaries and the smaller of the two right boundaries.",
+      "Both lists have exactly one item each, like nums1 = [1] and nums2 = [2]. len(B) < len(A) is False (they're equal), so no swap happens, and the search still correctly checks i = 0 as A's only real cut point."
+    ]
+  },
+  "code": "class Solution:\n    def findMedianSortedArrays(self, nums1: List[int], nums2: List[int]) -> float:\n        A, B = nums1, nums2\n        total = len(A) + len(B)\n        half = total // 2\n\n        if len(B) < len(A):\n            A, B = B, A\n\n        l, r = 0, len(A) - 1\n        while True:\n            i = (l + r) // 2\n            j = half - i - 2\n\n            Aleft = A[i] if i >= 0 else float(\"-infinity\")\n            Aright = A[i + 1] if (i + 1) < len(A) else float(\"infinity\")\n            Bleft = B[j] if j >= 0 else float(\"-infinity\")\n            Bright = B[j + 1] if (j + 1) < len(B) else float(\"infinity\")\n\n            if Aleft <= Bright and Bleft <= Aright:\n                if total % 2:\n                    return min(Aright, Bright)\n                return (max(Aleft, Bleft) + min(Aright, Bright)) / 2\n            elif Aleft > Bright:\n                r = i - 1\n            else:\n                l = i + 1\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().findMedianSortedArrays([1, 2], [3, 4])",
+    "expected": 2.5,
+    "describe": "nums1 = [1, 2], nums2 = [3, 4]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+      ],
+      "mistake": "Lowercase class solution:. Capitalization matters to Python.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method findMedianSortedArrays. It takes the two sorted lists and promises to give back a float: the median, which might be a whole number or an average ending in .5.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def findMedianSortedArrays", "meaning": "def starts a method definition. findMedianSortedArrays is the name LeetCode calls." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "nums1: List[int],", "meaning": "The first sorted list, hinted as a List of int." },
+        { "token": "nums2: List[int])", "meaning": "The second sorted list, hinted as a List of int." },
+        { "token": "-> float", "meaning": "Return type hint: the answer might not be a whole number." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "LeetCode chooses the exact name and parameter order. -> float matters here specifically, since an even-length merge always averages two values, which can land on a .5.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def findMedianSortedArrays(self, nums1, nums2):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Returning an int by rounding or truncating a .5 result. The problem expects the exact average, decimal included.",
+      "caption": "Python remembers the findMedianSortedArrays instructions for later."
+    },
+    "3": {
+      "explain": "This gives the two input lists working names, A and B, since the next few lines might swap which one the algorithm treats as which.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "A, B", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "nums1, nums2", "meaning": "The two input lists, in their original order." }
+      ],
+      "why": "The algorithm always wants A to refer to the SHORTER of the two lists, decided in a moment. Starting from fresh names A and B, rather than renaming the parameters directly, keeps nums1 and nums2 available unchanged if they're ever needed again.",
+      "if_removed": "Line 7's if len(B) < len(A) would crash with a NameError, since A and B wouldn't exist yet.",
+      "alternatives": [
+        { "code": "A, B = (nums1, nums2)", "difference": "The same tuple unpacking with explicit parentheses around the right side. Identical result." }
+      ],
+      "mistake": "Swapping nums1 and nums2 directly instead of introducing A and B. It would work the same way, but renaming makes it visually clear from here on which list is currently treated as the shorter one.",
+      "caption": "A and B start out as nums1 and nums2: A = {nums1}, B = {nums2}."
+    },
+    "4": {
+      "explain": "This works out how many items the merged list would have, without ever actually building it.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "total", "meaning": "A variable for the combined length." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "len(A) + len(B)", "meaning": "The two lists' lengths, added together." }
+      ],
+      "why": "Whether the merged list has an odd or even number of items decides how the median is read off later, on line 21. total is also used to work out how many items belong on the LEFT side of any partition, on line 5.",
+      "if_removed": "Line 5's half = total // 2 would crash with a NameError.",
+      "alternatives": [
+        { "code": "total = len(nums1) + len(nums2)", "difference": "Reads the original parameters instead of A and B. Gives the same number, since A and B are always just nums1 and nums2 in some order." }
+      ],
+      "mistake": "Computing len(A + B) instead, which concatenates the two lists into a new, bigger one just to measure it: a wasted copy that gives the same number len(A) + len(B) gets for free.",
+      "caption": "The merged list would have total = {len(A)} + {len(B)} = {len(A) + len(B)} items."
+    },
+    "5": {
+      "explain": "This works out how many items should sit in the LEFT part of the merged order, once it's correctly split down the middle.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "half", "meaning": "A variable for the left side's target size." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "total // 2", "meaning": "Integer division: divide and round DOWN to a whole number." }
+      ],
+      "why": "For an odd total, rounding down leaves exactly one extra item, which ends up on the right side and gets read directly as the median on line 22. For an even total, the two sides split evenly.",
+      "if_removed": "Line 13's j = half - i - 2 would crash with a NameError.",
+      "alternatives": [
+        { "code": "j = (len(A) + len(B)) // 2 - i - 2", "difference": "Recomputes total // 2 inline on line 13 instead of storing it once in half. Same result, just repeats the same calculation every time through the loop." }
+      ],
+      "mistake": "Using total / 2 instead of // 2, which gives a decimal that later breaks the index arithmetic j = half - i - 2 depends on.",
+      "caption": "Half of the merged list, rounded down, is {total} // 2 = {total // 2} items."
+    },
+    "7": {
+      "explain": "This checks whether B is actually SHORTER than A. The algorithm always wants to binary search over the shorter of the two lists.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "len(B)", "meaning": "How many items B currently holds." },
+        { "token": "<", "meaning": "\"Strictly less than\" comparison." },
+        { "token": "len(A)", "meaning": "How many items A currently holds." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "The search range on line 10 is sized to A, and the j formula on line 13 is only guaranteed to land inside B's valid indexes when B is the longer list. Making sure A is always the shorter one keeps both of those guarantees true.",
+      "if_removed": "Line 8 would never run, so the shorter list might end up being searched as if it were the longer one, breaking the guarantee that j always lands validly inside B.",
+      "alternatives": [
+        { "code": "if len(A) > len(B):", "difference": "The same comparison written the other way round. Identical behaviour." }
+      ],
+      "mistake": "Comparing len(A) < len(B) instead (backwards), which would swap in exactly the wrong situation and force A to become the LONGER list.",
+      "caption": [
+        { "when": "len(B) < len(A)", "text": "B, with {len(B)} items, is shorter than A, with {len(A)}: swap them so A is always the shorter one." },
+        "B, with {len(B)} items, isn't shorter than A, with {len(A)}: no swap needed."
+      ]
+    },
+    "8": {
+      "explain": "This swaps which list is called A and which is called B, so A always ends up referring to the shorter one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Inside the if block." },
+        { "token": "A, B", "meaning": "The two names being reassigned together." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "B, A", "meaning": "The CURRENT values of B and A, read before either name is overwritten, then assigned back in swapped order." }
+      ],
+      "why": "Python evaluates the whole right side, B, A, as a pair of the current values first, then assigns both names at once, which is exactly what makes a clean swap possible without a temporary variable.",
+      "if_removed": "A could end up being the longer list, and the j formula on line 13 could compute an index outside B's valid range.",
+      "alternatives": [
+        { "code": "temp = A\nA = B\nB = temp", "difference": "The classic three-line swap using a temporary variable, needed in languages without tuple assignment. Same result, more code." }
+      ],
+      "mistake": "Writing A, B = A, B by mistake (no actual swap happens), which silently skips the whole point of line 7's check.",
+      "caption": "Swap: now A = {B} (was B), B = {A} (was A)."
+    },
+    "10": {
+      "explain": "This sets up the binary search window over A's possible cut points: l and r mark the range of indexes i can take.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first valid index of A." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(A) - 1", "meaning": "A's last valid index." }
+      ],
+      "why": "Every non-negative cut point in A needs to be reachable by the search. The search can still reach i = -1 (meaning \"nothing from A on the left\") once r itself drops below 0, since line 12's floor division handles that case correctly.",
+      "if_removed": "Line 12's i = (l + r) // 2 would crash with a NameError.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(A) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Starting r at len(A) instead of len(A) - 1, which could let i land one index past A's last valid position.",
+      "caption": "Binary search A's possible cut points: l = 0, r = {len(A) - 1}."
+    },
+    "11": {
+      "explain": "This starts a loop that runs until the method returns from inside it. There's no separate condition to check in the loop header.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "True", "meaning": "A condition that's always True, so the loop never stops on its own." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Unlike plain binary search, this search's stopping condition, \"the partition balances\", is only known once the four boundary values have been computed, inside the loop body. while True with an explicit return inside is simpler than tracking that as a separate flag in the loop header.",
+      "if_removed": "There would be no loop at all; only the very first guess at i would ever be checked.",
+      "alternatives": [
+        { "code": "while l <= r:", "difference": "A more typical binary-search header. It would also work, since this loop only ever exits through an explicit return, but it implies the search could run out of window, which a correct partition is always found before that happens." }
+      ],
+      "mistake": "Forgetting that every path through this loop's body must either return or update l or r; otherwise it truly spins forever, since the header never stops it.",
+      "caption": "Check the current guess for i."
+    },
+    "12": {
+      "explain": "This guesses the next cut point in A: the midpoint of the current search window.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "i", "meaning": "The variable for A's current candidate cut point." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "(l + r)", "meaning": "The two ends of the current search window, added together." },
+        { "token": "// 2", "meaning": "Integer division: divide and round DOWN to a whole number." }
+      ],
+      "why": "Checking the middle index first means whichever side the search rules out, left or right, discards about half of the remaining candidates, the same gain plain binary search gets.",
+      "if_removed": "Line 13's j = half - i - 2 would crash with a NameError.",
+      "alternatives": [
+        { "code": "i = l + (r - l) // 2", "difference": "The overflow-safe form used elsewhere for very large lists. Since l and r here are small list indexes, both give exactly the same i." }
+      ],
+      "mistake": "Using / instead of //, which produces a decimal that can't be used to index into A.",
+      "caption": "Try cutting A right after index i = ({l} + {r}) // 2 = {(l + r) // 2}."
+    },
+    "13": {
+      "explain": "This works out the matching cut point in B. Since the merged list's left side must always hold exactly half of its items, B's cut is whatever makes up the rest once A's share is fixed.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "j", "meaning": "The variable for B's cut point, matching i." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "half - i - 2", "meaning": "half, minus A's left-side count, minus one more to convert that count into an index." }
+      ],
+      "why": "A's left side holds i + 1 items (indexes 0 through i). For the two left sides together to total half items, B's left side needs half - (i + 1) items, which ends at index j = half - i - 2. There's no separate search over B at all: once i is chosen, j is fully determined.",
+      "if_removed": "Lines 15 through 18 would crash with a NameError trying to index B with an undefined j.",
+      "alternatives": [
+        { "code": "j = half - (i + 1) - 1", "difference": "The same subtraction spelled out as (A's left-side count) then minus one more for the index conversion. Equivalent to half - i - 2, just written in two steps." }
+      ],
+      "mistake": "Writing j = half - i - 1 (off by one), which would make the two left sides add up to one item too many.",
+      "caption": "B's matching cut lands at j = {half} - {i} - 2 = {half - i - 2}."
+    },
+    "15": {
+      "explain": "This works out Aleft: the biggest value on A's left side, which is A[i] itself, unless i is -1, meaning A contributes nothing to the left side at all.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "Aleft", "meaning": "A variable for A's left-side boundary value." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "A[i] if i >= 0 else float(\"-infinity\")", "meaning": "A conditional expression: use A[i] when i is a real index, otherwise fall back to negative infinity." }
+      ],
+      "why": "Using negative infinity for \"nothing here\" means the balance check on line 20 works correctly without a separate special case for a cut that puts none of A on the left.",
+      "if_removed": "Line 20's comparison would crash with a NameError.",
+      "alternatives": [
+        { "code": "Aleft = A[i] if i >= 0 else float(\"-inf\")", "difference": "float(\"-inf\") is the more common spelling of negative infinity in Python; float(\"-infinity\") is a less familiar alias with exactly the same meaning." }
+      ],
+      "mistake": "Forgetting the i >= 0 check and writing Aleft = A[i] directly. A[-1] wouldn't even crash; it would silently read A's LAST item instead, which is arguably worse than an IndexError.",
+      "caption": [
+        { "when": "i >= 0", "text": "A's left side peaks at Aleft = A[{i}] = {A[i]}." },
+        "A contributes nothing to the left side this time: Aleft is treated as negative infinity."
+      ]
+    },
+    "16": {
+      "explain": "This works out Aright: the smallest value on A's right side, the very next item after the cut, unless the cut already takes every item of A onto the left.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "Aright", "meaning": "A variable for A's right-side boundary value." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "A[i + 1] if (i + 1) < len(A) else float(\"infinity\")", "meaning": "Use A[i + 1] when it's still a valid index, otherwise fall back to positive infinity." }
+      ],
+      "why": "Positive infinity for \"nothing left on this side\" means a cut that takes ALL of A onto the left needs no special-casing either.",
+      "if_removed": "Line 20's comparison would crash with a NameError.",
+      "alternatives": [
+        { "code": "Aright = A[i + 1] if i + 1 < len(A) else float(\"inf\")", "difference": "Drops the parentheses around i + 1, which aren't required since + binds tighter than <, and uses the more common \"inf\" spelling. Identical behaviour." }
+      ],
+      "mistake": "Writing Aright = A[i] by mistake, re-reading the LEFT boundary instead of the item right after it.",
+      "caption": [
+        { "when": "(i + 1) < len(A)", "text": "A's right side starts at Aright = A[{i + 1}] = {A[i + 1]}." },
+        "The cut already takes all of A onto the left side: Aright is treated as positive infinity."
+      ]
+    },
+    "17": {
+      "explain": "This works out Bleft, the mirror of Aleft for B: the biggest value on B's left side, or negative infinity if B contributes nothing to it.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "Bleft", "meaning": "A variable for B's left-side boundary value." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "B[j] if j >= 0 else float(\"-infinity\")", "meaning": "Use B[j] when j is a real index, otherwise fall back to negative infinity." }
+      ],
+      "why": "The same reasoning as line 15, applied to B and j instead of A and i.",
+      "if_removed": "Line 20's comparison would crash with a NameError.",
+      "alternatives": [
+        { "code": "Bleft = B[j] if j >= 0 else float(\"-inf\")", "difference": "Uses the more common \"-inf\" spelling instead of \"-infinity\". Identical meaning." }
+      ],
+      "mistake": "Writing Bleft = B[j - 1] by mistake, reading one position too far left.",
+      "caption": [
+        { "when": "j >= 0", "text": "B's left side peaks at Bleft = B[{j}] = {B[j]}." },
+        "B contributes nothing to the left side this time: Bleft is treated as negative infinity."
+      ]
+    },
+    "18": {
+      "explain": "This works out Bright, the mirror of Aright for B: the smallest value on B's right side, or positive infinity if the cut already takes all of B onto the left.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "Bright", "meaning": "A variable for B's right-side boundary value." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "B[j + 1] if (j + 1) < len(B) else float(\"infinity\")", "meaning": "Use B[j + 1] when it's still a valid index, otherwise fall back to positive infinity." }
+      ],
+      "why": "The same reasoning as line 16, applied to B and j instead of A and i.",
+      "if_removed": "Line 20's comparison would crash with a NameError.",
+      "alternatives": [
+        { "code": "Bright = B[j + 1] if j + 1 < len(B) else float(\"inf\")", "difference": "Drops the unnecessary parentheses and uses the more common \"inf\" spelling. Identical behaviour." }
+      ],
+      "mistake": "Writing Bright = B[j] by mistake, re-reading the LEFT boundary instead of the item right after it.",
+      "caption": [
+        { "when": "(j + 1) < len(B)", "text": "B's right side starts at Bright = B[{j + 1}] = {B[j + 1]}." },
+        "The cut already takes all of B onto the left side: Bright is treated as positive infinity."
+      ]
+    },
+    "20": {
+      "explain": "This checks whether the current cut balances: every value on EITHER left side must be no bigger than every value on EITHER right side.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition." },
+        { "token": "Aleft <= Bright", "meaning": "A's biggest left-side value isn't bigger than B's smallest right-side value." },
+        { "token": "and", "meaning": "Both sides of and must be True for the whole condition to be True." },
+        { "token": "Bleft <= Aright", "meaning": "B's biggest left-side value isn't bigger than A's smallest right-side value." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Because A and B are each already sorted on their own, these two cross-comparisons are enough to guarantee every combined left-side item is <= every combined right-side item, which is exactly what it means for the cut to sit correctly in the merged order.",
+      "if_removed": "The method would never recognize a correctly placed cut, and would keep adjusting l and r without ever returning.",
+      "alternatives": [
+        { "code": "if Aleft <= Bright and Aright >= Bleft:", "difference": "Writes the second comparison flipped around (Aright >= Bleft instead of Bleft <= Aright). Exactly the same comparison, just with its two sides swapped." }
+      ],
+      "mistake": "Checking only one of the two conditions, like just Aleft <= Bright. Both directions have to hold; a cut can fail on either side.",
+      "caption": [
+        { "when": "Aleft <= Bright and Bleft <= Aright", "text": "Aleft {Aleft} <= Bright {Bright}, and Bleft {Bleft} <= Aright {Aright}: this cut balances." },
+        "Aleft {Aleft}, Aright {Aright}, Bleft {Bleft}, Bright {Bright}: this cut doesn't balance yet."
+      ]
+    },
+    "21": {
+      "explain": "The cut balances, so now decide how to read the median off the four boundary values, depending on whether the merged list has an odd or even number of items.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "if", "meaning": "Starts a nested condition." },
+        { "token": "total % 2", "meaning": "The remainder of total divided by 2: 1 (truthy) when total is odd, 0 (falsy) when it's even." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "An odd-length merged list has one exact middle item; an even-length one has two items straddling the middle, which need averaging.",
+      "if_removed": "Line 23 would always run, even for an odd total, giving an averaged (and wrong) result instead of the single middle value.",
+      "alternatives": [
+        { "code": "if total % 2 == 1:", "difference": "Spells out the truthiness check explicitly. total % 2 is already 0 or 1, so this changes nothing." }
+      ],
+      "mistake": "Checking total % 2 == 0 and swapping the two branches, which would return a single value for even-length merges and an average for odd ones.",
+      "caption": [
+        { "when": "total % 2", "text": "{total} items is odd: the median is a single value." },
+        "{total} items is even: the median is the average of two values."
+      ]
+    },
+    "22": {
+      "explain": "For an odd total, the median is the smallest value immediately to the right of the balanced cut.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the nested if block." },
+        { "token": "return", "meaning": "End the method now, handing back the value." },
+        { "token": "min(Aright, Bright)", "meaning": "The smaller of the two right-side boundary values." }
+      ],
+      "why": "The left side already holds exactly half the items, the rounded-down half. The next item in merged order, the one extra item that makes the total odd, has to be the smaller of Aright and Bright, since both lists are sorted and nothing smaller remains on the right.",
+      "if_removed": "The method would fall through without returning on this path, eventually giving None instead of the median.",
+      "alternatives": [
+        { "code": "return Aright if Aright < Bright else Bright", "difference": "The same comparison spelled out with an if/else expression instead of Python's built-in min. Identical result." }
+      ],
+      "mistake": "Returning max(Aright, Bright) instead of min, which would pick the item right AFTER the true median instead of the median itself.",
+      "caption": "Odd total: return min(Aright, Bright) = min({Aright}, {Bright}) = {min(Aright, Bright)}."
+    },
+    "23": {
+      "explain": "For an even total, the median is the average of the two values exactly straddling the middle: the bigger of the two left boundaries, and the smaller of the two right boundaries.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the outer if block, after the nested if/return above." },
+        { "token": "return", "meaning": "End the method now, handing back the value." },
+        { "token": "(max(Aleft, Bleft) + min(Aright, Bright))", "meaning": "The last item of the combined left side, plus the first item of the combined right side." },
+        { "token": "/ 2", "meaning": "Regular division, giving their average." }
+      ],
+      "why": "Once the cut balances, max(Aleft, Bleft) is the last item of the full merged left side, and min(Aright, Bright) is the first item of the full merged right side: exactly the two middle items of the whole merged order.",
+      "if_removed": "The method would reach the end of the function without returning on this path, giving None instead of the median.",
+      "alternatives": [
+        { "code": "return (min(Aleft, Bleft) + max(Aright, Bright)) / 2", "difference": "Swaps which boundaries get max and min, averaging the OUTERMOST pair of values instead of the innermost (middle) pair. Gives the wrong answer whenever the two lists' values actually interleave." }
+      ],
+      "mistake": "Forgetting the / 2, which would return the SUM of the two middle values instead of their average.",
+      "caption": "Even total: return (max(Aleft, Bleft) + min(Aright, Bright)) / 2 = ({max(Aleft, Bleft)} + {min(Aright, Bright)}) / 2 = {(max(Aleft, Bleft) + min(Aright, Bright)) / 2}."
+    },
+    "24": {
+      "explain": "The cut didn't balance, and specifically A's left side reached too far: its biggest value, Aleft, is bigger than B's smallest right-side value, Bright.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 20. It's another branch of the same condition." },
+        { "token": "elif", "meaning": "Short for \"else if\". Checked only because the if above was False." },
+        { "token": "Aleft > Bright", "meaning": "Is A's biggest left-side value bigger than B's smallest right-side value?" },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "If Aleft > Bright, A's left side is holding a value that's actually bigger than something that belongs on the right, which means i, A's cut point, was chosen too big.",
+      "if_removed": "The else on line 26 would run unconditionally, always nudging i to the right even on passes where it actually needed to move left.",
+      "alternatives": [
+        { "code": "elif Bright < Aleft:", "difference": "The same comparison written the other way round. Identical behaviour." }
+      ],
+      "mistake": "Comparing Aright and Bleft here instead, which tests the wrong pair of boundaries and can send the search in the wrong direction.",
+      "caption": "Aleft {Aleft} > Bright {Bright}: A took too much on the left. Move i left."
+    },
+    "25": {
+      "explain": "This shrinks the search window to only indexes smaller than i, since i has just been shown to be too big.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the elif block." },
+        { "token": "r = i - 1", "meaning": "Make r one position to the left of i. The new window is l..i-1." }
+      ],
+      "why": "Excluding i itself (not just moving r to i) keeps the window shrinking every pass, which is what guarantees the loop eventually finds a balanced cut.",
+      "if_removed": "The window wouldn't shrink from the right on this path, risking an infinite loop that keeps re-trying the same wrong i.",
+      "alternatives": [
+        { "code": "r = i", "difference": "Keeps i in the window even though it was just proven too big. If l ever caught up to equal i, the loop would never move again." }
+      ],
+      "mistake": "Writing r = i instead of r = i - 1, the classic off-by-one that can freeze a binary search.",
+      "caption": "Search further left: r moves from {r} to {i - 1}."
+    },
+    "26": {
+      "explain": "The only remaining case: the overall balance check failed, but Aleft wasn't too big, so it must be Bleft that's bigger than Aright. B's left side reached too far instead.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if and elif above. It's the last branch of the same chain." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when every condition above it was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Line 20's check failing, combined with line 24's check also failing, leaves exactly one possibility: Bleft > Aright. B's left side is holding something too big for A's right side, so i needs to grow, giving A more room on its left and leaving less for B.",
+      "if_removed": "Line 27 would never run, and the search would have no way to move i to the right when it needed to.",
+      "alternatives": [
+        { "code": "elif Bleft > Aright:", "difference": "Spells out the condition again instead of relying on it being the only case left once the branches above were False. Correct, but redundant here." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if or elif.",
+      "caption": "Bleft {Bleft} > Aright {Aright}: B took too much on the left. Move i right."
+    },
+    "27": {
+      "explain": "This shrinks the search window to only indexes bigger than i, since i has just been shown to be too small.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "l = i + 1", "meaning": "Make l one position to the right of i. The new window is i+1..r." }
+      ],
+      "why": "Excluding i itself keeps the window shrinking every pass, which is what guarantees the loop eventually finds a balanced cut.",
+      "if_removed": "The window wouldn't shrink from the left on this path, risking an infinite loop that keeps re-trying the same wrong i.",
+      "alternatives": [
+        { "code": "l = i", "difference": "Keeps i in the window even though it was just proven too small. If r ever shrank to equal i, the loop would never move again." }
+      ],
+      "mistake": "Writing l = i instead of l = i + 1, the classic off-by-one that can freeze a binary search.",
+      "caption": "Search further right: l moves from {l} to {i + 1}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def findMedianSortedArrays(self, nums1: List[int], nums2: List[int]) -> float:\n        merged = sorted(nums1 + nums2)\n        n = len(merged)\n        mid = n // 2\n        if n % 2:\n            return merged[mid]\n        return (merged[mid - 1] + merged[mid]) / 2",
+    "explain": "Actually combine both lists into one, sort it, and read the median straight off the middle (or the average of the middle two) of the sorted result.",
+    "why_slow": "Combining and sorting both lists takes O((m + n) log(m + n)) time, since sorting dominates. The problem specifically asks for O(log(m + n)), and this approach throws away the fact that each list was ALREADY sorted before being combined.",
+    "how_pattern_fixes": "Since each list is already sorted, merging doesn't need a full sort, and finding the median doesn't even need a full merge: binary searching for the one correct cut point finds just the handful of boundary values that matter, in logarithmic time.",
+    "time": "O((m + n) log(m + n)): dominated by sorting the combined list.",
+    "space": "O(m + n): the new merged, sorted list."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step procedure for solving a problem.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(1) doesn't grow at all. O(log n) grows very slowly. O(n log n) and O(n^2) grow faster still.",
+    "binary search": "Searching a sorted sequence (or, here, the space of possible cut points) by repeatedly checking the middle and discarding a half that can't hold the answer.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(A).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, elif, else, while, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "conditional expression": "A one-line choice: X if condition else Y gives X when the condition is True, otherwise Y.",
+    "edge case": "An unusual input that's easy to get wrong, like an empty list or two lists of equal length.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if (or elif) above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when every if and elif above it was False.",
+    "expression": "Any piece of code that produces a value, like len(A) + len(B) or Aleft <= Bright.",
+    "float": "Python's name for a decimal number, like 2.5 or 2.0, and also the name of the built-in function that creates one, like float(\"infinity\").",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "index": "A position in a list, counting from 0.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like A[-1] on an empty list.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -1, 0 or 24.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return, class, def, and, or.",
+    "len": "A built-in function that gives the number of items in something: len([1, 2, 3]) is 3.",
+    "list": "An ordered collection written with square brackets, like [1, 2, 3]. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that gives the biggest value among its arguments: max(3, 7) is 7.",
+    "median": "The middle value of a sorted sequence: the single middle item when there's an odd number of them, or the average of the two middle items when there's an even number.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "min": "A built-in function that gives the smallest value among its arguments: min(3, 7) is 3.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another structure of the same kind, like an if inside another if's block.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "off-by-one": "A very common bug where an index or count is one too high or too low, usually from a mistake about where counting starts or stops.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, // divides and rounds down, / divides exactly, % gives a remainder, = assigns, <, >, <= and >= compare.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. nums1 and nums2 are findMedianSortedArrays's parameters.",
+    "partition": "A way of splitting one or more sequences into a left part and a right part, used here to divide the combined order of two lists without merging them.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2. Also, more generally, the span of values between a sequence's smallest and largest.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sentinel": "A placeholder value standing in for \"nothing here\", chosen so ordinary comparisons still behave correctly without extra special-case code. float(\"-infinity\") and float(\"infinity\") are the sentinels used here.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Also a built-in function, sorted([3, 1, 2]), that returns a new, sorted list.",
+    "sorting": "Putting items in order. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. Empty lists, empty strings, 0 and None count as False. Everything else counts as True.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: A, B = B, A reads the current values of B and A first, then assigns both names together.",
+    "type hint": "A label like nums1: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type.",
+    "value": "A piece of data, like a number in a list. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of a sequence (or, here, the range of possible indexes) that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "A (the shorter list)",
+      "source": "A",
+      "pointers": {
+        "i": "i",
+        "i+1": "i + 1"
+      },
+      "marks": {
+        "compared": "[x for x in (i, i + 1) if 0 <= x < len(A)] if __line__ in (15, 16, 17, 18, 20, 21, 24, 25, 26, 27) else []",
+        "found": "[x for x in (i, i + 1) if 0 <= x < len(A)] if __line__ in (22, 23) else []"
+      }
+    },
+    {
+      "type": "array",
+      "title": "B (the longer list)",
+      "source": "B",
+      "pointers": {
+        "j": "j",
+        "j+1": "j + 1"
+      },
+      "marks": {
+        "compared": "[x for x in (j, j + 1) if 0 <= x < len(B)] if __line__ in (15, 16, 17, 18, 20, 21, 24, 25, 26, 27) else []",
+        "found": "[x for x in (j, j + 1) if 0 <= x < len(B)] if __line__ in (22, 23) else []"
+      }
+    }
+  ]
+}
