@@ -55,7 +55,7 @@
       "An empty list, nums = []. r starts at -1, so l <= r is False immediately and we return -1."
     ]
   },
-  "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        l, r = 0, len(nums) - 1\n\n        while l <= r:\n            m = l + ((r - l) // 2)  # (l + r) // 2 can lead to overflow\n            if nums[m] > target:\n                r = m - 1\n            elif nums[m] < target:\n                l = m + 1\n            else:\n                return m\n        return -1\n",
+  "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        l, r = 0, len(nums) - 1\n\n        while l <= r:\n            m = l + ((r - l) // 2)\n            if nums[m] > target:\n                r = m - 1\n            elif nums[m] < target:\n                l = m + 1\n            else:\n                return m\n        return -1\n",
   "run": {
     "prelude": "from typing import List",
     "call": "Solution().search([-1, 0, 3, 5, 9, 12, 15, 20, 24, 31], 15)",
@@ -247,10 +247,6 @@
         {
           "token": "( ... )",
           "meaning": "The outer brackets aren't required, because // already happens before +. They make the order obvious to readers."
-        },
-        {
-          "token": "# (l + r) // 2 can ...",
-          "meaning": "A comment explaining why we don't just average l and r. See \"Why\" below."
         }
       ],
       "why": "Checking the middle splits the window into two equal halves, so whichever half we throw away, it's as big as possible. In languages like Java or C++, numbers have a maximum size, and l + r can go past it (overflow) on huge lists. l + (r - l) // 2 never does. Python's integers have no maximum size, so (l + r) // 2 is safe in Python, but the habit carries over to interviews in other languages.",
