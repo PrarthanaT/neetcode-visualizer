@@ -1,0 +1,347 @@
+{
+  "slug": "best-time-to-buy-and-sell-stock",
+  "title": "Best Time to Buy and Sell Stock",
+  "difficulty": "Easy",
+  "category": "Sliding Window",
+  "leetcode": 121,
+  "statement": [
+    "You are given a list called prices, where prices[i] is the price of one share of a stock on day i.",
+    "You may buy the stock on one day and sell it on a single LATER day, to maximize your profit. You must buy before you sell.",
+    "Return the most profit you can make. If no choice of buy day and sell day makes a profit, return 0 (you're also allowed to make no trade at all)."
+  ],
+  "examples": [
+    {
+      "input": "prices = [7, 1, 5, 3, 6, 4]",
+      "output": "5",
+      "explain": "Buy on day 1 at price 1, sell on day 4 at price 6: profit = 6 - 1 = 5. No other buy/sell pair, in order, does better. This is the example the visualizer runs."
+    },
+    {
+      "input": "prices = [7, 6, 4, 3, 1]",
+      "output": "0",
+      "explain": "The price only ever falls. Every later day is cheaper than every earlier one, so no buy-then-sell pair makes a profit, and the best choice is to not trade at all."
+    }
+  ],
+  "pattern": {
+    "name": "Sliding window tracking the lowest price seen so far",
+    "summary": "Walk through the prices once with two pointers. l marks the cheapest day found so far (the best day to have bought), and r marks the day being considered as a sell day. On each day, if selling at r would beat buying at l, compute that profit and keep it if it's the best yet. If instead today's price is lower than the price at l, today becomes the new best buy day: l jumps straight to r, because buying on any day between the old l and the new low could never beat buying at the new low itself.",
+    "recognize": [
+      "You must pick two positions, an earlier one and a later one, to maximize something that depends on both (buy low now, sell high later).",
+      "The best choice for the earlier position, up to any point, is always a single running fact (here, the lowest price so far), not something you need to search for again and again.",
+      "You only get to make one such choice (one buy, one sell), not repeated choices, so there's no need to add up gains across many pairs.",
+      "The brute-force answer checks every pair of days with a loop inside a loop, and the problem hints that the list of prices can be long."
+    ],
+    "avoid_when": [
+      "You're allowed to buy and sell as many times as you like, not just once. A different greedy rule, summing every day-to-day rise, solves that variant instead.",
+      "You need the actual buy and sell days, not just the amount of profit. The same scan still works, you'd just also remember the day indexes whenever maxP improves.",
+      "The list is tiny, like two or three prices. A nested loop checking every pair is just as fast and reads just as easily at that size.",
+      "You're told you may make at most k trades for some chosen k greater than one. That needs a more involved approach that tracks state across multiple buy/sell rounds."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "The whole algorithm is one comparison repeated once per day: would selling today, at prices[r], beat buying at the cheapest day seen so far, prices[l]? If so, that's a candidate profit.",
+      "l doesn't creep forward one day at a time. The moment a new low appears, l jumps straight to r, since every day between the old l and this new low could only ever produce a smaller profit than buying at the new low.",
+      "Because r visits every day exactly once and l only ever jumps to a day r has already reached, the two pointers together never do more than one pass's worth of work.",
+      "maxP starts at 0, and that value doubles as the answer when prices only fall: the condition prices[l] < prices[r] is never True, no profit is ever computed, and the untouched 0 is returned."
+    ],
+    "time": "O(n), linear time. n is the number of prices. r steps through every day exactly once, and on each day the work done (one comparison, maybe one subtraction and one max) is fixed size. Double the number of days and the work roughly doubles.",
+    "space": "O(1), constant extra memory. Just l, r and maxP, no matter how many prices there are.",
+    "edge_cases": [
+      "Prices that only fall, like [7, 6, 4, 3, 1]. prices[l] < prices[r] is never True, so profit is never even computed, and maxP stays 0, the correct answer, since no profitable sale exists.",
+      "Only one price in the whole list, like [5]. r starts at 1, and the while loop's condition r < len(prices) is already False (1 is not less than 1), so the loop body never runs, and the untouched maxP = 0 is returned, since you can't buy and sell on the same, only, day.",
+      "The lowest price comes right after the best sell day, like [1, 5, 0, 4]. maxP captures the profit of 4 from buying at 1 and selling at 5. Then l jumps to the new low, 0, at that day, and the scan keeps searching from there, even though 4 turns out to be the final answer.",
+      "The cheapest day is the very first day and the priciest is the very last, like [1, 2, 3, 4, 5]. l stays at 0 the entire time, since no later price is ever lower, and maxP keeps climbing to 4 (5 - 1) on the final day."
+    ]
+  },
+  "code": "class Solution:\n    def maxProfit(self, prices: List[int]) -> int:\n        l, r = 0, 1\n        maxP = 0\n        while r < len(prices):\n            if prices[l] < prices[r]:\n                profit = prices[r] - prices[l]\n                maxP = max(maxP, profit)\n            else:\n                l = r\n            r += 1\n        return maxP\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().maxProfit([7, 1, 5, 3, 6, 4])",
+    "expected": 5,
+    "describe": "prices = [7, 1, 5, 3, 6, 4]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def maxProfit would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named maxProfit. It takes the list prices and promises to give back a whole number: the most profit achievable.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "maxProfit", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "prices: List[int])", "meaning": "The input list of daily prices, hinted as a List of int (whole numbers)." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a single whole number, the best profit found." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and input are chosen by LeetCode. Returning a single number directly matches what the problem asks for: the amount of profit, not which two days achieved it.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def maxProfit(self, prices):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Returning the buy and sell days instead of the profit itself. The problem asks for an amount of money, not a description of the trade.",
+      "caption": "Python remembers the maxProfit instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This sets up the two pointers: l at day 0, treated as the best buy day so far, and r at day 1, the first day being considered as a possible sell day.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list: l starts at the very first day." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "1", "meaning": "The second index: r starts one day after l, since you must sell on a later day than you buy." }
+      ],
+      "why": "l always points at the cheapest day seen so far, which at the very start is just day 0, the only day seen. r starts one day later because selling has to happen strictly after buying.",
+      "if_removed": "The while loop on line 5 would crash with a NameError, since l and r wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = 0\nr = 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Starting both l and r at 0. Then prices[l] and prices[r] would be the same day on the first pass, which could never represent a real buy-then-sell trade.",
+      "caption": "l starts at day 0 (the first buy candidate) and r starts at day 1 (the first sell candidate)."
+    },
+    "4": {
+      "explain": "This creates maxP, the best profit found so far, starting at 0 since no trade has been checked yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "maxP", "meaning": "A variable name we chose, short for maximum profit." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The smallest possible profit: no trade made at all." }
+      ],
+      "why": "The method needs to remember the best profit seen across every day it checks, not just the most recent one, since an earlier day's profit might beat a later one. Starting at 0 also happens to be the correct answer when no profitable trade exists.",
+      "if_removed": "Line 8 would crash with a NameError, since maxP wouldn't exist to compare against.",
+      "alternatives": [
+        { "code": "maxP = float('-inf')", "difference": "Starts from negative infinity instead of 0. Since a profit can never be negative here (any day with prices[l] >= prices[r] is simply skipped), this gives the same final answer; starting at 0 is simpler and already matches the \"no profitable trade\" case." }
+      ],
+      "mistake": "Creating maxP inside the while loop on line 5 instead of before it. That would reset the best profit back to 0 on every single pass, losing track of anything found earlier.",
+      "caption": "Make maxP = 0: no trade has been checked yet."
+    },
+    "5": {
+      "explain": "This loop keeps going as long as there's still a day left for r to check. Each pass considers selling on day r, then moves r forward by one day.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True." },
+        { "token": "r < len(prices)", "meaning": "True as long as r still points at a real day inside the list." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Every day from day 1 onward needs a chance to be checked as a possible sell day, paired against the best buy day known up to that point. Once r runs past the last day, there's nothing left to sell.",
+      "if_removed": "Without the loop, only a single day would ever be checked as a sell day, and most of the prices list would be ignored entirely.",
+      "alternatives": [
+        { "code": "for r in range(1, len(prices)):", "difference": "A for loop over the same range of days. It works just as well here, since r only ever moves forward by exactly 1 each pass; a while loop is used because l's movement (jumping straight to r) doesn't follow a simple range." }
+      ],
+      "mistake": "Writing r <= len(prices). That would let r equal len(prices) on the last pass, and prices[r] would then read one position past the end of the list, raising an IndexError.",
+      "caption": [
+        { "when": "r < len(prices)", "text": "r = {r} still points at a real day. Keep checking." },
+        "r has run past the last day. Every sell day has been checked."
+      ]
+    },
+    "6": {
+      "explain": "This checks whether buying at the current best day, l, and selling on day r would make any profit at all.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "prices[l]", "meaning": "The price on the current best buy day." },
+        { "token": "<", "meaning": "\"Less than\" comparison." },
+        { "token": "prices[r]", "meaning": "The price on the day being considered as a sell." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "A trade only makes a profit when the sell price is higher than the buy price. Checking this before computing a profit avoids ever creating a negative one, since l always holds the cheapest day seen so far, there's no point selling for less than that.",
+      "if_removed": "Without this check, line 7 would always run and could compute a negative profit whenever prices[r] happened to be lower than prices[l] (which never actually happens here, since l always tracks the running low, but the check is what keeps that guarantee true).",
+      "alternatives": [
+        { "code": "if prices[r] > prices[l]:", "difference": "The same comparison written the other way round. Identical behaviour; pick whichever reads more naturally." }
+      ],
+      "mistake": "Comparing prices[r] < prices[l] by accident (the reversed condition). That would run the profit calculation exactly when there's no profit to be had, and skip it exactly when there is.",
+      "caption": [
+        { "when": "prices[l] < prices[r]", "text": "prices[l] = {prices[l]} is cheaper than prices[r] = {prices[r]}. Selling today would make a profit." },
+        "prices[l] = {prices[l]} isn't cheaper than prices[r] = {prices[r]}. No profit from selling today."
+      ]
+    },
+    "7": {
+      "explain": "Selling today would make a profit, so compute exactly how much: today's price minus the best buy price.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 6's condition was True." },
+        { "token": "profit", "meaning": "A new variable holding today's potential profit." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "prices[r]", "meaning": "What you'd sell for today." },
+        { "token": "-", "meaning": "Subtraction." },
+        { "token": "prices[l]", "meaning": "What you bought for, on the best buy day so far." }
+      ],
+      "why": "Profit is simply what you sell for minus what you paid. Because l always holds the lowest price seen up to r, this profit is the best one possible if today is chosen as the sell day.",
+      "if_removed": "Line 8 would crash with a NameError, since profit wouldn't exist to compare against maxP.",
+      "alternatives": [
+        { "code": "maxP = max(maxP, prices[r] - prices[l])", "difference": "Skips the named variable and computes the profit directly inside line 8's max call. Identical result; the named variable just makes the next line easier to read." }
+      ],
+      "mistake": "Subtracting in the wrong order, prices[l] - prices[r]. That flips every profit negative, since the guard on line 6 already guarantees prices[r] is the larger of the two.",
+      "caption": "Selling at {prices[r]} after buying at {prices[l]} gives a profit of {prices[r] - prices[l]}."
+    },
+    "8": {
+      "explain": "Keep whichever is larger: the best profit found before this day, or today's profit. That becomes the new maxP.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the if block from line 6." },
+        { "token": "maxP", "meaning": "The best profit found so far." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces maxP's old value." },
+        { "token": "max(", "meaning": "A built-in function that returns the larger of its arguments." },
+        { "token": "maxP,", "meaning": "The best profit found before this pass." },
+        { "token": "profit)", "meaning": "The profit from buying at l and selling at r today, just computed on line 7." }
+      ],
+      "why": "maxP needs to survive across the whole scan, so each day's profit is only kept if it beats every profit found on earlier days. Today's profit might be smaller than an earlier day's best, and this comparison is what stops a smaller number from overwriting a bigger one.",
+      "if_removed": "Without this line, maxP would stay 0 forever, no matter how much profit any day's trade would have made.",
+      "alternatives": [
+        { "code": "if profit > maxP:\n    maxP = profit", "difference": "Spells out the same comparison with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Writing maxP = profit instead of maxP = max(maxP, profit). That would overwrite the running best with whatever today's profit happens to be, even when it's smaller, losing track of a better day found earlier.",
+      "caption": "Best profit so far: max({maxP}, {profit}) = {max(maxP, profit)}."
+    },
+    "9": {
+      "explain": "else handles the other case: today's price isn't higher than the best buy day's price, so there's no profit to be made selling today.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 6. It's the other branch of the same check." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when line 6's condition was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "If today's price isn't above the current best buy price, selling today is pointless. But there's a silver lining: if today's price is this low, today itself might be an even better day to buy going forward, which is exactly what line 10 handles.",
+      "if_removed": "Without this branch, a new, lower price would never be recognised as a better buy day, and l would stay stuck on a worse (higher) price for the rest of the scan.",
+      "alternatives": [
+        { "code": "elif prices[r] <= prices[l]:", "difference": "Spells out the condition explicitly instead of using else. Since this is the only remaining possibility after line 6's if, it's logically redundant; else already covers exactly this case." }
+      ],
+      "mistake": "Forgetting this branch entirely and only keeping line 6's if. Then a new low price would never update l, and every later profit calculation would keep comparing against a buy day that isn't actually the cheapest one available.",
+      "caption": "No profit from selling today. Check whether today is a new, cheaper buy day instead."
+    },
+    "10": {
+      "explain": "Today's price is at or below the current best buy price, so today becomes the new best buy day: l jumps to r.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block, so it only runs when line 6's condition was False." },
+        { "token": "l", "meaning": "The best-buy-day pointer." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "r", "meaning": "Today's position, which becomes l's new value." }
+      ],
+      "why": "Every day strictly between the old l and this new low would give a smaller profit than buying at the new low itself, since the new low is cheaper than all of them. So there's no need to check those in-between days again as buy candidates; jumping straight to the new low loses nothing.",
+      "if_removed": "l would stay stuck at its old value forever, even after a cheaper day appears, and every later profit calculation would use a buy price that isn't actually the lowest one seen.",
+      "alternatives": [
+        { "code": "l += 1", "difference": "Moves l forward by just one day instead of jumping to the new low. This would eventually reach the same l, but only after extra passes where prices[l] is still not the true running minimum, which could let an in-between, higher buy price get compared against a sell day by mistake." }
+      ],
+      "mistake": "Writing r = l by accident (the reversed assignment). That would move the sell pointer backward onto the buy pointer instead of updating the buy day, breaking the scan.",
+      "caption": "A new low appears: l jumps to day {r}, price {prices[r]}."
+    },
+    "11": {
+      "explain": "Move r one day forward, so the next pass considers the following day as a possible sell day.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at while-loop level: this runs after the if/else above, on every single pass." },
+        { "token": "r += 1", "meaning": "Shorthand for r = r + 1: add 1 to r and store the result back in r." }
+      ],
+      "why": "r needs to visit every day exactly once as a candidate sell day. This line is what actually advances the scan; without it, the loop would never make progress.",
+      "if_removed": "r would never change, so the while loop's condition would stay True forever: an infinite loop checking the exact same day again and again.",
+      "alternatives": [
+        { "code": "r = r + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 inside the if or else block above instead of at this indentation level. It would still run every pass here either way since both branches fall through to this line, so this particular slip wouldn't actually change behaviour, but indenting it one level deeper, inside only one branch, would skip advancing r on the other branch and cause an infinite loop.",
+      "caption": "Move to the next day: r becomes {r + 1}."
+    },
+    "12": {
+      "explain": "Once r has checked every day, return the best profit found across the whole scan.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return maxP", "meaning": "Ends the method and hands back the best profit found." }
+      ],
+      "why": "maxP has been kept up to date on every day that could possibly improve it, so by the time the loop ends, it already holds the most profit any single buy-then-sell pair could make.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the best profit, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return max(maxP, 0)", "difference": "maxP can never go below 0, since it starts at 0 and is only ever replaced by a value from max(maxP, ...), so this extra safeguard has no effect here." }
+      ],
+      "mistake": "Putting this return statement inside the while loop. Then the method would stop after checking only the very first sell day, before any later, possibly better, day had a chance to be compared.",
+      "caption": "Every day has been checked. Return the best profit found: {maxP}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def maxProfit(self, prices: List[int]) -> int:\n        maxP = 0\n        for i in range(len(prices)):\n            for j in range(i + 1, len(prices)):\n                profit = prices[j] - prices[i]\n                maxP = max(maxP, profit)\n        return maxP",
+    "explain": "Try every possible pair of a buy day and a later sell day. The outer loop picks a buy day at position i, the inner loop tries every day after it, at position j, and the best profit across every pair is kept in maxP.",
+    "why_slow": "For n days, this checks about n x n / 2 pairs, which is O(n squared), quadratic time. It also recomputes, over and over, the same fact: what's the lowest price up to day j? The sliding window keeps that single fact updated instead of rediscovering it for every pair.",
+    "how_pattern_fixes": "The one-pass version realizes that the only buy day worth pairing with day r is whichever day before it had the lowest price, and that single running fact can be tracked with one pointer instead of rechecking every earlier day. That drops the work from about n x n down to about n.",
+    "time": "O(n squared): quadratic. Double the number of days, about four times the work.",
+    "space": "O(1): constant. Only maxP and the two loop variables, however many days there are."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "keyword": "A word reserved by Python, like while, if, else, return.",
+    "len": "A built-in function that gives the number of items in something.",
+    "list": "An ordered collection written with square brackets. You reach items by their index.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "nested loop": "A loop inside another loop. The inner loop runs completely for every single pass of the outer loop, so the work multiplies.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, < compares.",
+    "parameter": "A name in a function's definition that receives an input. prices is maxProfit's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in a list. Here l and r are pointers.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "running minimum": "The smallest value seen so far while scanning through a list, kept up to date one item at a time instead of recomputed from scratch.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 1 puts 0 in l and 1 in r.",
+    "two pointers": "A pattern that uses two position variables, often moving through a list together, to find an answer without extra memory.",
+    "type hint": "A label like prices: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "A piece of data a variable can refer to, or that a dictionary entry holds.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of the list still being scanned for a better answer, here everything from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "bars",
+      "title": "prices",
+      "source": "prices",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "[l, r] if r < len(prices) else []",
+        "found": "[l, r] if __line__ == 8 and profit > maxP else []",
+        "done": "list(range(l))"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "maxP (best profit so far)",
+      "source": "[['maxP', maxP]]"
+    }
+  ]
+}
