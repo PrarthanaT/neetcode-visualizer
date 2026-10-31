@@ -1,0 +1,391 @@
+{
+  "slug": "longest-repeating-character-replacement",
+  "title": "Longest Repeating Character Replacement",
+  "difficulty": "Medium",
+  "category": "Sliding Window",
+  "leetcode": 424,
+  "statement": [
+    "You are given a string s of uppercase English letters, and a whole number k.",
+    "You may choose up to k characters anywhere in s and change each one to any other uppercase letter you like, as many or as few as you want, up to that limit.",
+    "After making those changes, find the length of the longest run of characters, kept in order with nothing skipped, where every character is the same. Return just that length."
+  ],
+  "examples": [
+    {
+      "input": "s = \"ABAB\", k = 2",
+      "output": "4",
+      "explain": "Replace both 'B's with 'A' (or both 'A's with 'B'), using exactly k = 2 changes, to turn the whole string into one repeated letter. No run can be longer than the string itself. This is the example the visualizer runs."
+    },
+    {
+      "input": "s = \"AABABBA\", k = 1",
+      "output": "4",
+      "explain": "Changing the single 'A' at index 3 to 'B' turns the string into \"AABBBBA\", which contains \"BBBB\": a run of 4 identical letters, using only 1 of the allowed changes."
+    }
+  ],
+  "pattern": {
+    "name": "Sliding window bounded by its own most frequent character",
+    "summary": "Grow a window with r, counting how many times each character appears inside it. Keep maxf, the highest single-character count seen in any window so far. A window needs (window size - maxf) replacements to become all one character, since every character other than the most common one would have to change. Whenever that number is more than k, the window has gone too far: shrink it by one from the left. After each character is handled, the window's current size is a valid candidate for the answer.",
+    "recognize": [
+      "You're asked for the longest contiguous run of a sequence that can be made uniform (or made to satisfy some property) by changing up to a fixed number of its elements.",
+      "The number of changes a window needs comes from one formula: its size minus how many copies of its best (most common) element it already contains.",
+      "There's a running count, occurrences of each distinct element inside the window, that only needs to change by one entry at a time as the window grows or shrinks.",
+      "The brute-force answer tries every window and every choice of which characters to replace inside it, and the problem hints that s can be long."
+    ],
+    "avoid_when": [
+      "You need to find every window that satisfies the constraint, not just the length of the longest one.",
+      "The window's validity depends on something other than \"how many copies of its most common element,\" like requiring every character to be distinct (a different sliding window problem).",
+      "You must use exactly k replacements, not merely up to k. This approach only answers \"at most k\".",
+      "The string is tiny, and checking every window together with every possible choice of replacements is simple enough to read and just as fast at that size."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "count[s[r]] - maxf style problems reduce the whole thing to one formula: a window of size (r - l + 1) needs (r - l + 1) - maxf replacements, since every character that ISN'T the window's most common one has to change.",
+      "maxf only ever goes up. Even after the window shrinks, maxf keeps whatever high-water mark it already reached; it's never recomputed from scratch for the smaller window.",
+      "That's deliberate, not a bug: the window's size never actually shrinks from one pass to the next. On a pass where it shrinks, l and r both move forward by one, keeping the size the same; on a pass where it doesn't, only r moves, growing the size by one. So the window's size only ever holds steady or grows, and a stale (too-generous) maxf can never make a window LOOK valid at a length the algorithm hasn't already proven achievable.",
+      "res is simply the largest window size ever reached, recorded once per character, after that pass's shrink check has already run."
+    ],
+    "time": "O(n), linear time. n is the length of s. r visits every index exactly once, and l only ever moves forward, by at most one step per pass, so across the entire run both pointers together take at most about 2n steps.",
+    "space": "O(1) in practice: count never holds more than one entry per possible uppercase letter, 26 at most, a fixed cap that doesn't grow no matter how long s gets.",
+    "edge_cases": [
+      "k large enough to replace almost anything, like s = \"ABAB\", k = 4. Every character could be changed, so the whole string becomes one valid window, and res ends up as len(s).",
+      "k = 0, no replacements allowed at all, like s = \"ABAB\", k = 0. The window can only ever hold a single repeated letter without becoming invalid, so res ends up as the longest run of one repeated character already present in s, here 1.",
+      "A single character repeated throughout, like s = \"AAAA\", k = 2. maxf climbs in step with the window the whole way, (r - l + 1) - maxf stays 0, the window never needs to shrink, and res ends up as 4.",
+      "The most frequent character is front-loaded, then the rest of the string is different letters, like s = \"AABABBA\", k = 1. maxf locks onto the best count seen early on and never drops, even once the window has drifted onto a different stretch of the string, but since the window's size never shrinks below what's already been proven valid, res still ends up correct."
+    ]
+  },
+  "code": "class Solution:\n    def characterReplacement(self, s: str, k: int) -> int:\n        count = {}\n        res = 0\n        l = 0\n        maxf = 0\n        for r in range(len(s)):\n            count[s[r]] = 1 + count.get(s[r], 0)\n            maxf = max(maxf, count[s[r]])\n            if (r - l + 1) - maxf > k:\n                count[s[l]] -= 1\n                l += 1\n            res = max(res, r - l + 1)\n        return res\n",
+  "run": {
+    "prelude": "",
+    "call": "Solution().characterReplacement(\"ABAB\", 2)",
+    "expected": 4,
+    "describe": "s = \"ABAB\", k = 2"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container that groups related functions together. LeetCode always wraps your answer in a class called Solution.",
+      "syntax": [
+        { "token": "class", "meaning": "A Python keyword that means \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's test system creates a Solution object and calls your method on it, so this wrapper is fixed by the website, not by the algorithm.",
+      "if_removed": "Without this line, def characterReplacement would be a plain function, not part of a class, and LeetCode would fail with an error saying Solution is not defined.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 every class already behaves this way, so it's identical." }
+      ],
+      "mistake": "Writing class solution: with a lowercase s. Python treats Solution and solution as two different names.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines a method named characterReplacement. It takes the string s and the limit k, and promises to give back a whole number: the longest achievable run of one repeated letter.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def", "meaning": "Starts a function or method definition." },
+        { "token": "characterReplacement", "meaning": "The method's name. LeetCode calls exactly this name." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "s: str,", "meaning": "The input string, hinted as a str (text)." },
+        { "token": "k: int)", "meaning": "The maximum number of characters you're allowed to change, hinted as an int." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a single whole number, a length." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "The name and inputs are chosen by LeetCode. Returning just a length directly matches what the problem asks for, not the characters you'd actually replace.",
+      "if_removed": "Without self, calling the method crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def characterReplacement(self, s, k):", "difference": "No type hints. It runs identically; you just lose the documentation." }
+      ],
+      "mistake": "Swapping the parameter order to (self, k, s). LeetCode calls this method with s first and k second, so swapping them would feed the string into k and the number into s, crashing on the very first line that tries to index into s.",
+      "caption": "Python remembers the characterReplacement instructions for later. Nothing inside it runs yet."
+    },
+    "3": {
+      "explain": "This creates an empty dictionary named count, which will map each character currently inside the window to how many times it appears there.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "count", "meaning": "A variable name we chose for the per-character counts inside the window." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "{}", "meaning": "Curly braces with nothing inside make a new, empty dictionary." }
+      ],
+      "why": "To know how many replacements a window needs, the algorithm needs to know how many times its most common character appears. A dictionary tracks a running count per character, updated by one entry at a time as the window grows or shrinks.",
+      "if_removed": "Line 8 would crash with a NameError, since count wouldn't exist to be updated.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\ncount = defaultdict(int)", "difference": "A defaultdict treats a missing key as 0 automatically, so line 8 could be written count[s[r]] += 1 without needing .get. It needs an extra import; a plain dictionary with .get works just as well here." }
+      ],
+      "mistake": "Writing count = dict() instead. It makes the same empty dictionary; {} is just shorter.",
+      "caption": "Make an empty dictionary called count. It will map each character in the window to how many times it appears."
+    },
+    "4": {
+      "explain": "This creates res, the longest valid window length found so far, starting at 0 since no window has been checked yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "res", "meaning": "A variable name we chose, short for result." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The smallest possible answer: no characters examined yet." }
+      ],
+      "why": "The method needs to remember the best window length seen across the ENTIRE scan, not just the most recent one, since the window's size only ever grows or holds steady, never shrinks below a length already proven valid.",
+      "if_removed": "Line 13 would crash with a NameError, since res wouldn't exist to compare against.",
+      "alternatives": [
+        { "code": "res = 0\nl, maxf = 0, 0", "difference": "Combines the next two lines into one tuple-unpacking assignment. Identical result; purely a style choice." }
+      ],
+      "mistake": "Creating res inside the for loop on line 7 instead of before it. That would reset the best length back to 0 on every single character, losing track of anything found earlier.",
+      "caption": "Make res = 0: no window has been checked yet."
+    },
+    "5": {
+      "explain": "This creates l, the window's left edge, starting at position 0.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l", "meaning": "A variable name for the window's left boundary." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any string: the window starts as far left as possible." }
+      ],
+      "why": "The window needs two edges. l starts at the very first character, since before anything has been read, the only possible window starts there.",
+      "if_removed": "Line 10 (and every line that reads s[l]) would crash with a NameError, since l wouldn't exist yet.",
+      "alternatives": [
+        { "code": "l = r = 0", "difference": "Chains an assignment to set two names to the same value at once. r is reassigned by the for loop on line 7 anyway, so this would only save a line, not change behaviour." }
+      ],
+      "mistake": "Starting l at 1 instead of 0. That would skip ever considering the very first character of s as part of any window.",
+      "caption": "Make l = 0: the window's left edge starts at the first character."
+    },
+    "6": {
+      "explain": "This creates maxf, the highest single-character count seen inside any window checked so far, starting at 0 since nothing has been counted yet.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "maxf", "meaning": "A variable name we chose, short for maximum frequency." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "No character has been counted yet, so the highest count so far is 0." }
+      ],
+      "why": "Knowing how many replacements a window needs requires knowing its single most common character's count. maxf tracks the best (highest) such count seen, and it's allowed to keep that record even as the window moves around.",
+      "if_removed": "Line 9 would crash with a NameError, since maxf wouldn't exist to compare against.",
+      "alternatives": [
+        { "code": "maxf = 0\nres = 0", "difference": "The same two assignments in the opposite order as lines 4 and 6. Order doesn't matter here since neither line depends on the other." }
+      ],
+      "mistake": "Creating maxf inside the for loop on line 7 instead of before it. That would reset the running best frequency back to 0 on every single character, which would make the window shrink far more often than it needs to.",
+      "caption": "Make maxf = 0: no character's count has been checked yet."
+    },
+    "7": {
+      "explain": "This loop moves r through every index of s, one at a time. Each pass adds the character at r to the window and then makes sure the window is still valid.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "for", "meaning": "A keyword that starts a loop: run the indented block once per item." },
+        { "token": "r", "meaning": "The loop variable: the window's right edge, the newest character being added." },
+        { "token": "in", "meaning": "In a for loop, in means \"take values one at a time from\"." },
+        { "token": "range(len(s))", "meaning": "len(s) is how many characters s has. range of that produces every valid index, 0 through len(s) - 1." },
+        { "token": ":", "meaning": "Ends the loop header. The indented block below is the loop body." }
+      ],
+      "why": "Every character needs a turn as the newest addition to the window, since the longest achievable run could end anywhere in s. This is what sweeps r from left to right exactly once.",
+      "if_removed": "Without this loop, the body would run at most once, and only the very first character of s would ever be considered.",
+      "alternatives": [
+        { "code": "r = 0\nwhile r < len(s):\n    ...\n    r += 1", "difference": "A while loop doing the same sweep with an explicit counter. More typing for an identical result; the for loop is simpler here since r always advances by exactly 1." }
+      ],
+      "mistake": "Writing for r in range(1, len(s)): by accident. That would skip ever adding s[0] to the window, starting the scan one character too late.",
+      "caption": [
+        { "when": "r < len(s)", "text": "r moves to character {s[r]} at index {r}. Add it to the window." },
+        "Every character has had a turn as the window's right edge."
+      ]
+    },
+    "8": {
+      "explain": "This adds the character at r to the window's count: its running total goes up by 1.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the for loop." },
+        { "token": "count[s[r]]", "meaning": "Square brackets on the left of = mean \"the slot for key s[r]\". If the key is new, Python creates it; if it already exists, its value is replaced." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "1 +", "meaning": "Add 1 for the character just added." },
+        { "token": "count.get(s[r], 0)", "meaning": ".get looks up s[r] in count, returning its current count, or 0 if this character hasn't been seen in the window before." }
+      ],
+      "why": "The window's validity depends on how many times each character appears inside it. This line is what keeps that count accurate as the window grows: whenever r brings in a new character, its tally goes up by exactly one.",
+      "if_removed": "maxf on line 9 would never reflect the character just added, and the whole \"how many replacements does this window need\" calculation would be based on stale counts.",
+      "alternatives": [
+        { "code": "from collections import defaultdict\ncount = defaultdict(int)\n...\ncount[s[r]] += 1", "difference": "With a defaultdict (set up back on line 3), a missing key already behaves like 0, so += 1 works directly without needing .get. Same result, just a different kind of dictionary." }
+      ],
+      "mistake": "Writing count[s[r]] = 1 + count.get(s[l], 0) by accident, reading s[l] instead of s[r] on the right-hand side. That would base the new count on the WRONG character's old tally, corrupting the count for whichever character happens to be at s[r].",
+      "caption": "{s[r]} now appears {1 + count.get(s[r], 0)} time(s) in the window."
+    },
+    "9": {
+      "explain": "This updates maxf if the character just counted now has the highest single-character count seen in any window so far.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Still inside the for loop, right after count is updated." },
+        { "token": "maxf", "meaning": "The highest single-character count seen so far." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces maxf's old value." },
+        { "token": "max(", "meaning": "A built-in function that returns the larger of its arguments." },
+        { "token": "maxf,", "meaning": "The best count found before this pass." },
+        { "token": "count[s[r]])", "meaning": "The current count for the character just added, fresh from line 8." }
+      ],
+      "why": "Knowing the window's single most common character's count is what tells the algorithm how many characters would need to change. Only the character just added could possibly have set a new record this pass, since every other character's count didn't change.",
+      "if_removed": "maxf would stay 0 forever, making (r - l + 1) - maxf on line 10 always equal the full window size, which would force the window to shrink on almost every single pass.",
+      "alternatives": [
+        { "code": "if count[s[r]] > maxf:\n    maxf = count[s[r]]", "difference": "Spells out the same comparison with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Writing maxf = count[s[r]] instead of maxf = max(maxf, count[s[r]]). That would overwrite the running record with whatever today's count happens to be, even when it's smaller, losing track of a higher count found earlier.",
+      "caption": "Highest single-character count so far: max({maxf}, {count[s[r]]}) = {max(maxf, count[s[r]])}."
+    },
+    "10": {
+      "explain": "This checks whether the window, as it stands right now, would need more than k replacements to become all one character.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Still inside the for loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "(r - l + 1)", "meaning": "The window's current size: the distance from l to r, plus 1 since both ends are included." },
+        { "token": "- maxf", "meaning": "Subtract the count of the window's most common character. What's left is how many OTHER characters are in the window, which is exactly how many would need to change." },
+        { "token": "> k", "meaning": "True when that number of needed replacements is more than the allowed limit." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "A window becomes all one character by changing every character that isn't already the most common one. (window size) - maxf is exactly that count. If it exceeds k, the window asks for more changes than are allowed, and has to shrink.",
+      "if_removed": "The window would never shrink, so l would stay at 0 forever, and the window would just keep growing past the point where it's actually achievable with only k replacements, giving too large an answer.",
+      "alternatives": [
+        { "code": "if r - l + 1 - maxf > k:", "difference": "Drops the parentheses around r - l + 1. Since subtraction and addition have equal precedence and run left to right, this computes the exact same value; the parentheses are just there for clarity." }
+      ],
+      "mistake": "Writing maxf - (r - l + 1) > k (the subtraction flipped). Since maxf can never exceed the window's size, that expression is always 0 or negative, so the condition would never be True, and the window would never shrink no matter how invalid it became.",
+      "caption": [
+        { "when": "(r - l + 1) - maxf > k", "text": "Window size {r - l + 1} minus best count {maxf} is {(r - l + 1) - maxf}: more than k = {k}. Shrink from the left." },
+        "Window size {r - l + 1} minus best count {maxf} is {(r - l + 1) - maxf}: within k = {k}. No need to shrink."
+      ]
+    },
+    "11": {
+      "explain": "The window needs too many replacements, so remove the character at its left edge from the count, since it's about to leave the window.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block, so it only runs when line 10's condition was True." },
+        { "token": "count[s[l]]", "meaning": "The count for the character currently at the window's left edge." },
+        { "token": "-=", "meaning": "Shorthand for count[s[l]] = count[s[l]] - 1: subtract 1 and store the result back in the same slot." },
+        { "token": "1", "meaning": "One copy of this character is leaving the window." }
+      ],
+      "why": "count is only supposed to reflect characters currently inside the window. Before l moves forward on line 12, the character it's currently pointing at needs its tally reduced by one, since the window is about to lose that one occurrence.",
+      "if_removed": "l would still advance on line 12, but count would keep an inflated tally for a character that's partly left the window, which could make a later check wrongly think that character still appears as often as it used to.",
+      "alternatives": [
+        { "code": "count[s[l]] = count[s[l]] - 1", "difference": "The spelled-out version of the same update. -= is just shorter." }
+      ],
+      "mistake": "Writing count[s[r]] -= 1 by accident, decrementing the newly added character instead of the one leaving the window. That would corrupt the count for the wrong character.",
+      "caption": "{s[l]} is leaving the window: its count drops to {count[s[l]] - 1}."
+    },
+    "12": {
+      "explain": "Move the window's left edge one step to the right, since the character it was pointing at has just had its count reduced.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Still inside the if block from line 10." },
+        { "token": "l += 1", "meaning": "Shorthand for l = l + 1: add 1 to l and store the result back in l." }
+      ],
+      "why": "Shrinking the window means moving its left edge forward by one. This is a single step, not a loop, since removing exactly one character is always enough here: the window was valid one character ago, so taking away the oldest one restores validity.",
+      "if_removed": "l would never advance, so the window would keep growing past what k replacements can actually fix, and the same, now-too-small, count[s[l]] would get decremented again on a later pass, eventually going negative.",
+      "alternatives": [
+        { "code": "l = l + 1", "difference": "The spelled-out version of the same update. += is just shorter." }
+      ],
+      "mistake": "Writing r += 1 here by accident instead of l += 1. That would move the wrong pointer and skip checking whether the window is actually valid at its current size.",
+      "caption": "Shrink the window: l moves to {l + 1}."
+    },
+    "13": {
+      "explain": "Check whether the window's current size (now guaranteed to need at most k replacements) beats the best size found so far, and keep whichever is larger.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Back at for-loop level, after the if block has had its chance to run." },
+        { "token": "res", "meaning": "The best window size found so far." },
+        { "token": "=", "meaning": "Assignment: the result of max(...) replaces res's old value." },
+        { "token": "max(", "meaning": "A built-in function that returns the larger of its arguments." },
+        { "token": "res,", "meaning": "The best size found before this pass." },
+        { "token": "r - l + 1)", "meaning": "The current window's size, after any shrinking above has already happened." }
+      ],
+      "why": "By this point in the pass, the window (whatever size it ended up at) needs at most k replacements, so its size is a genuinely valid candidate for the answer. Comparing against res, rather than overwriting it, lets the best size survive even on later passes where the window doesn't grow.",
+      "if_removed": "res would stay 0 forever, and the method would always return 0, no matter how long any achievable window actually was.",
+      "alternatives": [
+        { "code": "size = r - l + 1\nif size > res:\n    res = size", "difference": "Spells out the same comparison with an explicit if instead of max. Identical result; max(a, b) is simply a shorter way to write \"keep whichever is bigger\"." }
+      ],
+      "mistake": "Placing this line BEFORE the if block on line 10, instead of after it. Then res could record a window size that was about to be shrunk for needing too many replacements, counting a window that was never actually achievable.",
+      "caption": "Window size is now {r - l + 1}. Best so far: {max(res, r - l + 1)}."
+    },
+    "14": {
+      "explain": "Once every character has had a turn as the window's right edge, return the longest achievable run length found.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop." },
+        { "token": "return res", "meaning": "Ends the method and hands back the best size found." }
+      ],
+      "why": "res has been kept up to date after every character was processed, so by the time the loop ends, it already holds the length of the longest run achievable with at most k replacements.",
+      "if_removed": "Reaching the end of the method without a return statement would give back None instead of the best length, and LeetCode would mark that wrong.",
+      "alternatives": [
+        { "code": "return max(res, 0)", "difference": "res can never go below 0, since it starts at 0 and is only ever replaced by a value from max(res, ...), so this extra safeguard has no effect here." }
+      ],
+      "mistake": "Putting this return statement inside the for loop. Then the method would stop after checking only the very first character, before the window had a chance to grow at all.",
+      "caption": "Every character has been checked. Return the longest achievable run: {res}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def characterReplacement(self, s: str, k: int) -> int:\n        res = 0\n        for i in range(len(s)):\n            count = {}\n            maxf = 0\n            for j in range(i, len(s)):\n                count[s[j]] = 1 + count.get(s[j], 0)\n                maxf = max(maxf, count[s[j]])\n                if (j - i + 1) - maxf <= k:\n                    res = max(res, j - i + 1)\n        return res",
+    "explain": "Try every possible starting position i for a window. For each start, grow a second index j forward, keeping a fresh count and maxf for that window alone, and record its length whenever it's still achievable with at most k replacements.",
+    "why_slow": "For n characters, this checks roughly n starting points, and for each one can scan up to n characters again, which is about n x n, O(n squared), quadratic time. It also throws away the count and maxf built up for one start and rebuilds them from scratch for the very next one, instead of reusing what's already known.",
+    "how_pattern_fixes": "The sliding window never restarts count or maxf from scratch. It keeps one window alive the whole time, only shrinking it by exactly as much as needed, so the counts carried over from earlier characters keep doing useful work instead of being recomputed. That drops the work from about n x n down to about n.",
+    "time": "O(n squared): quadratic. Double the length of s, about four times the work.",
+    "space": "O(1): the inner count dictionary never holds more than one entry per possible uppercase letter, a fixed cap."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function when you call it.",
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n squared) means doubling the input quadruples the work. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function. You write its name followed by brackets with the arguments.",
+    "character": "A single unit of text, like 'A' or '5'. A string is a sequence of characters.",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "defaultdict": "A dictionary from Python's collections module that fills in a default value automatically for a missing key, instead of raising a KeyError.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds a key almost instantly.",
+    "expression": "Any piece of code that produces a value, like r - l + 1 or maxf > k.",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "frequency": "How many times something appears. Here, how many times a character shows up inside the current window.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or a default you choose (d.get(key, 0)) if key is missing, without crashing.",
+    "hash map": "A structure that stores key -> value pairs and finds a key almost instantly. Python's dictionary is a hash map.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a string, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "key": "The part of a dictionary entry you look things up by. In {7: 2}, the key is 7.",
+    "KeyError": "The error Python raises when you look up a dictionary key that isn't there.",
+    "keyword": "A word reserved by Python, like for, if, return.",
+    "len": "A built-in function that gives the number of items in something: len(\"ABAB\") is 4.",
+    "loop": "Code that repeats.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a string, a dictionary or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, = assigns, > compares.",
+    "parameter": "A name in a function's definition that receives an input. s and k are characterReplacement's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like sliding window.",
+    "pointer": "A variable holding a position (index) in a string. Here l and r are pointers.",
+    "precedence": "The order in which operators are applied when an expression has more than one, like multiplication before addition.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "str": "Python's name for text (a string).",
+    "string": "Text, written in quotes like \"cat\" or 'hello'. Python calls the type str.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "tally": "A running count of how many times something has occurred, kept up to date as you go.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once, as in l = r = 0.",
+    "type hint": "A label like s: str that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "value": "The part of a dictionary entry you get back. In {7: 2}, the value is 2. More generally, any piece of data.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that keeps repeating its block for as long as its condition stays True.",
+    "window": "The part of the string currently being considered, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "s",
+      "source": "list(s)",
+      "pointers": { "l": "l", "r": "r" },
+      "marks": {
+        "compared": "list(range(l, r + 1)) if 'r' in globals() else []",
+        "found": "list(range(l, r + 1)) if __line__ == 13 and (r - l + 1) > res else []"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "count  (character \u2192 occurrences in window)",
+      "source": "count",
+      "lookup": "s[r] if __line__ in (8, 9) else (s[l] if __line__ == 11 else None)"
+    },
+    {
+      "type": "hashmap",
+      "title": "window stats",
+      "source": "[['maxf', maxf], ['window size', r - l + 1], ['need to replace', max(0, (r - l + 1) - maxf)]] if 'r' in globals() else []"
+    }
+  ]
+}
