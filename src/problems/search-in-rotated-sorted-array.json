@@ -1,0 +1,451 @@
+{
+  "slug": "search-in-rotated-sorted-array",
+  "title": "Search in Rotated Sorted Array",
+  "difficulty": "Medium",
+  "category": "Binary Search",
+  "leetcode": 33,
+  "statement": [
+    "You are given a list of whole numbers called nums. It started out sorted from smallest to largest, then got rotated at some unknown point: a chunk was moved from the front to the back, in order. So nums is really two sorted runs placed end to end, not sorted as a whole.",
+    "You are also given a number called target. Return its index in nums if it's there, or -1 if it isn't.",
+    "All the numbers in nums are different.",
+    "Your solution must be fast: it has to run in O(log n) time. That rules out checking every number one by one."
+  ],
+  "examples": [
+    {
+      "input": "nums = [4, 5, 6, 7, 0, 1, 2], target = 0",
+      "output": "4",
+      "explain": "[0, 1, 2, 4, 5, 6, 7] rotated so it starts at 4. This is the example the visualizer runs. Watch each half get checked for sortedness before one half is thrown away."
+    },
+    {
+      "input": "nums = [4, 5, 6, 7, 0, 1, 2], target = 3",
+      "output": "-1",
+      "explain": "3 would sit between 2 and 4 if the list weren't rotated, but it simply isn't in nums. The window still shrinks to nothing, and we return -1."
+    }
+  ],
+  "pattern": {
+    "name": "Binary search with a sortedness check",
+    "summary": "A rotated sorted list is two sorted runs glued together. Pick the middle, m. One of the two halves, l..m or m..r, is always genuinely sorted ascending from end to end (compare nums[l] with nums[m] to find out which), while the other half straddles the rotation point. Once you know which half is sorted, one range check tells you whether target could be hiding in it. If it can't, throw that whole half away; otherwise throw away the other half instead.",
+    "recognize": [
+      "The input is sorted, then rotated: not one sorted run, but exactly two.",
+      "You're matching an exact target value, not searching for a boundary.",
+      "The required speed is O(log n), ruling out a plain left-to-right scan.",
+      "A single comparison between the window's own edges, not against the target, reveals useful structure (here, which half is sorted)."
+    ],
+    "avoid_when": [
+      "The list isn't guaranteed to be a rotated sorted list. The sortedness check this pattern relies on doesn't mean anything on genuinely unsorted data.",
+      "The list could contain duplicate values. A duplicate can make nums[l] == nums[m] without revealing which half is sorted, which needs extra handling this version doesn't cover.",
+      "You need fast lookups by exact value for MANY different targets on the same data. Sorting once into a dictionary or set, if order doesn't matter, answers every later lookup in O(1).",
+      "The list is tiny. A plain scan is just as fast and easier to get right."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A rotated sorted list is two sorted runs end to end. For any window l..r inside it, comparing nums[l] with nums[m] tells you which HALF, l..m or m..r, is the one that's genuinely sorted ascending.",
+      "Once a half is known to be sorted, checking whether target is between its two edges (inclusive) is enough to know whether it could be hiding there, exactly the way it would be in plain binary search over that half alone.",
+      "The equality check on nums[m] happens first and separately, because target could be exactly the value that splits the two halves, and the range checks below it wouldn't catch that case on their own.",
+      "Excluding m with m - 1 or m + 1 once it's ruled out (by the equality check or by a failed range check) keeps the window shrinking every pass, which is what guarantees the loop ends."
+    ],
+    "time": "O(log n), logarithmic time. n is the length of nums. Every pass still throws away exactly one whole half of what's left, so a billion items need only about 30 passes.",
+    "space": "O(1), constant. Only three number variables, l, r and m, however long the list is.",
+    "edge_cases": [
+      "The list isn't rotated at all, like nums = [1, 2, 3, 4, 5]. nums[l] <= nums[m] is always true, so the left half is always treated as sorted, and the search behaves exactly like plain binary search.",
+      "target is exactly nums[m] on the very first middle checked. The equality check on line 7 catches it immediately, before either half is even considered.",
+      "target sits right at the rotation point, the smallest value in the whole list. It still falls inside exactly one half's range, so the range check correctly keeps that half.",
+      "A single item, like nums = [7]. l and r both start at 0, m is 0, and the equality check alone decides the answer without ever reaching the sortedness logic.",
+      "target isn't in nums at all. Every pass still discards a whole half, so the window shrinks to empty and the loop ends with return -1."
+    ]
+  },
+  "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        l, r = 0, len(nums) - 1\n\n        while l <= r:\n            m = l + (r - l) // 2\n            if nums[m] == target:\n                return m\n\n            if nums[l] <= nums[m]:\n                if target > nums[m] or target < nums[l]:\n                    l = m + 1\n                else:\n                    r = m - 1\n            else:\n                if target < nums[m] or target > nums[r]:\n                    r = m - 1\n                else:\n                    l = m + 1\n\n        return -1\n",
+  "run": {
+    "prelude": "from typing import List",
+    "call": "Solution().search([4, 5, 6, 7, 0, 1, 2], 0)",
+    "expected": 4,
+    "describe": "nums = [4, 5, 6, 7, 0, 1, 2], target = 0"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a class named Solution, a container for related functions. LeetCode always wraps your answer in it.",
+      "syntax": [
+        { "token": "class", "meaning": "A keyword meaning \"I am defining a class\"." },
+        { "token": "Solution", "meaning": "The class name LeetCode looks for, with a capital S." },
+        { "token": ":", "meaning": "Ends the header. The indented block below belongs to the class." }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError. A missing colon is a SyntaxError.",
+      "alternatives": [
+        { "code": "class Solution(object):", "difference": "The older Python 2 style. In Python 3 it behaves exactly the same." }
+      ],
+      "mistake": "Lowercase class solution:. Capitalization matters to Python.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method search. It takes the rotated sorted list nums and the number target, and promises to give back a whole number: target's index, or -1.",
+      "syntax": [
+        { "token": "    (4 spaces)", "meaning": "Indentation: inside the class." },
+        { "token": "def search", "meaning": "def starts a method definition. search is the name LeetCode calls." },
+        { "token": "(self,", "meaning": "self is the Solution object, required as the first parameter of every method." },
+        { "token": "nums: List[int],", "meaning": "The rotated sorted list, hinted as a List of int." },
+        { "token": "target: int)", "meaning": "The number to find, hinted as an int." },
+        { "token": "-> int", "meaning": "Return type hint: the answer is a whole number." },
+        { "token": ":", "meaning": "Ends the header. The indented body follows." }
+      ],
+      "why": "LeetCode chooses the name and inputs. Returning -1 for \"not found\" is a common convention, since -1 can never be a real index.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        { "code": "def search(self, nums, target):", "difference": "No type hints. It runs identically." }
+      ],
+      "mistake": "Returning the number found instead of its position. The problem asks for the index.",
+      "caption": "Python remembers the search instructions for later."
+    },
+    "3": {
+      "explain": "This sets up the search window over the whole list. l starts at the first index, 0, and r starts at the last index.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "l, r", "meaning": "Two variable names, assigned at once with tuple unpacking." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "0", "meaning": "The first index of any list." },
+        { "token": ",", "meaning": "Separates the two values: the first goes to l, the second to r." },
+        { "token": "len(nums) - 1", "meaning": "len gives how many items nums has. Indexes start at 0, so the last index is one less than the length." }
+      ],
+      "why": "target could be anywhere in the rotated list, so the search starts by considering every index a candidate. Both ends are INCLUSIVE: that choice is what makes the loop use l <= r and the updates use m - 1 and m + 1.",
+      "if_removed": "The while loop on line 5 would crash with a NameError. If r = len(nums) (no - 1), nums[r] on line 16 could raise an IndexError.",
+      "alternatives": [
+        { "code": "l = 0\nr = len(nums) - 1", "difference": "Two separate lines. Exactly the same result." }
+      ],
+      "mistake": "Forgetting the - 1, so r points one past the end of the list.",
+      "caption": "target could be anywhere: l = 0 and r = {len(nums) - 1} cover the whole list."
+    },
+    "5": {
+      "explain": "This loop keeps going as long as the window still has at least one item left to check.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Indentation: inside the method." },
+        { "token": "while", "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True. It re-checks the condition before every pass." },
+        { "token": "l <= r", "meaning": "<= means \"less than or equal to\". When l equals r, the window holds exactly one item, which still needs checking." },
+        { "token": ":", "meaning": "Ends the loop header." }
+      ],
+      "why": "Every branch below either returns immediately or excludes m with m - 1 or m + 1, so the window always shrinks and the loop needs l <= r, the same inclusive-bounds style as plain binary search, to still check a one-item window.",
+      "if_removed": "Only the very first middle index would ever be checked, and target might still be anywhere else in nums.",
+      "alternatives": [
+        { "code": "while l < r:", "difference": "With inclusive bounds, this misses the last single-item window entirely: search([5], 5) would return -1 instead of 0." }
+      ],
+      "mistake": "Writing l < r with these inclusive bounds. The single-item case is exactly what this bug breaks.",
+      "caption": [
+        { "when": "l > r", "text": "l = {l} has passed r = {r}. The window is empty, so the loop stops." },
+        "The window from l = {l} to r = {r} holds {r - l + 1} number(s). Keep searching."
+      ]
+    },
+    "6": {
+      "explain": "This finds the middle index of the current window, the same way plain binary search finds one.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "m", "meaning": "The variable for the middle index." },
+        { "token": "=", "meaning": "Assignment." },
+        { "token": "l +", "meaning": "Start from the left end." },
+        { "token": "(r - l)", "meaning": "How far it is from l to r." },
+        { "token": "// 2", "meaning": "Integer division: divide and round DOWN to a whole number. Indexes must be whole numbers." }
+      ],
+      "why": "Checking the middle splits the window into two equal halves. l + (r - l) // 2 also avoids overflow in languages where numbers have a maximum size; Python's integers never overflow, but the habit carries over to interviews in other languages.",
+      "if_removed": "nums[m] on the next line would crash with a NameError.",
+      "alternatives": [
+        { "code": "m = (l + r) // 2", "difference": "Simpler and perfectly safe in Python; gives exactly the same m." }
+      ],
+      "mistake": "Using / instead of //, which gives a decimal like 4.5, and a decimal can't be used as a list index.",
+      "caption": "The middle of {l}..{r} is m = {l} + ({r} - {l}) // 2 = {l + (r - l) // 2}."
+    },
+    "7": {
+      "explain": "Before worrying about which half is sorted, check the simplest thing first: is the middle number exactly target?",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition. The block below runs only if it's True." },
+        { "token": "nums[m]", "meaning": "The number at the middle index." },
+        { "token": "==", "meaning": "Equality comparison, not assignment." },
+        { "token": "target", "meaning": "The number we're looking for." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "target might be exactly the value that sits at the boundary between the two sorted halves. The range checks lower down only ask \"could target be hiding in this half\", so without this separate equality check up front, an exact match at m could be compared as \"not bigger, not smaller than itself\" and quietly discarded by the half logic.",
+      "if_removed": "If target == nums[m], the checks below would treat it as not inside the sorted half's open-ended comparisons the same way, and the search could move l or r right past m, losing the match for good.",
+      "alternatives": [
+        { "code": "if target == nums[m]:\n    return m\nelif ...", "difference": "Same check, written as the first branch of a longer if/elif chain instead of its own early if. Equivalent; this version just returns immediately instead of falling through more conditions." }
+      ],
+      "mistake": "Skipping this check and trying to fold \"found\" into the range comparisons below. It's easy to accidentally exclude m exactly when it's the answer.",
+      "caption": [
+        { "when": "nums[m] == target", "text": "nums[{m}] = {nums[m]} matches {target}. Found it." },
+        "nums[{m}] = {nums[m]} isn't {target}. Figure out which half is sorted."
+      ]
+    },
+    "8": {
+      "explain": "target was found exactly at the middle. Give back m and end the method.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "return m", "meaning": "End the method now, handing back the index m." }
+      ],
+      "why": "The problem asks for the position, not the number, so we return m, not nums[m].",
+      "if_removed": "The loop would keep running after already finding target, and the half-sortedness logic below could move l or r in a way that discards this exact match.",
+      "alternatives": [
+        { "code": "return nums[m]", "difference": "Returns the value itself, not its position. That's wrong for this problem." }
+      ],
+      "mistake": "Returning nums[m] instead of m.",
+      "caption": "Return {m}: target {target} is at index {m}."
+    },
+    "10": {
+      "explain": "The middle wasn't a match, so figure out which half of the window, l..m or m..r, is the one that's genuinely sorted ascending from end to end.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Indentation: inside the while loop." },
+        { "token": "if", "meaning": "Starts a condition." },
+        { "token": "nums[l]", "meaning": "The number at the left edge of the current window." },
+        { "token": "<=", "meaning": "\"Less than or equal to\" comparison." },
+        { "token": "nums[m]", "meaning": "The number at the middle index." },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Exactly one rotation point sits somewhere in the window. If it's NOT inside l..m, that half rises smoothly from nums[l] to nums[m], so nums[l] <= nums[m] holds. If the rotation point IS inside l..m, that half dips somewhere in the middle, so nums[l] ends up bigger than nums[m] instead, and the OTHER half, m..r, must be the one that's rotation-free.",
+      "if_removed": "The range checks below would have no way to know which half's edges to trust, since only a genuinely sorted half can be safely range-checked against target.",
+      "alternatives": [
+        { "code": "if nums[m] <= nums[r]:", "difference": "Checks whether the RIGHT half is sorted instead of the left. Equally valid as a starting point, but the two branches below would then need to be swapped to match." }
+      ],
+      "mistake": "Comparing nums[l] to nums[r] (the window's own two ends) instead of nums[l] to nums[m]. That only reveals whether the WHOLE window is rotated, not which HALF is safe to range-check.",
+      "caption": [
+        { "when": "nums[l] <= nums[m]", "text": "nums[{l}] = {nums[l]} isn't bigger than nums[{m}] = {nums[m]}: the left half, {l}..{m}, is the sorted one." },
+        "nums[{l}] = {nums[l]} is bigger than nums[{m}] = {nums[m]}: the rotation point is inside the left half, so the right half, {m}..{r}, is the sorted one."
+      ]
+    },
+    "11": {
+      "explain": "The left half, l..m, is sorted ascending. Check whether target is outside the range it covers, from nums[l] to nums[m].",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the if block." },
+        { "token": "if", "meaning": "Starts a nested condition." },
+        { "token": "target > nums[m]", "meaning": "Is target bigger than the largest value in this half?" },
+        { "token": "or", "meaning": "True if either side is True." },
+        { "token": "target < nums[l]", "meaning": "Is target smaller than the smallest value in this half?" },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "Because nums[l]..nums[m] is genuinely sorted, \"could target be hiding in here\" boils down to one simple range test: not bigger than the biggest value and not smaller than the smallest.",
+      "if_removed": "Line 12 would run on every pass regardless of target, always moving right even when target was actually inside the sorted left half.",
+      "alternatives": [
+        { "code": "if not (nums[l] <= target <= nums[m]):", "difference": "The exact same test, phrased as \"target is NOT inside this range\" instead of spelling out the two ways it could be outside. Equivalent, just written the other way round." }
+      ],
+      "mistake": "Comparing against nums[r] here instead of nums[l] and nums[m], the edges of THIS half rather than the whole window.",
+      "caption": [
+        { "when": "target > nums[m] or target < nums[l]", "text": "{target} is outside nums[{l}]..nums[{m}] = {nums[l]}..{nums[m]}: it can't be in the sorted left half." },
+        "{target} is inside nums[{l}]..nums[{m}] = {nums[l]}..{nums[m]}: it might be in the sorted left half."
+      ]
+    },
+    "12": {
+      "explain": "target can't be hiding in the sorted left half, so move the window to start right after m and search only the right side.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the nested if block." },
+        { "token": "l = m + 1", "meaning": "Make l one position to the right of the middle. The new window is m+1..r." }
+      ],
+      "why": "The whole sorted left half, including m, has just been proven unable to contain target, so the entire half can be dropped in one step, the same gain plain binary search gets from a sorted comparison.",
+      "if_removed": "l would never move past this half, and the search could keep re-checking the same half forever without reaching the side that actually holds target.",
+      "alternatives": [
+        { "code": "l = m", "difference": "Keeps re-checking m even though line 7 already proved nums[m] isn't target. If r ever shrank to equal m here, the loop would never move again." }
+      ],
+      "mistake": "Writing l = m, which would keep re-checking m even though line 7 already proved nums[m] isn't target.",
+      "caption": "{target} isn't in the sorted left half: l moves from {l} to {m + 1}."
+    },
+    "13": {
+      "explain": "Otherwise, target IS inside the sorted left half's range, so it might still be there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Lines up with the if on line 11. It's the other branch of the same condition." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when the if above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Not outside the range means inside it, so the left half is still worth searching.",
+      "if_removed": "Line 14 would run unconditionally, discarding the left half even on the branch where target might be inside it.",
+      "alternatives": [
+        { "code": "elif nums[l] <= target <= nums[m]:", "difference": "Spells out the condition again instead of relying on it being the only case left. Correct, but redundant here." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "{target} might be in the sorted left half, {l}..{m}."
+    },
+    "14": {
+      "explain": "Narrow the window down to the sorted left half, excluding m, which line 7 already proved isn't the answer.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the nested else block." },
+        { "token": "r = m - 1", "meaning": "Make r one position to the left of the middle. The new window is l..m-1." }
+      ],
+      "why": "m is already ruled out, so excluding it keeps the window shrinking every pass, which is what guarantees the loop eventually ends.",
+      "if_removed": "If r = m were used instead and the window ever shrank to l == r == m, neither side would move again, freezing the loop.",
+      "alternatives": [
+        { "code": "r = m", "difference": "Keeps m in the window even though it's already known not to match. If l ever caught up to equal m here, the loop would never move again." }
+      ],
+      "mistake": "Writing r = m here, copying the habit from code that never separately checks for an exact match at m.",
+      "caption": "Search the sorted left half: r moves from {r} to {m - 1}."
+    },
+    "15": {
+      "explain": "The left half wasn't the sorted one, so by elimination, the right half, m..r, must be.",
+      "syntax": [
+        { "token": "            (12 spaces)", "meaning": "Lines up with the if on line 10. It's the other branch of the same condition." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when the if above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Exactly one half can contain the rotation point; if it isn't l..m, it has to be m..r, which makes m..r the half that rises smoothly from nums[m] to nums[r].",
+      "if_removed": "Lines 16-19 would run on every pass, applying right-half range logic even when the left half was actually the sorted one.",
+      "alternatives": [
+        { "code": "elif nums[m] <= nums[r]:", "difference": "Spells out the condition again instead of relying on it being the only case left. Correct, but redundant here." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "The right half, {m}..{r}, is the sorted one."
+    },
+    "16": {
+      "explain": "The right half, m..r, is sorted ascending. Check whether target is outside the range it covers, from nums[m] to nums[r].",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Inside the else block." },
+        { "token": "if", "meaning": "Starts a nested condition." },
+        { "token": "target < nums[m]", "meaning": "Is target smaller than the smallest value in this half?" },
+        { "token": "or", "meaning": "True if either side is True." },
+        { "token": "target > nums[r]", "meaning": "Is target bigger than the largest value in this half?" },
+        { "token": ":", "meaning": "Ends the condition." }
+      ],
+      "why": "This mirrors line 11 for the other half: because nums[m]..nums[r] is genuinely sorted, target can only be hiding there if it's not smaller than the smallest value and not bigger than the largest.",
+      "if_removed": "Line 17 would run on every pass regardless of target, always moving left even when target was actually inside the sorted right half.",
+      "alternatives": [
+        { "code": "if not (nums[m] <= target <= nums[r]):", "difference": "The same test, phrased as \"target is NOT inside this range\". Equivalent, just written the other way round." }
+      ],
+      "mistake": "Comparing against nums[l] here instead of nums[m] and nums[r], the edges of THIS half rather than the whole window.",
+      "caption": [
+        { "when": "target < nums[m] or target > nums[r]", "text": "{target} is outside nums[{m}]..nums[{r}] = {nums[m]}..{nums[r]}: it can't be in the sorted right half." },
+        "{target} is inside nums[{m}]..nums[{r}] = {nums[m]}..{nums[r]}: it might be in the sorted right half."
+      ]
+    },
+    "17": {
+      "explain": "target can't be hiding in the sorted right half, so move the window to end right before m and search only the left side.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the nested if block." },
+        { "token": "r = m - 1", "meaning": "Make r one position to the left of the middle. The new window is l..m-1." }
+      ],
+      "why": "The whole sorted right half, including m, has just been proven unable to contain target, so the entire half can be dropped in one step.",
+      "if_removed": "r would never move past this half, and the search could keep re-checking the same half forever without reaching the side that actually holds target.",
+      "alternatives": [
+        { "code": "r = m", "difference": "Keeps re-checking m even though line 7 already proved nums[m] isn't target. If l ever caught up to equal m here, the loop would never move again." }
+      ],
+      "mistake": "Writing r = m, which would keep re-checking m even though line 7 already proved nums[m] isn't target.",
+      "caption": "{target} isn't in the sorted right half: r moves from {r} to {m - 1}."
+    },
+    "18": {
+      "explain": "Otherwise, target IS inside the sorted right half's range, so it might still be there.",
+      "syntax": [
+        { "token": "                (16 spaces)", "meaning": "Lines up with the if on line 16. It's the other branch of the same condition." },
+        { "token": "else", "meaning": "\"Otherwise\": runs when the if above was False." },
+        { "token": ":", "meaning": "Ends the line." }
+      ],
+      "why": "Not outside the range means inside it, so the right half is still worth searching.",
+      "if_removed": "Line 19 would run unconditionally, discarding the right half even on the branch where target might be inside it.",
+      "alternatives": [
+        { "code": "elif nums[m] <= target <= nums[r]:", "difference": "Spells out the condition again instead of relying on it being the only case left. Correct, but redundant here." }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if.",
+      "caption": "{target} might be in the sorted right half, {m}..{r}."
+    },
+    "19": {
+      "explain": "Narrow the window down to the sorted right half, excluding m, which line 7 already proved isn't the answer.",
+      "syntax": [
+        { "token": "                    (20 spaces)", "meaning": "Inside the nested else block." },
+        { "token": "l = m + 1", "meaning": "Make l one position to the right of the middle. The new window is m+1..r." }
+      ],
+      "why": "m is already ruled out, so excluding it keeps the window shrinking every pass, which is what guarantees the loop eventually ends.",
+      "if_removed": "If l = m were used instead and the window ever shrank to l == r == m, neither side would move again, freezing the loop.",
+      "alternatives": [
+        { "code": "l = m", "difference": "Keeps m in the window even though it's already known not to match. If r ever shrank to equal m here, the loop would never move again." }
+      ],
+      "mistake": "Writing l = m here, copying the habit from code that never separately checks for an exact match at m.",
+      "caption": "Search the sorted right half: l moves from {l} to {m + 1}."
+    },
+    "21": {
+      "explain": "The loop ended because the window became empty, so target isn't anywhere in nums. Give back -1.",
+      "syntax": [
+        { "token": "        (8 spaces)", "meaning": "Back at method level, after the loop. It only runs if the loop finished without returning." },
+        { "token": "return -1", "meaning": "Give back -1, the agreed signal for \"not found\"." }
+      ],
+      "why": "Every index outside the final empty window was ruled out one half at a time, so if nothing was ever returned, target truly isn't present.",
+      "if_removed": "The method would reach the end without returning anything, giving back None instead of -1.",
+      "alternatives": [
+        { "code": "return None", "difference": "Another common \"not found\" signal in Python, but not what this problem asks for." }
+      ],
+      "mistake": "Putting return -1 inside the loop, where it would run after the very first pass instead of only once the search is truly over.",
+      "caption": "The window is empty, so {target} isn't anywhere in nums. Return -1."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        for i in range(len(nums)):\n            if nums[i] == target:\n                return i\n        return -1",
+    "explain": "Check every number from left to right until target turns up. This linear search works on any list, rotated, sorted or not.",
+    "why_slow": "In the worst case (target is last or missing) it checks all n numbers. That's O(n), linear time: double the list and the work doubles. The problem asks for O(log n), and this ignores the structure we're given entirely: nums is made of two sorted runs, not random order.",
+    "how_pattern_fixes": "Because each half of the window is either fully sorted or contains the rotation point, one comparison between nums[l] and nums[m] reveals which half is safe to range-check against target, letting us throw away an entire half on every single step instead of checking one item at a time.",
+    "time": "O(n): linear. Every number may need checking.",
+    "space": "O(1): constant. Just the loop variable."
+  },
+  "glossary": {
+    "assignment": "Giving a name to a value with =. It's not a test for equality. That's ==.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(log n) barely grows. O(1) doesn't grow at all.",
+    "binary search": "Searching a sorted (or rotated sorted) sequence by repeatedly checking the middle and discarding a half that can't contain the answer.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slow.",
+    "call": "Running a function. You write its name followed by brackets with the arguments, like len(nums).",
+    "class": "A blueprint that groups related functions and data. LeetCode puts every answer in a class named Solution.",
+    "colon": "The : character. At the end of a line like if, for, def or class, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False: <, >, <=, >=, == and !=.",
+    "condition": "An expression that is True or False, used by if, elif and while.",
+    "dictionary": "Python's built-in hash map, written with curly braces like {7: 2}. It stores key -> value pairs and finds any key instantly.",
+    "edge case": "An unusual input that's easy to get wrong, like an empty list or a list with just one item.",
+    "elif": "Short for \"else if\". It checks another condition, but only when the if (or elif) above it was False.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if (and any elif) above it was False.",
+    "for loop": "A loop that runs its block once for each item in a collection, putting the item in a loop variable each time.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "inclusive": "Including the end points. An inclusive window from 2 to 5 contains 2, 3, 4 and 5.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. In [4, 5, 6, 7, 0, 1, 2], the 0 is at index 4.",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -1, 0 or 24.",
+    "integer division": "Division that rounds down to a whole number, written // in Python. 7 // 2 is 3.",
+    "keyword": "A word reserved by Python, like while, if, elif, else, return, for, class, def, or.",
+    "len": "A built-in function that gives the number of items in a list: len([4, 5, 6, 7, 0, 1, 2]) is 7.",
+    "linear search": "Checking items one by one from the start until you find what you want. It's O(n).",
+    "list": "An ordered collection written with square brackets, like [4, 5, 6, 7, 0, 1, 2]. You reach items by their index.",
+    "logarithm": "How many times you can halve a number before reaching 1. log₂ of 1,024 is 10. That's why halving algorithms are so fast.",
+    "loop": "Code that repeats.",
+    "method": "A function that belongs to a class or an object, called with a dot.",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another structure of the same kind, like an if inside another if's block.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory that has a type and data, like a list or a Solution. Variables are names pointing at objects.",
+    "operator": "A symbol that does something with values: + adds, - subtracts, // divides and rounds down, = assigns, <, >, <= and >= compare.",
+    "overflow": "In some languages, numbers have a maximum size, and going past it wraps around to garbage. Python's integers grow as needed, so they never overflow.",
+    "parameter": "A name in a function's definition that receives an input. nums and target are search's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems.",
+    "range": "The span of values from a sequence's smallest to its largest. Also a built-in function, range(3), which produces whole numbers 0, 1, 2.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "rotated": "Moved from the front of a sequence to the back (or back to front), in order, without changing the relative order of the rest.",
+    "rotation point": "The single spot in a rotated sorted list where a bigger number is immediately followed by a smaller one.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: l, r = 0, 9 puts 0 in l and 9 in r.",
+    "type hint": "A label like target: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type.",
+    "value": "A piece of data, like a number in a list. More generally, anything a variable can refer to or an expression can produce.",
+    "variable": "A name that refers to a value, created with =.",
+    "window": "The part of the list that could still contain the answer, from l to r."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums",
+      "source": "nums",
+      "pointers": {
+        "l": "l",
+        "r": "r",
+        "m": "m if __line__ not in (5, 6) else None"
+      },
+      "marks": {
+        "compared": "[m] if __line__ == 7 else ((list(range(l, m + 1)) if nums[l] <= nums[m] else list(range(m, r + 1))) if __line__ in (10, 11, 12, 13, 14, 15, 16, 17, 18, 19) else [])",
+        "found": "[m] if __line__ == 8 else []",
+        "done": "[k for k in range(len(nums)) if k < l or k > r]"
+      }
+    }
+  ]
+}
