@@ -1,0 +1,758 @@
+{
+  "slug": "remove-nth-node-from-end-of-list",
+  "title": "Remove Nth Node From End of List",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 19,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it. The last node's next is None.",
+    "You are given head, the first node, and a whole number n.",
+    "Counting from the end of the list, remove the n-th node, then return the head of the list with that node taken out.",
+    "You're guaranteed n is valid: it's never larger than the number of nodes in the list."
+  ],
+  "examples": [
+    {
+      "input": "head = 1 → 2 → 3 → 4 → 5, n = 2",
+      "output": "1 → 2 → 3 → 5",
+      "explain": "Counting from the end, the 2nd-from-last node holds 4, so it gets removed. This is the example the visualizer runs."
+    },
+    {
+      "input": "head = 1, n = 1",
+      "output": "None (an empty list)",
+      "explain": "The only node is also the 1st-from-last node, so removing it leaves nothing behind."
+    }
+  ],
+  "pattern": {
+    "name": "Two pointers with a fixed head start",
+    "summary": "Put left and right on a dummy node placed just before head. Move right forward n nodes first, opening up a fixed-size head start between left and right. Then move both forward together, one node at a time, until right falls off the end. At that moment left is sitting exactly one node before the one to remove, so left.next = left.next.next skips over it.",
+    "recognize": [
+      "You need a node's position counted from the END of a linked list, but you can only walk forward.",
+      "The question asks for a single pass, not two (one pass to count the length, a second pass to walk to the right spot).",
+      "A fixed-size head start between two pointers, opened once at the start and kept constant the whole way, converts \"distance from the end\" into \"distance from wherever the faster pointer currently is\".",
+      "You'll need to change a next field to remove a node, so you need the node just BEFORE the one to remove, not the node itself."
+    ],
+    "avoid_when": [
+      "You're allowed a second pass. Then walking once to count the list's length, then walking again to the (length - n - 1)-th node, is simpler to reason about, at the cost of visiting the list twice.",
+      "You already know the list's length some other way, for example it was given separately. Then a single walk straight to the right spot is enough.",
+      "The data is a plain Python list instead of linked nodes. Negative indexing, like values[:-n], already gives you positions counted from the end directly.",
+      "You need to remove several nodes at different positions from the end in one pass. That needs more bookkeeping than a single fixed-size head start."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A dummy node placed before head means left can remove the real head itself (when n equals the list's length) without any special case: left.next = left.next.next still works.",
+      "Moving right n nodes ahead FIRST, before left moves at all, is what fixes the head start at exactly n nodes. From then on, moving both pointers together preserves that gap.",
+      "When right becomes None, left is exactly n nodes behind where right started, which is exactly one node before the node to remove.",
+      "Removing a node only needs changing the next field of the node before it. The removed node itself is never read from again; it simply isn't pointed at by anything anymore."
+    ],
+    "time": "O(L), linear time, where L is the number of nodes in the list. right makes one full pass; left makes a shorter pass behind it. Either way, each node is visited a small, fixed number of times.",
+    "space": "O(1), constant extra memory. dummy, left and right are the only extra variables, no matter how long the list is.",
+    "edge_cases": [
+      "Removing the head itself, when n equals the list's length. right moves all the way past the real head before left ever moves, so left stays on dummy, and dummy.next = dummy.next.next correctly removes the old head.",
+      "A list with exactly one node and n = 1. The single node is both the head and the one to remove; the dummy node handles this the same way as removing any other head.",
+      "Removing the last node, when n = 1. right reaches the final real node, one step ahead of where it would stop otherwise, and left ends up just before the last node.",
+      "n equal to the list's length is valid by the problem's guarantee; n = 0 or n larger than the list's length is never given, so the code doesn't need to guard against it."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        dummy = ListNode(0, head)\n        left = dummy\n        right = head\n\n        while n > 0:\n            right = right.next\n            n -= 1\n\n        while right:\n            left = left.next\n            right = right.next\n\n        left.next = left.next.next\n        return dummy.next\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    head = None\n    for v in reversed(values):\n        head = ListNode(v, head)\n    return head\n\ndef to_list(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n",
+    "call": "Solution().removeNthFromEnd(build([1, 2, 3, 4, 5]), 2)",
+    "check": "to_list(__result__)",
+    "expected": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "describe": "head = 1 → 2 → 3 → 4 → 5, n = 2"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the list is an object made from this blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(0, head). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node, and ListNode(0, head) makes one pointing at head."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating nodes convenient. Passing head as the second argument lets the dummy node be created already linked to the real list, in one line.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. The dummy node's own val is never read by this method; only its next field matters.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.value = val",
+          "difference": "A different field name. All code would then have to say node.value. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node (or None at the end). Removing a node means changing exactly one next field, the one on the node right before it.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is the link that makes it a chain. left.next = left.next.next is the single line that performs the removal, by skipping the unwanted node's next field entirely.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too. Removing a node would then also mean fixing up the next node's prev field."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method removeNthFromEnd. It receives head, the first node, and n, the count-from-the-end position to remove, and promises to give back the head of the shortened list.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def removeNthFromEnd(",
+          "meaning": "def starts a method. removeNthFromEnd is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "head: Optional[ListNode]",
+          "meaning": "The first node of the list. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": "n: int",
+          "meaning": "A type hint meaning n should be an int, a whole number."
+        },
+        {
+          "token": ") -> Optional[ListNode]",
+          "meaning": "The method returns a ListNode or None: the (possibly new) head of the list after removal."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "The list is passed by its first node, and n is a plain number telling us how far from the end to count. The return type can be None because removing the only node leaves an empty list.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def removeNthFromEnd(self, head, n):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def removeNthFromEnd(self, head: ListNode | None, n: int) -> ListNode | None:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Assuming n is counted from the front (the usual way to count a position). The problem counts from the end, which is exactly why a simple nums[n] style lookup doesn't work here.",
+      "caption": "Python remembers the removeNthFromEnd instructions for later."
+    },
+    "8": {
+      "explain": "This creates a new node, dummy, whose val is 0 and whose next already points at head. It sits one slot before the real list, so the real head can be removed the same way as any other node.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "dummy",
+          "meaning": "A new variable name for the placeholder node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode(0, head)",
+          "meaning": "Calls ListNode's __init__ with val = 0 and next = head, creating a new node that's already linked to the start of the real list."
+        }
+      ],
+      "why": "If n turns out to equal the list's length, the node to remove is the real head itself. Without a node sitting before head, removing the head would need a separate, special-case line. With dummy in place, left.next = left.next.next handles that case exactly like every other.",
+      "if_removed": "Line 9 (left = dummy) would crash with a NameError, since dummy wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "dummy = ListNode(next=head)",
+          "difference": "Passes next by name and lets val keep its default of 0. Same result."
+        }
+      ],
+      "mistake": "Writing dummy = ListNode(0) without passing head, leaving dummy.next as None. Then right would start by walking off an already-empty list instead of the real one.",
+      "caption": "Create a dummy node just before head, so removing the real head needs no special case."
+    },
+    "9": {
+      "explain": "This points left at dummy, one slot before the real list. left will end up sitting exactly one node before the node that gets removed.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "left",
+          "meaning": "A new variable name: the pointer that ends up just before the node to remove."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: left now refers to the same node as dummy. No node is copied."
+        },
+        {
+          "token": "dummy",
+          "meaning": "The placeholder node created one line up."
+        }
+      ],
+      "why": "Removing a node means rewriting the next field of the node right before it, so the pointer doing the removal (left) has to start before everything, including a head start that might end up removing the head itself.",
+      "if_removed": "Line 16 (left = left.next) would crash with a NameError, since left wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "left = right = dummy",
+          "difference": "Starts both left and right on dummy instead of right starting on head (see the next line). It would also work, but then right's first move overlaps with where left already is, instead of starting from the real first node; the count in the next while loop would need adjusting to match."
+        }
+      ],
+      "mistake": "Setting left = head instead of left = dummy. Then left could never move far enough back to remove the head itself when n equals the list's length.",
+      "caption": "Point left at dummy, one slot before the real list."
+    },
+    "10": {
+      "explain": "This points right at head, the first real node. right is the pointer that gets the head start and walks all the way to the end first.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "right",
+          "meaning": "A new variable name: the pointer that gets the n-node head start."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head",
+          "meaning": "The first real node of the list."
+        }
+      ],
+      "why": "right needs to start at the very first real node so that moving it n nodes ahead measures exactly n nodes into the list, which is what sets up the fixed-size head start.",
+      "if_removed": "The while loop on line 12 would crash with a NameError, since right wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "right = dummy.next",
+          "difference": "Reaches the same node, head, through dummy instead of directly. Either is fine; head is simpler to read."
+        }
+      ],
+      "mistake": "Setting right = dummy instead of right = head. Then right's head start would be measured one node too early, and the method would end up removing the wrong node.",
+      "caption": [
+        {
+          "when": "head is None",
+          "text": "right starts at head, which is None: the list is empty."
+        },
+        {
+          "text": "right starts at the first real node, {head.val}."
+        }
+      ]
+    },
+    "12": {
+      "explain": "Move right forward, n times, before left moves at all. This opens up a gap of exactly n nodes between left and right.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "n",
+          "meaning": "The count-from-the-end position, used directly as the condition: any nonzero n is truthy."
+        },
+        {
+          "token": "> 0",
+          "meaning": "True as long as there are still head-start steps left to take."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "This is the whole trick of the pattern: by moving right n nodes ahead FIRST, left and right end up exactly n nodes apart, and that fixed distance is preserved no matter how far they both walk afterward.",
+      "if_removed": "right would never get a head start, and the second while loop would move left and right together from the very start, leaving them the same distance apart (zero) instead of n apart, so left would end up on the wrong node.",
+      "alternatives": [
+        {
+          "code": "for _ in range(n):\n    right = right.next",
+          "difference": "A for loop over range(n) instead of counting n down to 0 in a while loop. Same number of steps, without reusing n as a counter."
+        }
+      ],
+      "mistake": "Looping n + 1 or n - 1 times by mistake (an off-by-one slip), which shifts left onto the wrong node by one position in the final answer.",
+      "caption": [
+        {
+          "when": "n <= 0",
+          "text": "n is down to {n}: the head start is set. right is now {n} ahead of left."
+        },
+        {
+          "text": "n is {n} steps of the head start left to go."
+        }
+      ]
+    },
+    "13": {
+      "explain": "Move right forward by one node, as part of building the head start.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the first while loop."
+        },
+        {
+          "token": "right",
+          "meaning": "The pointer getting the head start."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "right.next",
+          "meaning": "The node right after the current right."
+        }
+      ],
+      "why": "Each pass of this loop advances right by exactly one node, so n passes give it a head start of exactly n nodes over left, which hasn't moved yet.",
+      "if_removed": "right would stay on head forever, n would never reach 0, and the loop would run until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "right = right.next if right else None",
+          "difference": "A defensive check that isn't needed here: the problem guarantees n never exceeds the list's length, so right always has a real next node for as many steps as this loop takes."
+        }
+      ],
+      "mistake": "Moving left here instead of right, which would open no gap at all between the two pointers.",
+      "caption": [
+        {
+          "when": "right.next",
+          "text": "Move right forward to {right.next.val}."
+        },
+        {
+          "text": "Move right forward, off the end to None."
+        }
+      ]
+    },
+    "14": {
+      "explain": "Count down one step of the head start that's already been taken.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the first while loop."
+        },
+        {
+          "token": "n",
+          "meaning": "The remaining head-start steps."
+        },
+        {
+          "token": "-=",
+          "meaning": "An augmented assignment: short for n = n - 1."
+        },
+        {
+          "token": "1",
+          "meaning": "Subtract exactly one step each pass."
+        }
+      ],
+      "why": "n doubles as both \"how far from the end to count\" at the start and \"how many head-start steps are left to take\" during this loop. Counting it down to 0 is what ends the loop at exactly the right moment.",
+      "if_removed": "n would never change, the loop condition n > 0 would stay True forever, and the loop would run until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "n = n - 1",
+          "difference": "Spells out the subtraction instead of using the -= shorthand. Exactly the same result."
+        }
+      ],
+      "mistake": "Writing n += 1 instead of n -= 1, which counts the wrong way and never reaches 0.",
+      "caption": "Count down the head start: n is now {n}."
+    },
+    "16": {
+      "explain": "Keep moving left and right together, one node each, for as long as right is still a real node. The gap between them stays fixed at n the whole time.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the first while loop."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True."
+        },
+        {
+          "token": "right",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Moving both pointers together, one step at a time, keeps the n-node gap between them constant. The moment right walks off the end, left must be exactly n nodes behind where right started, which is exactly one node before the node to remove.",
+      "if_removed": "left would stay on dummy forever, and line 19 would always remove the real head instead of the actual n-th-from-end node.",
+      "alternatives": [
+        {
+          "code": "while right is not None:",
+          "difference": "Spells out the None check explicitly. It behaves the same, and some people find it clearer."
+        }
+      ],
+      "mistake": "Writing while right.next: instead of while right:. That stops one node too early, leaving left one position short of where it needs to be.",
+      "caption": [
+        {
+          "when": "not right",
+          "text": "right has run off the end: left is now sitting exactly one node before the one to remove."
+        },
+        {
+          "text": "right is on {right.val}: move both left and right forward one node, keeping the gap between them the same."
+        }
+      ]
+    },
+    "17": {
+      "explain": "Move left forward by one node, keeping pace with right.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the second while loop."
+        },
+        {
+          "token": "left",
+          "meaning": "The pointer that will end up just before the node to remove."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "left.next",
+          "meaning": "The node after the current left."
+        }
+      ],
+      "why": "left has to move exactly as many times as right does from here on, so the n-node gap opened earlier never changes.",
+      "if_removed": "left would stay on dummy while right walked the rest of the list alone, and the gap between them would grow instead of staying fixed at n.",
+      "alternatives": [
+        {
+          "code": "left, right = left.next, right.next",
+          "difference": "Advances both pointers in one line instead of two. Python evaluates both right-hand sides first, so it's safe; it's just written differently."
+        }
+      ],
+      "mistake": "Moving right twice here (right = right.next) instead of moving left once, which would shrink the gap between them instead of keeping it the same.",
+      "caption": "Move left forward to {left.next.val}."
+    },
+    "18": {
+      "explain": "Move right forward by one node too, the other half of keeping both pointers moving together.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the second while loop."
+        },
+        {
+          "token": "right",
+          "meaning": "The pointer walking all the way to the end."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "right.next",
+          "meaning": "The node after the current right."
+        }
+      ],
+      "why": "right keeps walking forward until it runs out of list, which is how the loop knows when left has arrived at the right spot.",
+      "if_removed": "right would stay on the same node forever, the while condition would never become False, and the loop would run until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "left, right = left.next, right.next",
+          "difference": "The same combined form mentioned on the line above; either order of writing the two moves works, as long as both use the OLD left and right, not values already updated this pass."
+        }
+      ],
+      "mistake": "Moving left twice here by accident (copy-paste from the line above) instead of moving right, which would leave right stuck and the loop running forever.",
+      "caption": [
+        {
+          "when": "right.next",
+          "text": "Move right forward to {right.next.val}."
+        },
+        {
+          "text": "Move right forward, off the end to None."
+        }
+      ]
+    },
+    "20": {
+      "explain": "left is now sitting exactly one node before the one to remove. Skip over that node by pointing left.next directly at the node after it.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after the second while loop."
+        },
+        {
+          "token": "left.next",
+          "meaning": "On the left of =, this means \"the next field of left\", the slot being overwritten."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "left.next.next",
+          "meaning": "The node two steps after left: first read left.next (the node to remove), then read that node's own next field."
+        }
+      ],
+      "why": "Nothing in the list points at the removed node anymore once left.next skips past it, so it's no longer part of the list, without needing to touch the removed node itself at all.",
+      "if_removed": "The list would come back unchanged, with the n-th-from-end node still in it.",
+      "alternatives": [
+        {
+          "code": "to_remove = left.next\nleft.next = to_remove.next",
+          "difference": "Saves the node being removed in a variable first. It reaches the same result; saving it is only useful if you need to read something off that node afterward, which this problem doesn't."
+        }
+      ],
+      "mistake": "Writing left = left.next.next instead of left.next = left.next.next. That moves the left pointer forward instead of rewiring the list, leaving the unwanted node still linked in.",
+      "caption": [
+        {
+          "when": "left.next.next",
+          "text": "Skip over node {left.next.val}: left.next now points straight to {left.next.next.val}."
+        },
+        {
+          "text": "Skip over node {left.next.val}, the last node in the list: left.next becomes None."
+        }
+      ]
+    },
+    "21": {
+      "explain": "Return the real first node of the list, skipping over the dummy.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level."
+        },
+        {
+          "token": "return",
+          "meaning": "A keyword that ends the method and hands the value after it back to the caller."
+        },
+        {
+          "token": "dummy.next",
+          "meaning": "The node right after the placeholder: the real first node of the list, after removal."
+        }
+      ],
+      "why": "dummy was never part of the real list; dummy.next is always the true head, whether or not the head itself was the node removed.",
+      "if_removed": "Python would reach the end of the method with no return statement, and calling it would give back None, discarding the whole result.",
+      "alternatives": [
+        {
+          "code": "return head if left is not dummy else dummy.next",
+          "difference": "Unnecessary: dummy.next is already correct in every case, including when the original head was the node removed, since dummy sits before it either way."
+        }
+      ],
+      "mistake": "Returning head instead of dummy.next. head still refers to the ORIGINAL first node, which is wrong whenever that very node was the one removed.",
+      "caption": "Return dummy.next: the list now starts at {dummy.next.val if dummy.next else 'None, since the only node was removed'}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        length = 0\n        node = head\n        while node:\n            length += 1\n            node = node.next\n\n        dummy = ListNode(0, head)\n        left = dummy\n        for _ in range(length - n):\n            left = left.next\n        left.next = left.next.next\n        return dummy.next",
+    "explain": "Walk the whole list once just to count it, storing the total in length. The node to remove, counted from the end, sits (length - n) steps after the real head, so walk from dummy that many times to land one node before it, then remove it the same way as the pattern does.",
+    "why_slow": "It's not slower in big-picture time; both approaches are still O(L). The pattern's advantage is doing the job in a single pass over the list, without first walking all the way to the end just to learn its length.",
+    "how_pattern_fixes": "Instead of counting the whole list first, the pattern opens a fixed n-node gap between two pointers right away, then walks both forward together. By the time the faster pointer reaches the end, the slower one has arrived exactly where the length-counting approach would have calculated.",
+    "time": "O(L): linear, but with two separate passes over the list (one to count, one to walk to the spot), instead of one combined pass.",
+    "space": "O(1): constant. Only a few extra variables, however long the list is."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "argument": "The actual value you pass into a function or method when you call it. In ListNode(0, head), 0 and head are the arguments.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "augmented assignment": "A shorthand that combines an operation with assignment, like n -= 1, short for n = n - 1.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or walking through everything, sometimes more than once. It's simple but often costs an extra pass that a more targeted approach avoids.",
+    "call": "Running a function or method by writing its name followed by brackets, like ListNode(0, head) or Solution().removeNthFromEnd(head, 2).",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while or if lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "dummy node": "A placeholder node created one slot before the real list starts, so the real head can be removed the exact same way as any other node, with no special case. It's discarded at the end; only dummy.next matters.",
+    "edge case": "An unusual input that might break code: removing the head, a one-node list, removing the last node.",
+    "expression": "Any piece of code that produces a value, like left.next.next or n > 0.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "for loop": "A loop that runs its block once for each item in a collection, or, with range(n), exactly n times.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(0, head). It sets up the object's fields.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41. Python calls the type int.",
+    "keyword": "A word reserved by Python, like class, def, while, if, return.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position by index, including negative indexes counted from the end.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True, and a for loop repeats once per item in a collection, or n times with range(n).",
+    "method": "A function that belongs to a class, called with a dot: Solution().removeNthFromEnd(head, 2).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\", and the whole list being empty is also represented as None.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "off-by-one": "A bug caused by counting one step too many or too few, for example looping n + 1 or n - 1 times instead of n.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. head and n are removeNthFromEnd's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like opening a fixed gap between two pointers.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list. dummy, left and right are all pointers here.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2: it starts at 0 and stops before 3.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. None and 0 count as False, and any node object or nonzero number counts as True.",
+    "tuple": "An unchangeable sequence written with round brackets or just commas, like (left.next, right.next).",
+    "tuple unpacking": "Assigning several names at once from one tuple, as in left, right = left.next, right.next.",
+    "two pointers": "Using two position variables that move through the same data, often at different speeds or with a fixed gap between them, so comparing where they are reveals something useful. Here left and right keep a fixed n-node gap.",
+    "type hint": "A label like head: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "in place": "Modifying existing data directly instead of building a separate copy. Rewiring a next field on an existing node, instead of copying values into new ones, is done in place."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "left and right, with the gap between them",
+      "node_class": "ListNode",
+      "pointers": {
+        "left": "left",
+        "right": "right"
+      }
+    }
+  ]
+}
