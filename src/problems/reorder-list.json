@@ -1,0 +1,1048 @@
+{
+  "slug": "reorder-list",
+  "title": "Reorder List",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 143,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it. The last node's next is None.",
+    "You are given head, the first node of a linked list written as L0 → L1 → ... → Ln.",
+    "Rearrange it in place into L0 → Ln → L1 → Ln-1 → L2 → Ln-2 → ..., alternating a node from the front with a node from the back, working inward.",
+    "You can only rewire the existing nodes' next arrows. The method doesn't return anything; the list starting at head is changed directly."
+  ],
+  "examples": [
+    {
+      "input": "head = 1 → 2 → 3 → 4",
+      "output": "1 → 4 → 2 → 3",
+      "explain": "First with last (1, 4), then second with second-to-last (2, 3). An even-length list splits into two equal halves."
+    },
+    {
+      "input": "head = 1 → 2 → 3 → 4 → 5",
+      "output": "1 → 5 → 2 → 4 → 3",
+      "explain": "First with last (1, 5), then second with second-to-last (2, 4), and the exact middle node (3) has nothing left to pair with, so it ends up last. This is the example the visualizer runs."
+    }
+  ],
+  "pattern": {
+    "name": "Find the middle, reverse the second half, then weave",
+    "summary": "Split the list into two halves using fast and slow pointers, so slow lands on the last node to keep in the first half. Reverse the second half in place, the same way Reverse Linked List does. Then walk the first half and the reversed second half together, linking one node from each side after another, until the (shorter) reversed half runs out.",
+    "recognize": [
+      "The question asks for a new ARRANGEMENT of an existing linked list's nodes, especially one that pairs the front with the back.",
+      "The rearrangement needs nodes from both ends of the list at once, which a singly linked list can't jump to directly. Splitting into two halves and reversing one turns \"the back, read backward\" into \"the reversed second half, read forward\", something you CAN walk through directly.",
+      "The problem breaks down into smaller problems you already know how to solve one after another: finding a middle with fast and slow pointers, reversing a list with prev, curr and temp, then combining two lists one node at a time.",
+      "The method changes the list in place and returns nothing, a common shape for \"rearrange this structure\" questions."
+    ],
+    "avoid_when": [
+      "You're allowed extra memory and simplicity matters more than space. Copying every node (not just its value) into a plain Python list lets you reach any position directly by index, with no pointer rewiring needed to find the halves.",
+      "You only need to reverse the WHOLE list, not weave it together with the front half. Then Reverse Linked List's simpler two-pointer loop is all you need.",
+      "The list is doubly linked, with a working field pointing to the previous node already on every node. Then you can walk backward directly, with no need to reverse a second half first.",
+      "You need the list's ORIGINAL order kept somewhere else too. This rearranges the one list you're given in place; copy it first if the original order still matters elsewhere."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Three familiar sub-tasks, done one after another, solve a problem that looks unfamiliar at first: find the middle, reverse a list, then combine two lists one node at a time.",
+      "slow, fast = head, head.next (fast starting one node ahead, not level with slow) makes slow land on the last node to KEEP in the first half, so the first half is never shorter than the second.",
+      "Cutting slow.next = None before reversing the second half matters: without it, the first half would still trail off into the very nodes about to be reversed.",
+      "The final weave loop always ends when the reversed second half runs out, since it's never longer than the first half; any node left over belongs to the first half and is already correctly placed."
+    ],
+    "time": "O(n), linear time, where n is the number of nodes. Finding the middle, reversing the second half, and weaving the two halves together are each one pass over at most the whole list, one after another.",
+    "space": "O(1), constant extra memory. slow, fast, second, prev, temp, first, temp1 and temp2 are all pointer variables; no new nodes are ever created.",
+    "edge_cases": [
+      "A list with one node. fast starts at head.next, which is None, so the first while loop never runs; slow stays on the only node, second (slow.next) is None, so there's nothing to reverse or weave, and the list is left exactly as it was.",
+      "A list with two nodes. fast starts on the second node, so fast.next is already None and the first while loop never runs either; slow is the first node, and the one remaining node becomes the (one-node) second half, which weaves in right after it.",
+      "An even number of nodes, like 4. Both halves end up the same length, and every node is paired with one from the other half.",
+      "An odd number of nodes, like 5. The exact middle node ends up alone at the very end, since the second half has one fewer node than the first."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def reorderList(self, head: Optional[ListNode]) -> None:\n        slow, fast = head, head.next\n\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n\n        second = slow.next\n        slow.next = None\n        prev = None\n\n        while second:\n            temp = second.next\n            second.next = prev\n            prev = second\n            second = temp\n\n        first, second = head, prev\n        while second:\n            temp1, temp2 = first.next, second.next\n            first.next = second\n            second.next = temp1\n            first, second = temp1, temp2\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    head = None\n    for v in reversed(values):\n        head = ListNode(v, head)\n    return head\n\ndef to_list(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n\nhead = build([1, 2, 3, 4, 5])\n",
+    "call": "Solution().reorderList(head)",
+    "check": "to_list(head)",
+    "expected": [
+      1,
+      5,
+      2,
+      4,
+      3
+    ],
+    "describe": "head = 1 → 2 → 3 → 4 → 5"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the list is an object made from this blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(5). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating nodes convenient. This method doesn't create any new nodes, though; it only rewires the next fields of the nodes it's given.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. node.val is how every caption in this problem reads a node's value back.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.value = val",
+          "difference": "A different field name. All code would then have to say node.value. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node (or None at the end). Every single step of this method works by reading or rewriting some node's next field.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is the link that makes it a chain, and this problem is entirely about rearranging those links: splitting, reversing, and weaving, all without ever touching a val field.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too, which would make reaching 'the back of the list' far simpler than reversing a whole half."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method reorderList. It receives head, the first node, and returns nothing (None); it changes the list that head points into directly.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def reorderList(",
+          "meaning": "def starts a method. reorderList is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "head: Optional[ListNode]",
+          "meaning": "The first node of the list. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": ") -> None",
+          "meaning": "A type hint saying the method gives back nothing. The list is rearranged in place instead of being returned."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "The problem asks you to REARRANGE the given list, not build and return a new one, so the signature promises no return value. LeetCode's checker looks at the list through the same head reference afterward.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def reorderList(self, head):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def reorderList(self, head: ListNode | None) -> None:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Adding a return statement that hands back a node, out of habit from problems that build and return a brand-new head. LeetCode calls this method and then looks at head again afterward; a return value here is simply ignored.",
+      "caption": "Python remembers the reorderList instructions for later."
+    },
+    "8": {
+      "explain": "Set up the two pointers used to find the middle. slow starts at the first node; fast starts one node ahead, at head.next.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "slow, fast",
+          "meaning": "Two variable names, assigned at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head, head.next",
+          "meaning": "slow's starting node and fast's starting node, one node ahead of slow."
+        }
+      ],
+      "why": "Starting fast one node ahead of slow, instead of level with it, makes slow land on the last node to KEEP in the first half once the loop below finishes, which is exactly where the list needs to be cut in two.",
+      "if_removed": "The while loop below would crash with a NameError, since slow and fast wouldn't exist yet.",
+      "alternatives": [
+        {
+          "code": "slow, fast = head, head",
+          "difference": "Starting both pointers level instead of one node apart. It still finds A valid middle, but on an even-length list slow ends up one node later, giving the first half one MORE node than the second instead of one fewer. Either split is valid for this problem; it just changes exactly where the cut happens."
+        }
+      ],
+      "mistake": "Assuming head.next is always safe here without checking. It is, as long as reorderList is only ever called on a real, non-empty list, which the problem guarantees; head.next can still be None for a one-node list, which is why line 10's condition checks fast before relying on fast.next.",
+      "caption": [
+        {
+          "when": "head.next is None",
+          "text": "slow starts at {head.val}; fast starts at head.next, which is None: there's only one node, so there's nothing to split."
+        },
+        {
+          "text": "slow starts at {head.val}; fast starts one node ahead, at {head.next.val}."
+        }
+      ]
+    },
+    "10": {
+      "explain": "Keep looping as long as fast can still move two nodes forward. Each pass, slow moves one node while fast moves two, so by the time fast runs out, slow is sitting right at the split point between the two halves.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "fast",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": "and",
+          "meaning": "Both sides must be True. If fast is already False (None), Python skips checking fast.next entirely."
+        },
+        {
+          "token": "fast.next",
+          "meaning": "The node after fast, checked the same way."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "fast moving twice as fast as slow is exactly how slow ends up at the halfway point: by the time fast has covered the whole list, slow has covered about half of it.",
+      "if_removed": "Writing while fast: alone would let the loop reach the last node, where fast.next is None, then crash on fast.next.next with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "while fast is not None and fast.next is not None:",
+          "difference": "Spells out the None checks explicitly. It behaves the same, and some people find it clearer."
+        }
+      ],
+      "mistake": "Forgetting the and fast.next half and only checking fast. That crashes on the last node of a list with an odd number of nodes.",
+      "caption": [
+        {
+          "when": "not fast",
+          "text": "fast is None already: slow has reached the split point, on {slow.val}."
+        },
+        {
+          "when": "not fast.next",
+          "text": "fast is on {fast.val}, with no node after it: slow has reached the split point, on {slow.val}."
+        },
+        {
+          "text": "fast is on {fast.val} and has a node after it, so keep moving both pointers."
+        }
+      ]
+    },
+    "11": {
+      "explain": "Move slow forward by one node: its normal walking speed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "slow",
+          "meaning": "The slower pointer."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "slow.next",
+          "meaning": "The node right after the current slow."
+        }
+      ],
+      "why": "slow has to end up at the halfway point, and moving it one node per pass, against fast's two, is what makes that happen.",
+      "if_removed": "slow would never move, staying on head forever, so second = slow.next would always grab the second node instead of the true middle, splitting the list very unevenly.",
+      "alternatives": [
+        {
+          "code": "slow = slow.next if slow else None",
+          "difference": "A defensive check that isn't needed here: the while condition already guarantees slow, which never gets ahead of fast, has a real next node."
+        }
+      ],
+      "mistake": "Writing slow = slow.next.next by accident, copying the line below. That makes slow move at fast's speed too, landing it much too far into the list.",
+      "caption": "Move slow forward one node, to {slow.next.val}."
+    },
+    "12": {
+      "explain": "Move fast forward by two nodes: its double speed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "fast",
+          "meaning": "The faster pointer."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "fast.next.next",
+          "meaning": "The node two steps after the current fast: first read fast.next (a real node, guaranteed by the while condition), then read that node's own next field."
+        }
+      ],
+      "why": "Moving fast twice as far as slow on every pass is what makes slow land at the halfway point once fast runs out of list.",
+      "if_removed": "fast would move only one node, the same as slow. The two would stay the same distance apart forever, and the loop would never end on anything but the very last node.",
+      "alternatives": [
+        {
+          "code": "fast = fast.next\nfast = fast.next",
+          "difference": "Two separate one-step moves instead of one two-step move. Same result, written with an extra line."
+        }
+      ],
+      "mistake": "Writing fast = fast.next instead of fast.next.next. Then fast moves at the same speed as slow, and slow never reaches the true middle.",
+      "caption": [
+        {
+          "when": "fast.next.next",
+          "text": "Move fast forward two nodes, to {fast.next.next.val}."
+        },
+        {
+          "text": "Move fast forward two nodes, off the end to None."
+        }
+      ]
+    },
+    "14": {
+      "explain": "Grab the start of the second half: the node right after slow, the split point the loop above just found.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the while loop."
+        },
+        {
+          "token": "second",
+          "meaning": "A new variable name: the front of the second half, about to be reversed."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "slow.next",
+          "meaning": "The node right after slow: everything from here to the end of the list is the second half."
+        }
+      ],
+      "why": "slow marks the last node that stays in the first half; slow.next is the first node of everything that needs to be reversed and woven back in afterward.",
+      "if_removed": "Line 15 would still cut the first half loose, but there'd be no variable pointing at the second half anymore, so it could never be reversed or woven back in; the list would simply be truncated.",
+      "alternatives": [
+        {
+          "code": "mid = slow\nsecond = mid.next",
+          "difference": "Introduces an extra name for slow before reading its next field. Same result, with one more line."
+        }
+      ],
+      "mistake": "Reading slow.next AFTER line 15 sets slow.next to None, instead of before. The order matters: grab second first, then cut.",
+      "caption": "Grab the second half, starting at {slow.next.val}."
+    },
+    "15": {
+      "explain": "Cut the first half loose from the second by setting the last first-half node's next to None.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "slow.next",
+          "meaning": "The next field of slow, the slot being overwritten."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "None",
+          "meaning": "The first half's new, true ending."
+        }
+      ],
+      "why": "Without this cut, the first half would still be linked into whatever the second half becomes after it's reversed, which would tangle the two halves together instead of leaving two clean, separate chains.",
+      "if_removed": "The first half would still trail off into the second half's nodes. Once those get reversed in the next loop, the \"first half\" would end up corrupted along with them.",
+      "alternatives": [
+        {
+          "code": "slow.next = None  # slow is now the first half's own tail",
+          "difference": "Same line; just a note that slow has become the true end of the first half from here on."
+        }
+      ],
+      "mistake": "Forgetting this line entirely. second would still be reachable from slow.next, so reversing second would end up reversing part of what still looks like the first half too.",
+      "caption": "Cut the first half loose: {slow.val}'s next becomes None."
+    },
+    "16": {
+      "explain": "Start the second-half reversal exactly like Reverse Linked List does: prev begins at None, since nothing has been reversed yet.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "prev",
+          "meaning": "A new variable name: the already-reversed part of the second half, so far none."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "None",
+          "meaning": "Nothing has been reversed yet."
+        }
+      ],
+      "why": "The first node reversed will become the new END of the reversed second half, and ends need a next of None. Starting prev at None makes the very first flip set that up automatically, with no special case.",
+      "if_removed": "The while loop below would crash with a NameError, since prev wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "prev, second = None, second",
+          "difference": "Combines this line with reassigning second, which was already set two lines up and doesn't need reassigning here."
+        }
+      ],
+      "mistake": "Starting prev at second instead of None. The first node reversed would then point at itself instead of becoming the true end of the reversed half.",
+      "caption": "Start the reversal: prev is None, nothing reversed yet."
+    },
+    "18": {
+      "explain": "This is Reverse Linked List's loop, reversing the second half in place: keep going as long as there's a node left to flip.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True."
+        },
+        {
+          "token": "second",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Every node in the second half needs its next arrow flipped exactly once. Looping until second runs out guarantees none are skipped.",
+      "if_removed": "The second half would never get reversed, and the weave loop afterward would see it in its original, forward order instead of reversed.",
+      "alternatives": [
+        {
+          "code": "while second is not None:",
+          "difference": "Spells out the None check explicitly. Behaves the same."
+        }
+      ],
+      "mistake": "Writing while second.next: instead of while second:, which stops one node early and leaves the very last node of the second half un-flipped.",
+      "caption": [
+        {
+          "when": "not second",
+          "text": "second is None: the whole second half has been reversed."
+        },
+        {
+          "text": "second is on {second.val}: flip its arrow next."
+        }
+      ]
+    },
+    "19": {
+      "explain": "Save the node after second before second's own next field gets overwritten, exactly like Reverse Linked List's temp.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "temp",
+          "meaning": "A temporary variable, remembering the next node for one pass."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: no node is copied, temp just refers to the same node as second.next."
+        },
+        {
+          "token": "second.next",
+          "meaning": "The node after the current second, or None if second is the last node of this half."
+        }
+      ],
+      "why": "Line 20 is about to point second.next backward. This is the last moment to grab the rest of the second half before that link is gone.",
+      "if_removed": "After line 20, second.next would point backward, so line 22 (second = temp) would have nothing saved to advance to, cutting the reversal short and losing the rest of the second half.",
+      "alternatives": [
+        {
+          "code": "nxt = second.next",
+          "difference": "Same thing with a different name. Pure style."
+        }
+      ],
+      "mistake": "Doing the flip on line 20 before saving next here. That's the single most common bug in any reversal.",
+      "caption": [
+        {
+          "when": "second.next",
+          "text": "Save second.next ({second.next.val}) in temp before it gets overwritten."
+        },
+        {
+          "text": "Save second.next, which is None since second is the last node of this half, in temp."
+        }
+      ]
+    },
+    "20": {
+      "explain": "Flip second's arrow to point backward, at prev, instead of forward.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "second.next",
+          "meaning": "On the left of =, the next field of second, the slot being changed."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: overwrite that field."
+        },
+        {
+          "token": "prev",
+          "meaning": "The already-reversed part of the second half so far."
+        }
+      ],
+      "why": "Each pass flips exactly one arrow. After the flip, second is the newest front of the reversed part, running back through prev.",
+      "if_removed": "No arrow in the second half would ever change direction, so the weave loop afterward would still walk the second half in its original, forward order.",
+      "alternatives": [
+        {
+          "code": "second.next = None",
+          "difference": "Cuts second loose instead of linking it back to prev, which would drop every node reversed so far from the list entirely."
+        }
+      ],
+      "mistake": "Writing prev.next = second instead, which recreates the ORIGINAL forward link and reverses nothing. It would also crash on the very first pass, since prev is None.",
+      "caption": [
+        {
+          "when": "prev",
+          "text": "Flip {second.val}'s arrow to point back at {prev.val}."
+        },
+        {
+          "text": "Flip {second.val}'s arrow to point at prev, which is None: it becomes the end of the reversed half."
+        }
+      ]
+    },
+    "21": {
+      "explain": "Move prev forward to second, the node just flipped and now the front of the reversed part.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "prev",
+          "meaning": "The front of the already-reversed part."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: prev now refers to the same node as second. No node is copied."
+        },
+        {
+          "token": "second",
+          "meaning": "The node just flipped."
+        }
+      ],
+      "why": "On the next pass, the following node's arrow has to point back at THIS node, so this node becomes the new prev.",
+      "if_removed": "prev would stay None forever, so every node's next would be set to None on line 20 instead of chaining back through the reversed part, leaving only the very last node reversed and every node before it disconnected.",
+      "alternatives": [
+        {
+          "code": "prev, second = second, temp",
+          "difference": "Advances both prev and second in one line instead of two separate lines (this one and the next). Python evaluates both right-hand sides first, so it's safe; it just combines lines 21 and 22."
+        }
+      ],
+      "mistake": "Advancing second before prev (swapping the order of lines 21 and 22). prev would then jump straight to temp, a node that hasn't been flipped yet.",
+      "caption": "Move prev forward to {second.val}, the new front of the reversed half."
+    },
+    "22": {
+      "explain": "Move second forward to temp, the node saved before the flip: the next node still waiting to be reversed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "second",
+          "meaning": "The pointer walking through the not-yet-reversed part of the second half."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "temp",
+          "meaning": "The node saved on line 19, before second.next was flipped."
+        }
+      ],
+      "why": "second.next now points backward, so second = second.next would walk the wrong way. temp is exactly the node that used to be there before the flip.",
+      "if_removed": "second would never move, and the while loop would run on the very same node forever, until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "second = second.next",
+          "difference": "Wrong here! After line 20, second.next points backward (at prev), so this would walk the reversal backward instead of continuing forward through the un-flipped nodes."
+        }
+      ],
+      "mistake": "Writing second = second.next out of habit. It's the usual way to walk a list, but not right after flipping the very arrow you'd be reading.",
+      "caption": [
+        {
+          "when": "temp",
+          "text": "Move second forward to {temp.val}, the next node to flip."
+        },
+        {
+          "text": "Move second forward to None: the second half is fully reversed."
+        }
+      ]
+    },
+    "24": {
+      "explain": "Set up the final weave: first starts back at the front of the first half (head), and second is reassigned to prev, the front of the now-reversed second half.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the reversal loop."
+        },
+        {
+          "token": "first, second",
+          "meaning": "Two variable names, assigned at once (tuple unpacking). second is being reused here for a new role: the front of the reversed second half."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head, prev",
+          "meaning": "first starts at the very first node of the whole list; second starts at prev, exactly where the reversal loop left off."
+        }
+      ],
+      "why": "head still refers to the first half's own front node, since nothing has touched it. prev is exactly the new front of the reversed second half, the loop above's final value.",
+      "if_removed": "The weave loop below would crash with a NameError, since first wouldn't exist, and second would still hold None from the reversal loop ending, so the weave would never run at all.",
+      "alternatives": [
+        {
+          "code": "first = head\nsecond = prev",
+          "difference": "Two separate assignments instead of one tuple assignment. Same result."
+        }
+      ],
+      "mistake": "Writing first, second = head, second, forgetting that second is already None at this point (the reversal loop just finished running on it). prev is what actually holds the reversed half's front node.",
+      "caption": [
+        {
+          "when": "second",
+          "text": "Weave together the first half (starting at {first.val}) and the reversed second half (starting at {second.val})."
+        },
+        {
+          "text": "The second half was empty, so there's nothing to weave in."
+        }
+      ]
+    },
+    "25": {
+      "explain": "Keep weaving as long as there's a node left from the reversed second half. Since the second half is never longer than the first, running out of second always happens at or before running out of first.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True."
+        },
+        {
+          "token": "second",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Looping on the (possibly shorter) second half guarantees the loop always finds a real node on both sides until second runs out; any leftover node in a longer first half is already exactly where it should end up.",
+      "if_removed": "The two halves would never get linked together; the list would be left as the two separate halves it was split into.",
+      "alternatives": [
+        {
+          "code": "while second is not None:",
+          "difference": "Spells out the None check. Behaves the same."
+        }
+      ],
+      "mistake": "Looping on first instead of second. first can be one node LONGER (on an odd-length list), so looping on it would try to read a second-half node that no longer exists, crashing with an AttributeError.",
+      "caption": [
+        {
+          "when": "not second",
+          "text": "second is None: every node from the second half has been woven in. Whatever's left of first (at most one node) is already correctly placed."
+        },
+        {
+          "text": "Link {second.val} in right after {first.val}."
+        }
+      ]
+    },
+    "26": {
+      "explain": "Save both halves' next nodes before either gets overwritten: temp1 is what used to come after first, and temp2 is what used to come after second.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "temp1, temp2",
+          "meaning": "Two temporary variables, assigned at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "first.next, second.next",
+          "meaning": "The nodes each pointer was about to move to, read before either next field gets rewritten below."
+        }
+      ],
+      "why": "The next two lines rewrite both first.next and second.next. Both original values are needed to keep walking each half afterward, so both have to be saved before either is touched.",
+      "if_removed": "Line 27 would overwrite first.next before its old value is saved anywhere, permanently losing the rest of the first half.",
+      "alternatives": [
+        {
+          "code": "temp1 = first.next\ntemp2 = second.next",
+          "difference": "Two separate assignments instead of one tuple assignment. Same result, written as two lines."
+        }
+      ],
+      "mistake": "Saving only one of the two (for example just temp1), then trying to read second.next on a later line, after line 28 has already overwritten it.",
+      "caption": [
+        {
+          "when": "first.next and second.next",
+          "text": "Save first.next ({first.next.val}) and second.next ({second.next.val}) before rewiring either."
+        },
+        {
+          "when": "first.next",
+          "text": "Save first.next ({first.next.val}); second.next is None, since second is the last reversed node."
+        },
+        {
+          "when": "second.next",
+          "text": "first.next is None, since first is the last original node; save second.next ({second.next.val})."
+        },
+        {
+          "text": "Save first.next and second.next, both None: first and second are each the last node of their half."
+        }
+      ]
+    },
+    "27": {
+      "explain": "Point first's arrow at second: this is the line that actually links the (reversed) second-half node in, right after first.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "first.next",
+          "meaning": "On the left of =, the next field of first, the slot being overwritten."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "second",
+          "meaning": "The reversed-half node being woven in."
+        }
+      ],
+      "why": "This is the actual alternation: instead of first.next continuing straight into the rest of the first half, it detours through one node of the reversed second half first.",
+      "if_removed": "first.next would stay pointing at its OLD next node (saved in temp1), so second would never actually get linked into the list, and the result would just be the unreordered first half.",
+      "alternatives": [
+        {
+          "code": "first.next = second  # first and second are now linked",
+          "difference": "Same line; noting that walking first.next.val afterward would now read second's value."
+        }
+      ],
+      "mistake": "Writing first.next = temp2 by mixing up the two saved variables, which would link in the wrong node.",
+      "caption": "Link {first.val} → {second.val}."
+    },
+    "28": {
+      "explain": "Point second's arrow at temp1, the node that used to come after first: this continues the chain on into whatever's left of the first half.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "second.next",
+          "meaning": "On the left of =, the next field of second, the slot being overwritten."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "temp1",
+          "meaning": "The node saved on line 26: what used to come after first."
+        }
+      ],
+      "why": "Line 27 just linked first to second. Without this line, second would dead-end instead of continuing on into the rest of the first half, breaking the chain.",
+      "if_removed": "second.next would be left pointing wherever it did in the reversed half (at temp2, the node about to become the next second), so the node just woven in would point to the wrong place instead of continuing into the rest of the first half.",
+      "alternatives": [
+        {
+          "code": "second.next = temp1  # continues into the rest of the first half",
+          "difference": "Same line; noting what it connects on to."
+        }
+      ],
+      "mistake": "Writing second.next = temp2 instead of temp1, which would keep walking through the reversed half instead of continuing into the rest of the first half, breaking the alternation.",
+      "caption": "Link {second.val} → {temp1.val if temp1 else 'None'}."
+    },
+    "29": {
+      "explain": "Move both pointers forward to continue the weave: first advances into the rest of the first half, second advances into the rest of the reversed second half.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "first, second",
+          "meaning": "Two variable names, assigned at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "temp1, temp2",
+          "meaning": "The nodes saved on line 26, before either half got rewired."
+        }
+      ],
+      "why": "temp1 and temp2 are exactly the nodes the weave needs next. Both have to come from the saved values, not from first.next or second.next, since lines 27 and 28 just overwrote both of those.",
+      "if_removed": "The while loop would crash with a NameError, since first and second would never be reassigned, or (if an earlier line happened to still define them) the loop could run on the same pair of nodes forever.",
+      "alternatives": [
+        {
+          "code": "first = temp1\nsecond = temp2",
+          "difference": "Two separate assignments instead of one tuple assignment. Same result."
+        }
+      ],
+      "mistake": "Writing first, second = first.next, second.next instead. By this point first.next and second.next have already been rewritten by lines 27 and 28, so this would walk in a small circle instead of advancing through the rest of each half.",
+      "caption": [
+        {
+          "when": "temp1 and temp2",
+          "text": "Move on: first is now {temp1.val}, second is now {temp2.val}."
+        },
+        {
+          "when": "temp1",
+          "text": "Move on: first is now {temp1.val}; second is now None, so the next check ends the weave."
+        },
+        {
+          "when": "temp2",
+          "text": "Move on: first is now None; second is now {temp2.val}."
+        },
+        {
+          "text": "Both halves are exhausted: first and second are now None."
+        }
+      ]
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def reorderList(self, head: Optional[ListNode]) -> None:\n        nodes = []\n        node = head\n        while node:\n            nodes.append(node)\n            node = node.next\n\n        l, r = 0, len(nodes) - 1\n        while l < r:\n            nodes[l].next = nodes[r]\n            l += 1\n            if l == r:\n                break\n            nodes[r].next = nodes[l]\n            r -= 1\n        nodes[l].next = None",
+    "explain": "Walk the list once to collect every node (not just its value) into a plain Python list, nodes, so any position can be reached directly by index. Then use two index pointers, l at the front and r at the back, and alternate linking nodes[l] to nodes[r] and nodes[r] to nodes[l], moving each pointer inward after it's used, until they meet in the middle.",
+    "why_slow": "It's not slower in time; both approaches are O(n). The cost is memory: nodes holds a reference to every node in the list, so it needs O(n) extra space, while the three-phase pattern needs none.",
+    "how_pattern_fixes": "Instead of collecting every node into an indexable list, the pattern finds the middle and reverses the second half, so \"the back of the list, read backward\" turns into \"the reversed second half, read forward\", something a singly linked list can walk through directly, with no extra storage.",
+    "time": "O(n): linear. One pass to collect the nodes, one pass to relink them.",
+    "space": "O(n): linear. The nodes list holds a reference to every node in the list."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips checking B at all (short-circuiting).",
+    "append": "A list method that adds an item to the end: nodes.append(node) adds node to the end of the nodes list.",
+    "argument": "The actual value you pass into a function or method when you call it. In ListNode(5), 5 is the argument.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "break (keyword)": "A keyword that exits a loop immediately, skipping any remaining passes.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or collecting everything. It's simple but often hungrier for memory than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like ListNode(5) or Solution().reorderList(head).",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while or if lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "edge case": "An unusual input that might break code: a one-node list, a two-node list, an even or an odd number of nodes.",
+    "expression": "Any piece of code that produces a value, like fast.next.next or temp1.val if temp1 else 'None'.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "if (keyword)": "A keyword that starts a condition check. The indented block below it runs only when the condition is True.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "index": "A position in a list, counting from 0. nodes[r] reaches the node at position r.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(5). It sets up the object's fields.",
+    "int": "Python's name for whole numbers (integers).",
+    "keyword": "A word reserved by Python, like class, def, while, if, return.",
+    "len": "A built-in function that gives the number of items in something: len(nodes) is how many nodes the list has.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position by index.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True, and a for loop repeats once per item in a collection.",
+    "method": "A function that belongs to a class, called with a dot: Solution().reorderList(head).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\". It's also what this method returns, since it rearranges the list in place instead of handing back a new one.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. head is reorderList's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like splitting, reversing and weaving a linked list.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list. slow, fast, second, prev, temp, first, temp1 and temp2 are all pointers here.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it. This method has no explicit return, so it hands back None by default.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. None counts as False, and any node object counts as True.",
+    "tuple": "A sequence written with round brackets or just commas, like (list1, list2) or head, prev.",
+    "tuple unpacking": "Assigning several names at once from one tuple, as in first, second = head, prev.",
+    "two pointers": "Using two position variables that move through data together, often at different speeds or through different structures, so comparing where they are reveals something useful.",
+    "type hint": "A label like head: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "weave": "Linking two separate chains together by alternating nodes from each one, instead of attaching one chain wholesale after the other.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "in place": "Modifying existing data directly instead of building a separate copy. Rewiring next fields on the original nodes, instead of copying values into new ones, is done in place."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "find the middle, reverse the second half, then weave",
+      "node_class": "ListNode",
+      "pointers": {
+        "slow": "slow if __line__ in (8, 10, 11, 12, 14, 15) else HIDE",
+        "fast": "fast if __line__ in (8, 10, 11, 12) else HIDE",
+        "second": "second if __line__ >= 14 else HIDE",
+        "prev": "prev if __line__ in (16, 18, 19, 20, 21, 22, 24) else HIDE",
+        "temp": "temp if __line__ in (19, 20, 21, 22) else HIDE",
+        "first": "first if __line__ >= 24 else HIDE",
+        "temp1": "temp1 if __line__ in (26, 27, 28, 29) else HIDE",
+        "temp2": "temp2 if __line__ in (26, 27, 28, 29) else HIDE"
+      }
+    }
+  ]
+}
