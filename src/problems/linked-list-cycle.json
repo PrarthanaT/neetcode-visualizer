@@ -1,0 +1,618 @@
+{
+  "slug": "linked-list-cycle",
+  "title": "Linked List Cycle",
+  "difficulty": "Easy",
+  "category": "Linked List",
+  "leetcode": 141,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it.",
+    "Normally the last node's next is None, meaning the list ends there. But sometimes a node's next points back to an earlier node instead, which creates a cycle: a loop you could walk around forever and never reach the end.",
+    "You are given head, the first node. Return True if the list has a cycle anywhere in it, and False if following next eventually reaches None.",
+    "You should not use an extra structure that grows with the list, like a collection of every node seen so far. The intended solution uses a fixed, constant amount of extra memory."
+  ],
+  "examples": [
+    {
+      "input": "head = 3 → 2 → 0 → -4, and the -4 node's next points back to the node holding 2",
+      "output": "True",
+      "explain": "Following next from -4 leads back to 2, then 0, then -4 again, forever. This is the example the visualizer runs."
+    },
+    {
+      "input": "head = 1 → 2, with no cycle (the 2 node's next is None)",
+      "output": "False",
+      "explain": "Following next from 2 reaches None, so the list has an ordinary end."
+    }
+  ],
+  "pattern": {
+    "name": "Floyd's cycle detection (fast & slow pointers)",
+    "summary": "Walk two pointers from head: slow moves one node per step, fast moves two. If the list truly ends, fast runs off the end first, since it's always at least as far along as slow. If the list has a cycle, fast can never escape it, and because fast gains exactly one node on slow every step once both are inside the cycle, it is guaranteed to land exactly on slow before going all the way around again.",
+    "recognize": [
+      "The question is about a linked list, and asks whether it loops back on itself, or where a loop or a middle node is.",
+      "You need a fixed amount of extra memory, so you can't keep a growing collection of every node already seen and check membership in it.",
+      "You only have forward arrows (next) to work with. There's no way to look backward or ask a node how long the rest of the list is.",
+      "Two pointers moving at different speeds will either both fall off the end together (no cycle) or collide somewhere inside a loop (a cycle)."
+    ],
+    "avoid_when": [
+      "Memory isn't a concern. Then walking once with a single pointer and remembering every node visited is simpler to read, and just as fast.",
+      "You need the cycle's starting node, not just a yes-or-no answer. That needs a second phase after slow and fast meet, which this problem doesn't ask for.",
+      "The structure isn't a linked list but a plain list of numbers, where each number points to the next position by its own value. The same idea still applies there (walking next(i) = nums[i]), but there's no ListNode object to walk through.",
+      "The list is guaranteed to have no cycle. Then a single pointer walking forward until it hits None is enough, and simpler."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "fast covers twice the ground of slow on every step. If the list ends, fast always reaches None at or before slow does, since fast is always at least as far along.",
+      "A cycle can't be escaped by walking forward. If fast never reaches None, the only explanation is that it's looping inside a cycle forever.",
+      "Once both pointers are inside the cycle, the gap between them shrinks by exactly one node every step (fast moves 2, slow moves 1). A gap that keeps shrinking by 1, inside a loop of fixed length, is guaranteed to hit 0, so they must eventually land on the same node.",
+      "Check fast and fast.next, not just fast, before moving fast two nodes. Skipping the second check lets fast.next.next run off a node that doesn't have a next, which crashes."
+    ],
+    "time": "O(n), linear time, where n is the number of nodes. Even counting how long it takes the two pointers to meet, that happens within one full trip around the cycle, so the total number of steps stays proportional to the list's length.",
+    "space": "O(1), constant extra memory. Only two pointer variables exist, slow and fast, no matter how long the list is.",
+    "edge_cases": [
+      "An empty list, head = None. fast starts at None, so the loop's condition fails immediately, and we return False.",
+      "A single node with no cycle, where that node's next is None. fast.next is None right away, the loop never runs, and we return False.",
+      "A single node whose next points back to itself, a cycle of length one. fast reaches the same node as slow on the very first pass.",
+      "A long list where the cycle is small and near the very end. The pointers might take many passes before they meet, but the shrinking-gap argument guarantees they still will, within a bounded number of steps."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def hasCycle(self, head: Optional[ListNode]) -> bool:\n        slow, fast = head, head\n\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if slow == fast:\n                return True\n        return False\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build_cycle(values, pos):\n    nodes = [ListNode(v) for v in values]\n    for i in range(len(nodes) - 1):\n        nodes[i].next = nodes[i + 1]\n    if pos != -1:\n        nodes[-1].next = nodes[pos]\n    return nodes[0] if nodes else None\n",
+    "call": "Solution().hasCycle(build_cycle([3, 2, 0, -4], 1))",
+    "expected": true,
+    "describe": "head = 3 → 2 → 0 → -4, and the last node's next points back to the node holding 2 (pos = 1)"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the list is an object made from this blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(5). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating nodes convenient: ListNode(5) makes a lone node, and ListNode(5, other) makes a node pointing at other.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. Later, node.val reads the value back.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.value = val",
+          "difference": "A different field name. All code would then have to say node.value. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node (or None if there is no cycle and this is the last node). A cycle exists exactly when some node's next doesn't eventually lead to None.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is the link that makes it a chain, and it's the only thing hasCycle is allowed to look at to tell whether the chain loops.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too. A cycle could then be detected by other means, but this problem only gives you next."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method hasCycle. It receives head, the first node (or None for an empty list), and promises to give back a bool: True if walking the list loops forever, False if it reaches None.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def hasCycle(",
+          "meaning": "def starts a method. hasCycle is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "head: Optional[ListNode]",
+          "meaning": "The first node of the list. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": ") -> bool",
+          "meaning": "The method returns a bool: either True or False. The question only asks yes-or-no, not where a cycle starts."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "A linked list is passed around by its first node, so the input is just head. The output is a plain bool because the problem only asks whether a cycle exists.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def hasCycle(self, head):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def hasCycle(self, head: ListNode | None) -> bool:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Returning something other than a plain bool, like the node where the pointers met. LeetCode expects exactly True or False.",
+      "caption": "Python remembers the hasCycle instructions for later."
+    },
+    "8": {
+      "explain": "This sets up two pointers at the start of the list. slow and fast both begin at head; what makes them different is how far each one moves per step, not where they start.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "slow, fast",
+          "meaning": "Two variable names. Python assigns both at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head, head",
+          "meaning": "Both names start out pointing at the same first node."
+        }
+      ],
+      "why": "Both pointers need a starting point, and the first node is the natural one. They're the same node at first; the \"slow\" and \"fast\" speeds only show up once the loop starts moving them.",
+      "if_removed": "The loop below would crash with a NameError, since slow and fast wouldn't exist yet.",
+      "alternatives": [
+        {
+          "code": "slow = fast = head",
+          "difference": "Chained assignment: the same result, written as one assignment target chain instead of a tuple. Either is fine style."
+        }
+      ],
+      "mistake": "Starting fast at head.next instead of head. It changes which pass the two pointers meet on, and it crashes immediately on an empty list, where head is already None and head.next doesn't exist.",
+      "caption": [
+        {
+          "when": "head is None",
+          "text": "slow and fast both start at head, which is None: the list is empty."
+        },
+        {
+          "text": "slow and fast both start at the first node, {head.val}."
+        }
+      ]
+    },
+    "10": {
+      "explain": "Keep looping as long as fast can still move two nodes forward: fast has to be a real node, and so does fast.next. The moment either one is None, fast has walked off the end, which means there's no cycle.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "fast",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": "and",
+          "meaning": "Both sides must be True. If fast is already False (None), Python skips checking fast.next entirely."
+        },
+        {
+          "token": "fast.next",
+          "meaning": "The node after fast, checked the same way: a node is True, None is False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "fast is about to jump two nodes ahead with fast.next.next, so both fast and fast.next must exist first, or that lookup would crash on a node whose next is None. Checking two steps ahead, not one, is exactly what lets fast move faster than slow.",
+      "if_removed": "Writing while fast: alone would let the loop reach the very last node, where fast.next is None, then crash on fast.next.next with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "while fast is not None and fast.next is not None:",
+          "difference": "Spells out the None checks explicitly. It behaves the same, and some people find it clearer."
+        }
+      ],
+      "mistake": "Forgetting the and fast.next half and only checking fast. That crashes the moment fast lands on the last real node of a list with no cycle.",
+      "caption": [
+        {
+          "when": "not fast",
+          "text": "fast is None: we've walked off the end, so there's no cycle. Return False."
+        },
+        {
+          "when": "not fast.next",
+          "text": "fast is on {fast.val}, but fast.next is None: one more step would run off the end. No cycle. Return False."
+        },
+        {
+          "text": "fast is on {fast.val} and has a node after it, so advance both pointers."
+        }
+      ]
+    },
+    "11": {
+      "explain": "Move slow forward by one node: its normal walking speed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "slow",
+          "meaning": "The slower pointer."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "slow.next",
+          "meaning": "The node right after the current slow."
+        }
+      ],
+      "why": "slow is the one fast has to catch up to. Moving it one step at a time is what makes the two pointers close the gap between them, instead of always staying the same distance apart.",
+      "if_removed": "slow would never move, staying on head forever, while fast raced ahead. In a list with a cycle, fast would lap around and might accidentally land back on head, but the method would no longer correctly detect every cycle shape.",
+      "alternatives": [
+        {
+          "code": "slow = slow.next if slow else None",
+          "difference": "A defensive check that isn't needed here: the while condition already guarantees there's enough list left for slow, which never gets ahead of fast, to take one more step safely."
+        }
+      ],
+      "mistake": "Writing slow = slow.next.next by accident, copying the line below. That makes slow move at fast's speed too, and the two pointers would then only ever meet by starting on the same node.",
+      "caption": "Move slow forward one node, to {slow.next.val}."
+    },
+    "12": {
+      "explain": "Move fast forward by two nodes: its double speed.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "fast",
+          "meaning": "The faster pointer."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "fast.next.next",
+          "meaning": "The node two steps after the current fast: first read fast.next (a real node, guaranteed by the while condition), then read that node's own next field."
+        }
+      ],
+      "why": "Moving fast two nodes for every one node slow moves is the whole trick: if there's no cycle, fast reaches the end twice as fast; if there is one, fast closes the gap on slow by exactly one node every pass.",
+      "if_removed": "fast would move only one node, the same as slow. Two pointers moving at identical speed from the same start would always stay the same distance apart and never collide inside a cycle.",
+      "alternatives": [
+        {
+          "code": "fast = fast.next\nfast = fast.next",
+          "difference": "Two separate one-step moves instead of one two-step move. Same result, written with an extra line."
+        }
+      ],
+      "mistake": "Writing fast = fast.next instead of fast.next.next. That's the single most common slip in this pattern: both pointers end up moving at the same speed and never gain on each other.",
+      "caption": [
+        {
+          "when": "fast.next.next",
+          "text": "Move fast forward two nodes, to {fast.next.next.val}."
+        },
+        {
+          "text": "Move fast forward two nodes, off the end to None."
+        }
+      ]
+    },
+    "13": {
+      "explain": "Check whether the two pointers now point at the exact same node.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "A keyword that starts a condition check. The indented block below runs only when it's True."
+        },
+        {
+          "token": "slow",
+          "meaning": "The slower pointer."
+        },
+        {
+          "token": "==",
+          "meaning": "Equality. Since ListNode doesn't define a custom ==, this compares whether slow and fast are the very same object, not just equal values."
+        },
+        {
+          "token": "fast",
+          "meaning": "The faster pointer."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition. The indented block below is what runs when it's True."
+        }
+      ],
+      "why": "If slow and fast are standing on the same node, they've collided. Two pointers moving at different, nonzero speeds from the same start can only ever land on the same node again by going around a loop.",
+      "if_removed": "The loop would keep running past the moment the pointers actually meet, never reporting the cycle, and would run forever until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "if slow is fast:",
+          "difference": "is checks that both names refer to the exact same object, which is exactly what's being tested. Because ListNode has no custom ==, slow == fast already behaves identically to slow is fast here."
+        }
+      ],
+      "mistake": "Checking slow.val == fast.val instead of the nodes themselves. Two different nodes can hold equal values without being the same node, which would wrongly report a cycle.",
+      "caption": [
+        {
+          "when": "slow == fast",
+          "text": "slow and fast are both on the node holding {slow.val}: they've collided. There's a cycle!"
+        },
+        {
+          "text": "slow is on {slow.val} and fast is on {fast.val}: not the same node yet. Keep going."
+        }
+      ]
+    },
+    "14": {
+      "explain": "The pointers collided, which can only happen inside a cycle, so return True right away.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block, so this only runs when the condition was True."
+        },
+        {
+          "token": "return",
+          "meaning": "A keyword that ends the method immediately and hands the value after it back to the caller."
+        },
+        {
+          "token": "True",
+          "meaning": "The boolean answer: yes, there's a cycle."
+        }
+      ],
+      "why": "The moment slow and fast meet, a cycle is already proven. There's no reason to keep looping.",
+      "if_removed": "The if block would be empty, which Python doesn't allow; you'd get a SyntaxError before the code could even run. If the whole if were removed instead, a real cycle would never be reported, and the loop would run forever (slow and fast would stay together, circling the cycle in lockstep) until the visualizer's step cap stopped it.",
+      "alternatives": [
+        {
+          "code": "found = True\nbreak",
+          "difference": "Set a flag and break out of the loop, then return the flag afterwards. It reaches the same answer with more code, since returning immediately already does the job."
+        }
+      ],
+      "mistake": "Forgetting this line, which (as noted) isn't valid Python with an empty if body.",
+      "caption": "Found the collision: return True."
+    },
+    "15": {
+      "explain": "The loop ended because fast ran off the end without ever meeting slow, so the list has no cycle.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level: runs once, after the loop, only if it never returned True."
+        },
+        {
+          "token": "return",
+          "meaning": "Ends the method and hands back the value after it."
+        },
+        {
+          "token": "False",
+          "meaning": "The boolean answer: no, there's no cycle."
+        }
+      ],
+      "why": "Reaching this line means the while condition failed, which only happens when fast walked past the last real node. A list that truly ends can't contain a cycle.",
+      "if_removed": "Python would reach the end of the method with no return statement, and calling it would give back None instead of False, which isn't the exact value LeetCode expects.",
+      "alternatives": [
+        {
+          "code": "return slow == fast",
+          "difference": "This line is only reached when the loop ended by running out of list, so slow == fast is always False here anyway; writing False directly says what's actually true more plainly."
+        }
+      ],
+      "mistake": "Indenting this line so it sits inside the while loop instead of after it. Then it would return False after the very first pass that doesn't collide, instead of only after fast genuinely runs out of list.",
+      "caption": "fast ran off the end: no cycle. Return False."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def hasCycle(self, head: Optional[ListNode]) -> bool:\n        seen = set()\n        node = head\n\n        while node:\n            if node in seen:\n                return True\n            seen.add(node)\n            node = node.next\n        return False",
+    "explain": "Walk the list with a single pointer, node, and remember every node object visited in a set. Before stepping onto a new node, check if it's already in the set; if it is, we've looped back onto something seen before, which means a cycle. If node reaches None without ever repeating, there's no cycle.",
+    "why_slow": "It isn't slower in time; both approaches are O(n). The cost is memory: the set can end up holding every node in the list, so it needs O(n) extra space, while the two-pointer pattern needs none.",
+    "how_pattern_fixes": "Instead of remembering every node visited, the fast and slow pointers use the cycle itself as the memory: a faster pointer is guaranteed to catch up to a slower one if, and only if, both are stuck looping in the same cycle. No extra collection is needed.",
+    "time": "O(n): linear. Each node is visited once before either returning True or exhausting the list.",
+    "space": "O(n): linear. The set holds up to every node in the list."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips checking B at all (short-circuiting).",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking everything. It's simple but often slower, or hungrier for memory, than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like ListNode(5) or Solution().hasCycle(head).",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while or if lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "cycle": "A loop in a linked list's links: some node's next, followed far enough, leads back to a node you've already visited, so following next forever never reaches None.",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "dummy node": "A placeholder node created just to simplify the code, not part of the real data. This problem doesn't need one, but Merge Two Sorted Lists and Remove Nth Node From End of List do.",
+    "edge case": "An unusual input that might break code: an empty list, a single node, a cycle of length one, and so on.",
+    "expression": "Any piece of code that produces a value, like fast.next.next or slow == fast.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(5). It sets up the object's fields.",
+    "keyword": "A word reserved by Python, like class, def, while, if, return.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. A cycle is a linked list where this chain never reaches None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True.",
+    "method": "A function that belongs to a class, called with a dot: Solution().hasCycle(head).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\", so a list with no cycle always reaches None eventually.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. head is hasCycle's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like fast and slow pointers.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around the list. slow and fast are pointers.",
+    "pop": "Not used in this file's code, but a common list method that removes and returns the last item; mentioned here since other linked list problems use it.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node. This problem is about whether that forward chain loops.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "tail": "The last node of a linked list, the one whose next is None. A list with a cycle has no tail.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "truthiness": "Using a non-boolean value as a condition. None counts as False, and any node object counts as True.",
+    "tuple": "Like a list but unchangeable, written with round brackets or just commas: (1, 2) or 1, 2.",
+    "tuple unpacking": "Assigning several names at once: slow, fast = head, head.",
+    "two pointers": "Using two position variables that move through the same data, often at different speeds or from different starting points, so comparing where they are reveals something about the structure.",
+    "type hint": "A label like head: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "argument": "The actual value you pass into a function or method when you call it. In build_cycle([3, 2, 0, -4], 1), the list and the 1 are arguments.",
+    "bool": "Python's name for the boolean type: a value that is True or False.",
+    "SyntaxError": "The error Python raises when it can't even read your code: a missing colon, an empty block, an unclosed bracket, and so on."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "the list (watch the back-edge)",
+      "node_class": "ListNode",
+      "pointers": {
+        "slow": "slow",
+        "fast": "fast if __line__ in (10, 12, 13, 14) else HIDE"
+      }
+    }
+  ]
+}
