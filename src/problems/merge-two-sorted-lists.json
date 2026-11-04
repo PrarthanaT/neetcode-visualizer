@@ -1,0 +1,797 @@
+{
+  "slug": "merge-two-sorted-lists",
+  "title": "Merge Two Sorted Lists",
+  "difficulty": "Easy",
+  "category": "Linked List",
+  "leetcode": 21,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it. The last node's next is None.",
+    "You are given list1 and list2, the first nodes of two linked lists, and both lists are already sorted from smallest to largest.",
+    "Merge them into one sorted list by reusing the existing nodes (don't make new ones), and return the first node of the merged list.",
+    "Either list might be empty, in which case its head is None."
+  ],
+  "examples": [
+    {
+      "input": "list1 = 1 → 2 → 4, list2 = 1 → 3 → 4",
+      "output": "1 → 1 → 2 → 3 → 4 → 4",
+      "explain": "Every node from both lists appears once, in sorted order. This is the example the visualizer runs."
+    },
+    {
+      "input": "list1 = None, list2 = None",
+      "output": "None",
+      "explain": "Both lists are empty, so the merged list is empty too."
+    }
+  ],
+  "pattern": {
+    "name": "Two-pointer merge behind a dummy node",
+    "summary": "Walk list1 and list2 at the same time with two pointers. At each step, compare the two current nodes and link the smaller one onto the end of the list you're building, then move that list's pointer forward. A dummy node sits before the very first real node, so the first link works exactly like every other one, with no special case for starting an empty answer. When one list runs out, attach whatever is left of the other.",
+    "recognize": [
+      "You're given two (or more) sorted sequences and asked to combine them into one sorted sequence.",
+      "The inputs are already sorted, so you never need to search backward: the smallest remaining item is always at the front of one of the lists.",
+      "You must reuse the existing nodes rather than copy values into a new list, which is a common extra constraint on linked list problems.",
+      "Building a new list one node at a time is awkward to start, because the very first node has no earlier node to attach to; a dummy node removes that special case."
+    ],
+    "avoid_when": [
+      "The inputs aren't already in sorted order. Then you'd need to put them in that order first, which costs more than the O(n) merge itself.",
+      "You're merging many lists at once, not just two. Repeating this pairwise merge works but is slower than using a heap to always grab the smallest head (see Merge K Sorted Lists).",
+      "The data is plain arrays, not linked lists, and you're allowed extra memory. Then building a new output array (or using Python's sorted()) is simpler, since arrays support indexing.",
+      "You need to merge in place without even a dummy node. It's possible by special-casing the first node, but the dummy node version is simpler to get right."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "A dummy node is a placeholder you throw away at the end. It lets curr.next = ... work identically on the very first node and every node after it, so there's no 'if this is the first node' branch.",
+      "Because both lists are sorted, the overall smallest remaining value is always one of exactly two candidates: list1's current node or list2's current node. You never need to look further ahead.",
+      "curr always marks the last node of the merged list so far; curr.next is where the next node gets attached, and then curr itself moves there.",
+      "When one list runs out, the other list is already sorted and has nothing left to compare against, so you can attach all of it in one line instead of looping node by node."
+    ],
+    "time": "O(n + m), linear time, where n and m are the lengths of list1 and list2. Each node from both lists is looked at and attached exactly once.",
+    "space": "O(1), constant extra memory. No new nodes are created; dummy and curr are the only extra variables, and the merged list is built entirely out of the two input lists' own nodes.",
+    "edge_cases": [
+      "Both lists empty, list1 = None and list2 = None. The while loop never runs, and curr.next = list1 if list1 else list2 attaches None, so dummy.next is None.",
+      "One list empty, the other not. The while loop never runs (it needs both lists to have a node), and the non-empty list is attached whole by the line after the loop.",
+      "Equal values, like a 1 in both lists. list1.val <= list2.val is True when they're equal, so list1's node is taken first; either order is a valid merge.",
+      "Lists of very different lengths. The loop stops as soon as the shorter list runs out, and the line after it attaches the rest of the longer one in one step."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:\n        dummy = ListNode()\n        curr = dummy\n\n        while list1 and list2:\n            if list1.val <= list2.val:\n                curr.next = list1\n                list1 = list1.next\n            else:\n                curr.next = list2\n                list2 = list2.next\n            curr = curr.next\n\n        curr.next = list1 if list1 else list2\n        return dummy.next\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    head = None\n    for v in reversed(values):\n        head = ListNode(v, head)\n    return head\n\ndef to_list(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n",
+    "call": "Solution().mergeTwoLists(build([1, 2, 4]), build([1, 3, 4]))",
+    "check": "to_list(__result__)",
+    "expected": [
+      1,
+      1,
+      2,
+      3,
+      4,
+      4
+    ],
+    "describe": "list1 = 1 → 2 → 4, list2 = 1 → 3 → 4"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the list is an object made from this blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(5). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating nodes convenient: ListNode(5) makes a lone node, and ListNode() with no arguments at all makes a throwaway node whose val is 0 and whose next is None, exactly what a dummy node needs.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. Later, node.val reads the value back, which is exactly what list1.val <= list2.val compares.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.value = val",
+          "difference": "A different field name. All code would then have to say node.value. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node (or None at the end). The whole merge works by reading and rewriting these next fields.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is the link that makes it a chain. curr.next = list1 and curr.next = list2 are the two lines doing the actual merging.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too. Merging would then also need to fix up backward links on each attached node."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method mergeTwoLists. It receives list1 and list2, the first nodes of two sorted lists (either may be None), and promises to give back the first node of the merged list.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def mergeTwoLists(",
+          "meaning": "def starts a method. mergeTwoLists is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "list1: Optional[ListNode]",
+          "meaning": "The first input list's head. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": "list2: Optional[ListNode]",
+          "meaning": "The second input list's head, hinted the same way."
+        },
+        {
+          "token": ") -> Optional[ListNode]",
+          "meaning": "The method returns a ListNode or None: the head of the merged list."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Each linked list is passed around by its first node, so two lists means two parameters, and the merged answer is just the head of a third (reused) list.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def mergeTwoLists(self, list1, list2):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def mergeTwoLists(self, list1: ListNode | None, list2: ListNode | None) -> ListNode | None:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Assuming list1 and list2 can't both be None at once. They can: that's one of the edge cases, and the code has to handle it without crashing.",
+      "caption": "Python remembers the mergeTwoLists instructions for later."
+    },
+    "8": {
+      "explain": "This creates a brand-new, throwaway node called dummy, using ListNode()'s defaults: val = 0, next = None. It isn't part of the answer; it just gives curr somewhere to start.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "dummy",
+          "meaning": "A new variable name for the placeholder node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode()",
+          "meaning": "Calls ListNode's __init__ with no arguments, so val defaults to 0 and next defaults to None. This makes a brand-new node, separate from every node in list1 or list2."
+        }
+      ],
+      "why": "Without a dummy, attaching the very first node of the merged list would need its own special-case line (since there's no earlier node yet to set .next on). dummy gives every attachment, including the first, the exact same curr.next = ... shape.",
+      "if_removed": "Line 10 (curr = dummy) would crash with a NameError, since dummy wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "dummy = ListNode(-1)",
+          "difference": "Any value works for dummy's val, since this node is thrown away at the end and never appears in the answer. 0 (the default) is just as good as -1."
+        }
+      ],
+      "mistake": "Reusing one of list1 or list2's real nodes as the dummy instead of creating a new one. That would silently drop a real value from the merged answer.",
+      "caption": "Create a throwaway dummy node (val 0, next None) to build the merged list behind."
+    },
+    "9": {
+      "explain": "This points curr at dummy. curr always marks the last node attached to the merged list so far, and right now that's just the dummy.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "curr",
+          "meaning": "A new variable name: the current end of the merged list being built."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: curr now refers to the same node as dummy. No node is copied."
+        },
+        {
+          "token": "dummy",
+          "meaning": "The placeholder node just created."
+        }
+      ],
+      "why": "curr is what the rest of the method moves forward, one attached node at a time. dummy itself never moves, so we can always get back to the start of the merged list through dummy.next, even after curr has walked far ahead.",
+      "if_removed": "The while loop below would crash with a NameError, since curr wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "dummy = curr = ListNode()",
+          "difference": "Combines this line and the one above into a chained assignment. Same result, one line instead of two."
+        }
+      ],
+      "mistake": "Setting curr = dummy.next instead of curr = dummy. dummy.next is still None at this point, so curr would start as None and crash the moment the loop tried curr.next = list1.",
+      "caption": "Point curr at dummy: the merged list starts empty, right behind the placeholder."
+    },
+    "11": {
+      "explain": "Keep looping as long as both list1 and list2 still have a node left to compare. The moment either one runs out, there's nothing left to compare it against, so the loop stops.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "list1",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": "and",
+          "meaning": "Both sides must be True. If list1 is already False (None), Python skips checking list2 entirely."
+        },
+        {
+          "token": "list2",
+          "meaning": "Checked the same way as list1."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "As long as both lists have a current node, the true smallest remaining value must be one of those two nodes, since each list is sorted. Once one list is exhausted, the comparison has nothing left to weigh it against.",
+      "if_removed": "The lines below would never run, and curr.next = list1 if list1 else list2 would immediately attach one whole list after the other, in list1-then-list2 order, without merging them by value at all.",
+      "alternatives": [
+        {
+          "code": "while list1 is not None and list2 is not None:",
+          "difference": "Spells out the None checks explicitly. It behaves the same, and some people find it clearer."
+        }
+      ],
+      "mistake": "Writing or instead of and. with or, the loop would keep running even after one list ran out, and list1.val would crash with an AttributeError the moment list1 became None.",
+      "caption": [
+        {
+          "when": "not list1",
+          "text": "list1 is used up, so stop comparing and attach whatever is left of list2."
+        },
+        {
+          "when": "not list2",
+          "text": "list2 is used up, so stop comparing and attach whatever is left of list1."
+        },
+        {
+          "text": "list1 is on {list1.val} and list2 is on {list2.val}: compare them."
+        }
+      ]
+    },
+    "12": {
+      "explain": "Compare the two current nodes' values. If list1's is smaller or equal, its node gets attached next; otherwise list2's does.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "A keyword that starts a condition check. The indented block below runs only when it's True."
+        },
+        {
+          "token": "list1.val",
+          "meaning": "Reads the value field of the node list1 currently points at."
+        },
+        {
+          "token": "<=",
+          "meaning": "Less than or equal to. Using <= instead of < decides what happens on a tie (see the mistake below)."
+        },
+        {
+          "token": "list2.val",
+          "meaning": "The value field of list2's current node."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition. The indented block below is what runs when it's True."
+        }
+      ],
+      "why": "Both lists are sorted, so the smaller of the two current values is guaranteed to be the smallest value left anywhere in either list. Taking it first keeps the merged list sorted.",
+      "if_removed": "There would be no way to decide which node to attach next; the code wouldn't compile without some condition here.",
+      "alternatives": [
+        {
+          "code": "if list1.val < list2.val:",
+          "difference": "Using < instead of <=. On a tie, this takes list2's node first instead of list1's. Either order is a valid merge, so both are correct; they just attach equal values in a different order."
+        }
+      ],
+      "mistake": "Comparing the nodes themselves (list1 <= list2) instead of their values (list1.val <= list2.val). ListNode doesn't support <=, so that would crash with a TypeError.",
+      "caption": [
+        {
+          "when": "list1.val <= list2.val",
+          "text": "{list1.val} <= {list2.val}, so list1's node is smaller (or tied). Take it next."
+        },
+        {
+          "text": "{list1.val} > {list2.val}, so list2's node is smaller. Take it next."
+        }
+      ]
+    },
+    "13": {
+      "explain": "Attach list1's current node onto the end of the merged list, right after curr.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block, so this only runs when list1's node was smaller or tied."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The next field of curr, the slot we're filling in."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: overwrite that field."
+        },
+        {
+          "token": "list1",
+          "meaning": "The node currently at the front of list1."
+        }
+      ],
+      "why": "curr marks the end of the merged list so far, so pointing curr.next at list1 is exactly how a new node gets linked onto it. This reuses list1's existing node; nothing is copied or created.",
+      "if_removed": "curr.next would stay whatever it was before (None, the first time), so the merged list would end right where it is, silently dropping list1's node and everything after it.",
+      "alternatives": [
+        {
+          "code": "curr.next = ListNode(list1.val)",
+          "difference": "Creates a brand-new node with a copy of the value, instead of reusing list1's own node. It would still work, but the problem specifically wants the existing nodes reused, not copied."
+        }
+      ],
+      "mistake": "Writing curr.next = list1.val, which attaches the raw number instead of the node. Later code expecting curr.next to be a ListNode (like curr.next.next) would then crash with an AttributeError.",
+      "caption": "Attach list1's node, {list1.val}, after curr."
+    },
+    "14": {
+      "explain": "Move list1 forward to the node after the one just attached, so the next comparison looks at list1's next-smallest value.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block."
+        },
+        {
+          "token": "list1",
+          "meaning": "The pointer being advanced."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "list1.next",
+          "meaning": "The node after the one list1 was just on."
+        }
+      ],
+      "why": "The node list1 pointed at has already been attached to the merged list. Advancing list1 makes sure that node is never considered, or attached, twice.",
+      "if_removed": "list1 would stay on the same node forever. Since curr.next = list1 would keep re-attaching the same node, curr.next (its own next field) would be left pointing at itself, which produces a tiny cycle instead of growing the list, and the method would never make progress.",
+      "alternatives": [
+        {
+          "code": "list1 = curr.next.next",
+          "difference": "Reaches the same node a longer way around, through the merged list instead of through list1 directly. Confusing to read; list1.next says exactly what's meant."
+        }
+      ],
+      "mistake": "Advancing curr here instead of list1. That would leave curr stuck as the dummy (or wherever it already was) one attachment behind, and the next attachment would overwrite curr.next before it's ever moved.",
+      "caption": [
+        {
+          "when": "list1.next",
+          "text": "Move list1 forward to {list1.next.val}."
+        },
+        {
+          "text": "Move list1 forward, off the end to None."
+        }
+      ]
+    },
+    "15": {
+      "explain": "Otherwise, list2's current value is smaller, so take list2's node instead.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Lines up with the if on line 12. It's the other branch of the same condition."
+        },
+        {
+          "token": "else",
+          "meaning": "\"Otherwise\": runs when the if above was False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the line."
+        }
+      ],
+      "why": "The if already covers list1.val <= list2.val, so else covers exactly the opposite: list2.val is strictly smaller.",
+      "if_removed": "Lines 16 and 17 would run unconditionally after line 12's if block, attaching list2's node every single pass regardless of which value was actually smaller.",
+      "alternatives": [
+        {
+          "code": "elif list2.val < list1.val:",
+          "difference": "Spells the condition out again instead of relying on it being the only case left. Correct, but redundant here, since the if above already covers every other possibility."
+        }
+      ],
+      "mistake": "Misaligning else so it pairs with the wrong if, or with the while loop instead of the if.",
+      "caption": "list2's node, {list2.val}, is smaller. Take it next."
+    },
+    "16": {
+      "explain": "Attach list2's current node onto the end of the merged list, right after curr.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the else block."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The next field of curr, the slot being filled in."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "list2",
+          "meaning": "The node currently at the front of list2."
+        }
+      ],
+      "why": "Same idea as line 13, mirrored for list2: curr.next = list2 links list2's node onto the end of the merged list, reusing it as-is.",
+      "if_removed": "curr.next would stay whatever it was before, silently dropping list2's node and everything after it from the answer.",
+      "alternatives": [
+        {
+          "code": "curr.next = ListNode(list2.val)",
+          "difference": "Creates a new node with a copy of the value instead of reusing list2's own node. It would work, but copies data the problem wants reused."
+        }
+      ],
+      "mistake": "Writing curr.next = list1 here by copy-paste mistake. That would re-attach list1's node (already attached, or not yet smaller) instead of list2's, producing the wrong order or a tiny cycle.",
+      "caption": "Attach list2's node, {list2.val}, after curr."
+    },
+    "17": {
+      "explain": "Move list2 forward to the node after the one just attached.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the else block."
+        },
+        {
+          "token": "list2",
+          "meaning": "The pointer being advanced."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "list2.next",
+          "meaning": "The node after the one list2 was just on."
+        }
+      ],
+      "why": "Mirrors line 14: the node list2 pointed at is now part of the merged list, so list2 has to move on to its own next-smallest value.",
+      "if_removed": "list2 would stay on the same node forever, and the method would keep re-attaching it without ever making progress through list2.",
+      "alternatives": [
+        {
+          "code": "list2 = curr.next.next",
+          "difference": "Reaches the same node through the merged list instead of through list2 directly. Works, but list2.next is far more direct."
+        }
+      ],
+      "mistake": "Advancing list1 here instead of list2. Then list1 would skip a node it hasn't actually been compared or attached yet, silently dropping it from the answer.",
+      "caption": [
+        {
+          "when": "list2.next",
+          "text": "Move list2 forward to {list2.next.val}."
+        },
+        {
+          "text": "Move list2 forward, off the end to None."
+        }
+      ]
+    },
+    "18": {
+      "explain": "Move curr forward to the node that was just attached, so the next attachment lands after it instead of overwriting it.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Back at while-loop level: this line runs after either branch of the if/else, on every pass."
+        },
+        {
+          "token": "curr",
+          "meaning": "The end of the merged list so far."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The node curr.next was just set to, two lines up, inside whichever branch ran."
+        }
+      ],
+      "why": "curr has to track the true end of the merged list at all times, so the next node attached lands in the right place instead of replacing the one just added.",
+      "if_removed": "curr would stay on dummy forever, and every pass would overwrite dummy.next with whichever node is smallest at that moment, so the merged list would only ever have one real node in it.",
+      "alternatives": [
+        {
+          "code": "if list1.val <= list2.val:\n    curr.next = list1\n    curr = curr.next\n    list1 = list1.next\nelse:\n    ...",
+          "difference": "Moving curr right after attaching, inside each branch, instead of once after the if/else. Same result, with the line duplicated in both branches instead of shared."
+        }
+      ],
+      "mistake": "Writing curr = curr.next.next, copying the cycle-detection idiom from a different problem. That would skip over the node just attached and corrupt the merge.",
+      "caption": "Move curr forward to the node just attached, {curr.next.val}."
+    },
+    "20": {
+      "explain": "The loop ended because one list ran out. Attach whatever real nodes are left in the other list, all at once, in one line.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level, after the while loop."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The next field of curr, the last node attached so far."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "list1 if list1 else list2",
+          "meaning": "A conditional expression: evaluates to list1 if list1 is truthy (a real node), otherwise to list2."
+        }
+      ],
+      "why": "Whichever list still has nodes left is already sorted, and every value left in it is at least as large as everything already merged, so there's nothing to compare: the whole remaining chain can be attached in one step instead of looping node by node.",
+      "if_removed": "The merged list would silently stop early, missing whichever list's tail wasn't fully compared through the loop.",
+      "alternatives": [
+        {
+          "code": "curr.next = list1 or list2",
+          "difference": "or returns its first truthy operand, so this reaches the exact same result as the conditional expression here. Some readers find or less explicit about what's being decided."
+        }
+      ],
+      "mistake": "Writing curr.next = list2 if list1 else list1, swapping the two branches by accident. That attaches the wrong (already-exhausted) list.",
+      "caption": [
+        {
+          "when": "list1",
+          "text": "list1 still has nodes left, starting at {list1.val}: attach the rest of list1."
+        },
+        {
+          "text": "list1 is used up, so attach whatever is left of list2 (starting at {list2.val if list2 else 'nothing, since list2 is empty too'})."
+        }
+      ]
+    },
+    "21": {
+      "explain": "Return the real first node of the merged list, skipping over the dummy.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Back at method level."
+        },
+        {
+          "token": "return",
+          "meaning": "A keyword that ends the method and hands the value after it back to the caller."
+        },
+        {
+          "token": "dummy.next",
+          "meaning": "The node right after the placeholder: the first real node of the merged list."
+        }
+      ],
+      "why": "dummy itself was never a real part of the answer; dummy.next is the first node that actually belongs to the merged list, no matter how the merge went.",
+      "if_removed": "Python would reach the end of the method with no return statement, and calling it would give back None, discarding the whole merged list.",
+      "alternatives": [
+        {
+          "code": "return dummy.next if dummy.next else None",
+          "difference": "Unnecessary: dummy.next already is None when both inputs are empty, since Python functions return None by default when nothing is explicitly returned, and None here is exactly the value an empty merge should give back."
+        }
+      ],
+      "mistake": "Returning dummy instead of dummy.next. That would include the throwaway placeholder node, with its leftover val of 0, as if it were a real part of the answer.",
+      "caption": "Return dummy.next: the real merged list starts at {dummy.next.val if dummy.next else 'None, since both lists were empty'}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:\n        values = []\n        for node in (list1, list2):\n            while node:\n                values.append(node.val)\n                node = node.next\n        values.sort()\n\n        dummy = ListNode()\n        curr = dummy\n        for v in values:\n            curr.next = ListNode(v)\n            curr = curr.next\n        return dummy.next",
+    "explain": "Walk both lists and copy every value into a plain Python list. Put that list into sorted order with Python's list method shown in the code above. Then build a brand-new chain of nodes from the sorted values, one ListNode per value, and return the first one.",
+    "why_slow": "It's not slower in big-picture time: putting n + m values in sorted order costs O((n + m) log(n + m)), which is actually a bit worse than the pattern's O(n + m), since it ignores that the inputs were already sorted. It also breaks the \"reuse the existing nodes\" rule, creating a whole new set of ListNode objects instead.",
+    "how_pattern_fixes": "Because both inputs are already sorted, there's no need to put anything in order again: comparing just the two current front values at each step is enough to always pick the true smallest remaining value. The pattern also reuses the original nodes directly instead of copying every value into a new list and building fresh nodes.",
+    "time": "O((n + m) log(n + m)): putting the combined values in order dominates, ignoring the fact that the two inputs were already individually sorted.",
+    "space": "O(n + m): linear. The values list holds a copy of every value, and a whole new set of nodes gets built from it."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips checking B at all (short-circuiting).",
+    "argument": "The actual value you pass into a function or method when you call it. In ListNode(5), 5 is the argument.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n log n) grows a bit faster than that. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or copying everything. It's simple but often slower, or hungrier for memory, than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like ListNode(5) or Solution().mergeTwoLists(a, b).",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while, if or else lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "comparison operator": "A symbol like <=, <, == or > that compares two values and produces a boolean.",
+    "conditional expression": "A compact if/else written as one expression: a if condition else b. It produces a value, unlike a full if statement.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "dummy node": "A placeholder node created before the real list starts, so the first real node can be attached the exact same way as every later one, with no special case for an empty answer. It's thrown away at the end; only dummy.next matters.",
+    "edge case": "An unusual input that might break code: an empty list, both lists empty, equal values, lists of very different lengths.",
+    "else (keyword)": "A keyword meaning \"otherwise\". Its block runs when the if above it was False.",
+    "expression": "Any piece of code that produces a value, like list1.val <= list2.val or list1 if list1 else list2.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(5). It sets up the object's fields.",
+    "keyword": "A word reserved by Python, like class, def, while, if, else, return.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position by index.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True, and a for loop repeats once per item in a collection.",
+    "method": "A function that belongs to a class, called with a dot: Solution().mergeTwoLists(a, b).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\", and a head of None means the whole list is empty.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "or (operator)": "A logical operator. A or B produces A if A is truthy, otherwise B. list1 or list2 gives whichever one is a real node, favoring list1.",
+    "parameter": "A name in a function's definition that receives an input. list1 and list2 are mergeTwoLists's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like merging with two pointers.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list. list1, list2, dummy and curr are all pointers here.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise. Both list1 and list2 are given already sorted.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tuple": "An unchangeable sequence written with round brackets or just commas, like (list1, list2). Used here to loop over both input lists with the same code.",
+    "type hint": "A label like list1: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "two pointers": "Using two position variables that move through data together, often at different speeds or through different structures, so comparing where they are reveals something useful. Here list1 and list2 are the two pointers being merged.",
+    "in place": "Modifying existing data directly instead of building a separate copy. Rewiring next fields on the original nodes, instead of copying values into new ones, is done in place.",
+    "cycle": "A loop in a linked list's links, where following next forever never reaches None. A correct merge should never accidentally create one.",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "operand": "A value an operator works on. In A or B, A and B are the operands."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "list1, list2, and the merged list growing behind dummy",
+      "node_class": "ListNode",
+      "pointers": {
+        "list1": "list1",
+        "list2": "list2",
+        "dummy": "dummy",
+        "curr": "curr"
+      }
+    }
+  ]
+}
