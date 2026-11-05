@@ -1,0 +1,617 @@
+{
+  "slug": "merge-k-sorted-lists",
+  "title": "Merge K Sorted Lists",
+  "difficulty": "Hard",
+  "category": "Linked List",
+  "leetcode": 23,
+  "statement": [
+    "You're given an array of k linked lists, lists, where each one is already sorted in ascending order.",
+    "Merge all k lists into a single sorted linked list, and return its head."
+  ],
+  "examples": [
+    {
+      "input": "lists = [[1,4,5],[1,3,4],[2,6]]",
+      "output": "[1,1,2,3,4,4,5,6]",
+      "explain": "Three sorted lists, of lengths 3, 3 and 2, merge into one sorted list of all 8 values. This is the exact example the visualizer runs."
+    },
+    {
+      "input": "lists = [[],[]]",
+      "output": "[]",
+      "explain": "Every input list is empty (represented as None). There's nothing to merge, so the result is an empty list too."
+    }
+  ],
+  "pattern": {
+    "name": "K-way merge with a min-heap",
+    "summary": "Keep a min-heap holding, at all times, the CURRENT head of every list that still has nodes left, up to k candidates. Repeatedly pop the smallest candidate off the heap (it's guaranteed to be the smallest value not yet placed, since every other list's current head is at least that big), attach it to the growing result, and push that same list's next node (if it has one) back onto the heap to replace it. The heap never holds more than k items at once, which is what keeps finding each next-smallest value fast even as the total number of nodes n grows.",
+    "recognize": [
+      "You need to merge several (k) already-SORTED sequences into one, rather than sort one unsorted sequence from scratch.",
+      "At every step, the next output value is \"the smallest of several current candidates\", one per sequence, a question a min-heap answers in O(log k) instead of scanning all k candidates.",
+      "k itself matters for the time complexity (O(n log k)), distinct from n, the total number of items across every sequence; this is the clue that a heap sized by k, not n, is the right tool.",
+      "Merge Two Sorted Lists already solved the k=2 case with a simple two-pointer walk; this is the same idea generalized to comparing k candidates instead of just 2, which is exactly what a heap is for."
+    ],
+    "avoid_when": [
+      "k is 2, exactly. A plain two-pointer merge (see Merge Two Sorted Lists) compares exactly two candidates directly, with no heap overhead needed at all.",
+      "The lists aren't actually sorted to begin with. A heap only helps because each list's CURRENT head is guaranteed to be its smallest remaining value; without that guarantee, you'd need to sort everything first anyway.",
+      "k is large relative to n (many short lists). Repeatedly merging pairs of lists two at a time (divide and conquer, like merge sort) also reaches O(n log k) without needing heapq at all, which some prefer for simplicity.",
+      "Memory for a heap of size k isn't available, or k is fixed at a small constant. Comparing a handful of candidates directly in a loop each step can be simpler to read, at the cost of being O(k) per step instead of O(log k)."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "The heap list itself is NOT sorted overall, only index 0 is guaranteed to hold the smallest candidate; heapq keeps just enough internal structure to make THAT one guarantee true after every push and pop, nothing more.",
+      "Every entry in the heap is tagged with its source list's index i, purely as a tiebreaker. Without it, two candidates with the exact same val would make Python try to compare the ListNode objects directly, which crashes, since nodes have no defined ordering.",
+      "The heap never grows past k items: a list contributes its head once, that head gets popped and replaced by the SAME list's next node, one-in-one-out. The total number of pushes across the whole run is n, one per node, not k times n.",
+      "dummy and curr follow the exact same pattern as Merge Two Sorted Lists, just fed by heap.heappop() instead of comparing two candidates by hand: a throwaway placeholder node makes attaching the very first real node identical to attaching every later one."
+    ],
+    "time": "O(n log k), where n is the total number of nodes across every list and k is the number of lists. Every node is pushed and popped from the heap exactly once, and each of those operations costs O(log k), since the heap never holds more than k items.",
+    "space": "O(k) extra space for the heap itself, beyond the O(n) the merged list's nodes already take (which are the same node objects being relinked, not copies).",
+    "edge_cases": [
+      "lists is empty, or every entry in it is None. The loop on line 6 pushes nothing, the heap stays empty, the while loop on line 13 never runs, and dummy.next, still None, is correctly returned.",
+      "Only one list is non-empty. The heap only ever holds candidates from that one list, and the merge degenerates into just walking it through to the end, in order.",
+      "Two different lists' current heads tie exactly on val. The tuple's second element, i, breaks the tie by list index, so heapq never needs to compare the ListNode objects (line 3's tuple comparison), which would otherwise crash with a TypeError.",
+      "A list with exactly one node. Its head gets pushed once (line 8), popped and attached once (lines 14-16), and line 17's node.next is None, so nothing further is ever pushed for it again."
+    ]
+  },
+  "code": "import heapq\n\nclass Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        heap = []\n        for i, node in enumerate(lists):\n            if node:\n                heapq.heappush(heap, (node.val, i, node))\n\n        dummy = ListNode()\n        curr = dummy\n\n        while heap:\n            val, i, node = heapq.heappop(heap)\n            curr.next = node\n            curr = curr.next\n            if node.next:\n                heapq.heappush(heap, (node.next.val, i, node.next))\n\n        return dummy.next\n",
+  "run": {
+    "prelude": "from typing import List, Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(vals):\n    head = ListNode(vals[0])\n    cur = head\n    for v in vals[1:]:\n        cur.next = ListNode(v)\n        cur = cur.next\n    return head\n\ndef to_vals(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n\nlists = [build([1, 4, 5]), build([1, 3, 4]), build([2, 6])]\n",
+    "call": "to_vals(Solution().mergeKLists(lists))",
+    "expected": [
+      1,
+      1,
+      2,
+      3,
+      4,
+      4,
+      5,
+      6
+    ],
+    "describe": "lists = [[1,4,5],[1,3,4],[2,6]]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This imports Python's built-in heapq module, which maintains a list as a binary min-heap: a structure where the smallest item is always instantly available at index 0, even as items are added and removed.",
+      "syntax": [
+        {
+          "token": "import",
+          "meaning": "A keyword that loads a module so its functions become available."
+        },
+        {
+          "token": "heapq",
+          "meaning": "The standard library module this solution uses for heappush and heappop."
+        }
+      ],
+      "why": "The whole point of this pattern is finding the smallest of the k lists' current heads, over and over, without scanning all k of them each time. heapq is what makes that instant.",
+      "if_removed": "heapq.heappush and heapq.heappop on lines 8, 14 and 18 would both crash with a NameError, since the name heapq wouldn't exist at all.",
+      "alternatives": [
+        {
+          "code": "from heapq import heappush, heappop",
+          "difference": "Imports the two functions directly by name, so the code could write heappush(...) instead of heapq.heappush(...). Same behavior, a different style of naming."
+        }
+      ],
+      "mistake": "Writing import heap instead of import heapq (missing the q). Python's module is named heapq; heap on its own doesn't exist as a standard library name.",
+      "caption": "Load the heapq module, so a list can be used as a min-heap."
+    },
+    "3": {
+      "explain": "This creates the class LeetCode tests: Solution. Like every LeetCode problem that isn't a \"design a data structure\" one, the whole answer lives inside one method on a single-use Solution object.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The exact class name LeetCode's tester expects."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls mergeKLists on it exactly once per test case, so the method needs to live inside a class named exactly Solution.",
+      "if_removed": "There'd be nowhere to attach mergeKLists as a method LeetCode's tester can find and call.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Naming the class something else, like MergeKLists. LeetCode specifically looks for a class named Solution.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "4": {
+      "explain": "This defines mergeKLists, the method that merges all k given sorted lists into one, in sorted order, and returns its head.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "mergeKLists",
+          "meaning": "The method name LeetCode's tester calls."
+        },
+        {
+          "token": "(self, lists: List[Optional[ListNode]])",
+          "meaning": "self, the Solution object; lists, a Python list holding each sorted list's head node, or None for an empty list."
+        },
+        {
+          "token": "-> Optional[ListNode]",
+          "meaning": "Return type hint: mergeKLists gives back either a ListNode (the merged list's head) or None, if every input list was empty."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode calls Solution().mergeKLists(lists) with exactly this signature: a Python list of linked-list heads in, one merged linked-list head out.",
+      "if_removed": "Calling Solution().mergeKLists(lists) would fail with an AttributeError, since the object would have no mergeKLists method.",
+      "alternatives": [
+        {
+          "code": "def mergeKLists(self, lists):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Treating lists like a single linked list instead of a Python list OF linked lists. lists[0] is the head of the FIRST sorted list, not the first value of one combined list.",
+      "caption": "Python remembers the mergeKLists instructions for later."
+    },
+    "5": {
+      "explain": "This creates heap, an empty Python list that heapq will maintain as a min-heap of candidates: one entry per list that still has nodes left to contribute.",
+      "syntax": [
+        {
+          "token": "heap",
+          "meaning": "A local variable, a plain Python list."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "[]",
+          "meaning": "An empty list. heapq works directly on ordinary lists; nothing special-purpose needs to be imported to hold the heap itself."
+        }
+      ],
+      "why": "The heap only ever needs to hold k candidates at once, one current head per list, no matter how many total nodes exist across all of them. That's what keeps each heappush/heappop O(log k) instead of O(log n).",
+      "if_removed": "Line 8's heapq.heappush(heap, ...) would crash with a NameError, since heap would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "heap = list()",
+          "difference": "Same empty list, made by calling list. [] is shorter."
+        }
+      ],
+      "mistake": "Starting heap as a list of every node from every list at once, instead of just the k current heads. That would work, but defeats the whole point: finding the minimum among k candidates is cheap, finding it among all n nodes isn't.",
+      "caption": "Start with an empty heap: no candidates yet."
+    },
+    "6": {
+      "explain": "This walks through lists, pairing each one with its position i, so every list's STARTING node (or lack of one) gets considered exactly once.",
+      "syntax": [
+        {
+          "token": "for",
+          "meaning": "Starts a loop that repeats once per item."
+        },
+        {
+          "token": "i, node",
+          "meaning": "Two loop variables: i, the position; node, the value at that position."
+        },
+        {
+          "token": "in",
+          "meaning": "Introduces what's being looped over."
+        },
+        {
+          "token": "enumerate(lists)",
+          "meaning": "enumerate pairs each item of lists with its index, so the loop gets both at once."
+        }
+      ],
+      "why": "i is needed later (line 8) specifically to break ties: two different lists could have heads with the EQUAL val, and i, being unique per list, lets the heap compare tuples without ever needing to compare two ListNode objects directly.",
+      "if_removed": "Without enumerate, the loop would only see each head node, with no way to remember which list it came from, which line 8's tuple (node.val, i, node) needs.",
+      "alternatives": [
+        {
+          "code": "for node in lists:\n    ...",
+          "difference": "Loses track of which list each node came from. heapq.heappush(heap, (node.val, node)) would then risk comparing two ListNode objects directly whenever two heads tie on val, which crashes with a TypeError, since ListNode has no defined ordering."
+        }
+      ],
+      "mistake": "Writing for node, i in enumerate(lists): instead of for i, node in enumerate(lists):, swapping the order. enumerate always hands back (index, item), so this would put the ListNode into i and the actual index into node.",
+      "caption": [
+        "Done looking at list {i} of {len(lists)}: move to the next one.",
+        "Look at each of the {len(lists)} given lists in turn."
+      ]
+    },
+    "7": {
+      "explain": "This skips any list that's empty (None), since there's nothing to push onto the heap for it.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "node",
+          "meaning": "Truthy exactly when node isn't None: a real ListNode, not an empty list's placeholder."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "lists is allowed to contain None for any list that happens to be empty. Pushing None onto the heap would make heapq try to compare it against other candidates' vals on a later heappush or heappop, crashing with a TypeError.",
+      "if_removed": "Line 8 would run unconditionally, and heapq.heappush(heap, (node.val, i, node)) would crash with an AttributeError the moment any input list is empty, since node.val can't be read off None.",
+      "alternatives": [
+        {
+          "code": "if node is not None:",
+          "difference": "Spells out the same check explicitly instead of relying on None being falsy. Identical result; truthiness is simply more compact here."
+        }
+      ],
+      "mistake": "Forgetting this check and pushing every list's head unconditionally, even the empty (None) ones. That crashes the very first time any input list happens to be empty.",
+      "caption": [
+        {
+          "when": "node",
+          "text": "List {i} starts with {node.val}: push it onto the heap as a candidate."
+        },
+        "List {i} is empty: nothing to push for it."
+      ]
+    },
+    "8": {
+      "explain": "This pushes one candidate onto the heap: a 3-item tuple of (that head's value, which list it's from, the node itself), keeping the heap's invariant that index 0 is always the smallest candidate.",
+      "syntax": [
+        {
+          "token": "heapq.heappush(",
+          "meaning": "Adds an item to heap, then re-arranges just enough of it to keep the min-heap property true."
+        },
+        {
+          "token": "heap, (node.val, i, node))",
+          "meaning": "heap, the list being maintained as a heap; the tuple being added."
+        }
+      ],
+      "why": "Python tuples compare left to right: (node.val, i, node) compares by val first. Only if two candidates tie exactly on val does Python move on to compare i, which is always different between lists, so node (which has no ordering of its own) never actually needs to be compared.",
+      "if_removed": "The heap would never gain this list's first candidate, and that entire list's values would be silently skipped from the merged result.",
+      "alternatives": [
+        {
+          "code": "heapq.heappush(heap, (node.val, node))",
+          "difference": "Drops the tiebreaker i. Works fine until two different lists' current heads tie exactly on val, at which point Python falls back to comparing the two ListNode objects directly, which crashes with a TypeError: ListNode has no defined ordering."
+        }
+      ],
+      "mistake": "Pushing (i, node.val, node) instead of (node.val, i, node), swapping the first two. That would make the heap sort candidates by WHICH LIST they're from first, and only by value as a tiebreak, destroying the whole point: finding the smallest VALUE.",
+      "caption": "Push ({node.val}, list {i}, node) onto the heap."
+    },
+    "10": {
+      "explain": "This creates a dummy node: a throwaway placeholder that sits just before the real merged list begins, so the first real node can be attached the exact same way as every later one.",
+      "syntax": [
+        {
+          "token": "dummy",
+          "meaning": "A local variable for the placeholder node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode()",
+          "meaning": "A brand new node. Called with no arguments, it takes val's default of 0 and next's default of None."
+        }
+      ],
+      "why": "Without a dummy, attaching the very FIRST node to the merged list would need special-case code (nothing yet to set .next on), different from attaching every node after it.",
+      "if_removed": "Line 15's curr.next = node would crash with a NameError, since curr (which starts as dummy) would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "dummy = ListNode(0)",
+          "difference": "Passes val explicitly instead of relying on its default. Identical result, since val=0 either way."
+        }
+      ],
+      "mistake": "Forgetting dummy entirely and trying to track the merged list's head directly as the first popped node. That works, but needs an extra if-check on the very first iteration of the loop below to set that head, instead of treating every iteration identically.",
+      "caption": "Create a dummy placeholder node. The merged list will grow after it."
+    },
+    "11": {
+      "explain": "This points curr at dummy to start: curr always tracks the LAST node currently in the merged list, the one new nodes get attached after.",
+      "syntax": [
+        {
+          "token": "curr",
+          "meaning": "A local variable: the tail of the merged list so far."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "dummy",
+          "meaning": "The placeholder node just created."
+        }
+      ],
+      "why": "curr needs a starting point before the loop below can attach anything. Starting it at dummy means the very first real node gets attached with curr.next = node, exactly like every later node, no special case needed.",
+      "if_removed": "Line 15's curr.next = node would crash with a NameError, since curr would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "curr = dummy = ListNode()",
+          "difference": "Combines the creation and the starting assignment into one line. curr and dummy end up pointing at the SAME node, which is exactly what's needed; just written more compactly."
+        }
+      ],
+      "mistake": "Writing curr = ListNode() instead of curr = dummy, creating a second, different empty node. Then dummy.next on line 20 would never actually get set to anything, since curr and dummy would be two separate objects.",
+      "caption": "curr starts at dummy too: both point at the same empty placeholder."
+    },
+    "13": {
+      "explain": "This loop keeps going as long as the heap still has at least one candidate left: at least one list that hasn't been fully consumed yet.",
+      "syntax": [
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "heap",
+          "meaning": "Truthy exactly when the list isn't empty: there's at least one candidate."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Every node from every list needs to be visited exactly once. The heap holding zero candidates is exactly the signal that every list has been fully drained, with nothing left to merge in.",
+      "if_removed": "The loop would never run at all, and dummy.next would stay None: an empty merged list would be returned regardless of what lists actually contained.",
+      "alternatives": [
+        {
+          "code": "while len(heap) > 0:",
+          "difference": "Spells out the same check explicitly instead of relying on an empty list being falsy. Identical result."
+        }
+      ],
+      "mistake": "Writing while heap is not None instead of while heap:. heap is always a list object, never None itself (it starts as [] on line 5), so this condition would always be True, looping forever once the heap is actually empty and heapq.heappop crashes with an IndexError.",
+      "caption": [
+        {
+          "when": "heap",
+          "text": "The heap holds {len(heap)} candidate(s): keep merging."
+        },
+        "The heap is empty: every list has been fully merged in."
+      ]
+    },
+    "14": {
+      "explain": "This pulls the single smallest candidate off the heap: whichever of the currently available heads has the smallest val, resolved by the tiebreaker i if there's an exact tie.",
+      "syntax": [
+        {
+          "token": "val, i, node",
+          "meaning": "Three local variables, unpacked at once from the popped tuple."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "heapq.heappop(heap)",
+          "meaning": "Removes and returns the SMALLEST item from heap (always the one at index 0), then re-arranges the rest to restore the min-heap property."
+        }
+      ],
+      "why": "Since every candidate already on the heap is some list's CURRENT head, and heads only ever grow as you move forward through a sorted list, the smallest candidate overall is guaranteed to be the smallest value not yet placed into the merged result, out of everything still available.",
+      "if_removed": "The loop body below (lines 15-18) would crash with a NameError, since val, i and node would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "node = heapq.heappop(heap)[2]",
+          "difference": "Reads only the node out of the popped tuple, discarding val and i immediately instead of naming them. Works, but val and i are never actually read again anyway, so this is mostly a stylistic choice."
+        }
+      ],
+      "mistake": "Unpacking in the wrong order, like i, val, node = heapq.heappop(heap). The tuple was pushed as (val, i, node); unpacking it differently swaps what val and i actually refer to, though since neither is read again below, this particular mistake happens not to break anything here.",
+      "caption": "Pop the smallest candidate: {heap[0][0]} from list {heap[0][1]}."
+    },
+    "15": {
+      "explain": "This attaches node, the smallest candidate just found, onto the end of the merged list so far.",
+      "syntax": [
+        {
+          "token": "curr.next",
+          "meaning": "The next field of whatever node is currently the merged list's tail."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "node",
+          "meaning": "The node just popped from the heap."
+        }
+      ],
+      "why": "This is the actual merge step: node's value belongs next in the sorted output, because the heap just proved it's the smallest value available anywhere across all k lists right now.",
+      "if_removed": "node would be popped from the heap and then simply discarded, never linked into the result at all. The merged list would be missing values.",
+      "alternatives": [
+        {
+          "code": "curr.next = node\ncurr = node",
+          "difference": "Spells out line 16 here too, assigning curr directly to node instead of reading curr.next back. Since curr.next was just set to node, curr.next and node are the same object; functionally identical, one line fewer."
+        }
+      ],
+      "mistake": "Writing curr = node directly here, skipping curr.next = node. That would move curr forward without ever actually LINKING node into the merged list, leaving the real list structure broken even though curr itself would seem to track the right node.",
+      "caption": "Attach {node.val} to the end of the merged list."
+    },
+    "16": {
+      "explain": "This moves curr forward to BE node, so the next node attached goes after this one, not after whatever used to be last.",
+      "syntax": [
+        {
+          "token": "curr",
+          "meaning": "The merged list's tail tracker."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "What curr.next was just set to on the line above: exactly node."
+        }
+      ],
+      "why": "Without moving curr forward, every later node would get attached with curr.next = node overwriting the SAME link repeatedly, and only the very last node popped would ever end up actually linked into the result.",
+      "if_removed": "curr would stay pointing at the old tail forever. Line 15 on every later iteration would keep overwriting that same curr.next, so only the final popped node would remain linked in, and every earlier one would be silently overwritten and lost.",
+      "alternatives": [
+        {
+          "code": "curr = node",
+          "difference": "Reads node directly instead of curr.next. Since line 15 just made curr.next equal to node, these refer to the exact same object; functionally identical."
+        }
+      ],
+      "mistake": "Writing curr = curr.next.next, advancing two steps instead of one. That would skip over node's own slot and point curr at whatever node.next happens to be at this moment (likely None, for a node whose source list hasn't been re-pushed yet), breaking the next attachment.",
+      "caption": "Move curr forward: curr is now {curr.val}."
+    },
+    "17": {
+      "explain": "This checks whether node's OWN source list has another node after it. If so, THAT node becomes the new candidate representing that list.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "node.next",
+          "meaning": "Truthy exactly when there's a real node after node in its original list, not None."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Each list can only ever contribute ONE candidate to the heap at a time, its current head. Once that head is consumed (lines 15-16), the list's NEXT node, if it has one, needs to take its place as the new candidate, or that list's remaining values would never be considered again.",
+      "if_removed": "List i's remaining values, everything after node, would never be pushed onto the heap at all, and the merged result would silently be missing them.",
+      "alternatives": [
+        {
+          "code": "if node.next is not None:",
+          "difference": "Spells out the same check explicitly instead of relying on None being falsy. Identical result."
+        }
+      ],
+      "mistake": "Checking node.next.next by mistake, or checking heap instead of node.next. The question here is specifically \"does list i, the one node came from, have anything left\", which only node.next can answer.",
+      "caption": [
+        {
+          "when": "node.next",
+          "text": "List {i} still has {node.next.val} next: push it as the new candidate for that list."
+        },
+        "List {i} is now exhausted: nothing left to push for it."
+      ]
+    },
+    "18": {
+      "explain": "This pushes node's successor onto the heap, as the new current candidate for the list node came from, keeping exactly one candidate per still-active list.",
+      "syntax": [
+        {
+          "token": "heapq.heappush(",
+          "meaning": "Adds an item to heap and restores the min-heap property."
+        },
+        {
+          "token": "heap, (node.next.val, i, node.next))",
+          "meaning": "The same 3-item shape as line 8: the new candidate's value, the SAME list index i (it's still the same list), and the node itself."
+        }
+      ],
+      "why": "Reusing i here (rather than some new index) is what keeps every candidate from a given list tagged consistently, so two candidates from different lists that happen to tie in val still break the tie correctly.",
+      "if_removed": "List i's remaining nodes, after this one, would never get a chance to be considered: that list's contribution to the merge would stop one node early, truncating the merged result.",
+      "alternatives": [
+        {
+          "code": "nxt = node.next\nheapq.heappush(heap, (nxt.val, i, nxt))",
+          "difference": "Reads node.next into a variable first instead of repeating it twice. Functionally identical, a touch less repetitive."
+        }
+      ],
+      "mistake": "Pushing (node.val, i, node.next) by mistake, reusing the OLD value instead of reading node.next.val. That would record the new candidate under the PREVIOUS value, corrupting the heap's ordering for every comparison involving it from then on.",
+      "caption": "Push {node.next.val} from list {i} as its new candidate."
+    },
+    "20": {
+      "explain": "This returns the actual head of the merged list: whatever dummy.next ended up pointing at, which is the very first node ever attached back on line 15's first run.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "dummy.next",
+          "meaning": "dummy itself is never part of the real answer; only what comes after it is."
+        }
+      ],
+      "why": "dummy was only ever a placeholder to make the first attachment uniform with every later one (line 10). dummy.next is where the real, merged list actually begins.",
+      "if_removed": "The method would reach its end without returning anything, giving back None instead of the merged list, even though the list was built correctly.",
+      "alternatives": [
+        {
+          "code": "head = dummy.next\nreturn head",
+          "difference": "Saves dummy.next in a variable first. Functionally identical; the variable is never read again before returning."
+        }
+      ],
+      "mistake": "Returning dummy instead of dummy.next. That would hand back the placeholder itself as the head, a single extra 0-valued node sitting in front of the real, correctly merged list.",
+      "caption": "Return the merged list, starting at {dummy.next.val if dummy.next else None}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        vals = []\n        for node in lists:\n            while node:\n                vals.append(node.val)\n                node = node.next\n        vals.sort()\n\n        dummy = ListNode()\n        curr = dummy\n        for v in vals:\n            curr.next = ListNode(v)\n            curr = curr.next\n        return dummy.next",
+    "explain": "Walk every list from start to end, collecting every single value into one plain Python list, vals. Sort vals from scratch with Python's built-in sort. Then rebuild a brand new linked list from the sorted values, the same dummy/curr pattern as the real solution, just fed from a sorted array instead of a heap.",
+    "why_slow": "vals.sort() sorts all n values from scratch, in O(n log n) time, completely ignoring the fact that each of the k lists was ALREADY individually sorted. That extra information goes to waste.",
+    "how_pattern_fixes": "A min-heap of just the k current candidates exploits exactly the information the brute force throws away: since each list is already sorted, only its CURRENT head can ever be the next-smallest value overall. Comparing k candidates (via a heap, in O(log k)) instead of sorting all n values (in O(n log n)) is why the pattern reaches O(n log k) instead.",
+    "time": "O(n log n), dominated by sorting all n values from scratch, where n is the total number of nodes across every list.",
+    "space": "O(n), for the vals list holding every value at once, versus O(k) for the pattern solution's heap."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or collecting everything. It's simple but often slower than a more targeted approach.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next.",
+    "min": "A built-in function that returns the smallest of its arguments: min(3, 7) is 3.",
+    "pattern": "A reusable technique that solves a whole family of problems, like a min-heap merge.",
+    "pop": "A list method that removes the last item and gives it back. heapq.heappop is a different, related function: it removes the SMALLEST item from a heap-ordered list, not just the last one.",
+    "push": "Adding an item to a collection. heapq.heappush adds an item to a heap-ordered list and keeps it heap-ordered, unlike a plain list append.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or when two values of incomparable types are compared, like two ListNode objects with no defined ordering.",
+    "argument": "The actual value passed into a function or method when it's called. In heapq.heappush(heap, item), heap and item are both arguments.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names end up referring to the SAME object.",
+    "AttributeError": "The error Python raises when you ask an object for an attribute or method it doesn't have.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(log k) barely grows at all. O(n) grows in step with the input.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "call": "Running a function or method by writing its name followed by brackets, like heapq.heappop(heap).",
+    "class": "A blueprint that groups related functions (methods) and data (attributes) together. Solution and ListNode are both classes.",
+    "colon": "The : character. At the end of a class, def, if, or while line, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False, like > or ==.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1).",
+    "dummy node": "A placeholder node created before the real merged list starts, so the first real node can be attached the exact same way as every later one, with no special case for the first attachment. It's thrown away at the end; only dummy.next matters.",
+    "edge case": "An unusual input that might break code: an empty list of lists, a list with only one node, or two candidates that tie exactly in value.",
+    "enumerate": "A built-in function that pairs each item of a sequence with its index: enumerate([5, 9]) gives (0, 5) then (1, 9).",
+    "expression": "Any piece of code that produces a value, like node.val or heap and heap[0].",
+    "for loop": "A loop that runs its block once for each item in a collection, here once per entry in lists.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node, by following next.",
+    "if (keyword)": "A keyword that starts a condition check. The indented block below it runs only when the condition is True.",
+    "in place": "Modifying existing data directly instead of building a separate copy. This solution relinks the SAME nodes from the input lists rather than copying their values into new ones.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. A tuple's index 0 is its first item, as in (node.val, i, node)[0].",
+    "IndexError": "The error Python raises when you ask for a position that doesn't exist, like heapq.heappop on an empty list.",
+    "int": "Python's name for whole numbers (integers).",
+    "KeyError": "The error Python raises when you look up a dictionary key that doesn't exist. Not raised anywhere in this solution, which uses no dictionaries.",
+    "keyword": "A word reserved by Python, like class, def, if, while, for, import, return, in, not.",
+    "len": "A built-in function that gives the number of items in something: len(lists) is how many lists were given.",
+    "loop": "Code that repeats. A for loop repeats once per item in a collection; a while loop repeats as long as its condition stays True.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node, or None at the end.",
+    "list": "Python's built-in ordered collection, written with square brackets. Both lists (the input) and heap (the min-heap) are Python lists; lists holds node objects, heap holds tuples.",
+    "method": "A function that belongs to a class, called with a dot: Solution().mergeKLists(lists).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node.",
+    "None": "Python's value for \"nothing\". A list that's empty is represented here as None rather than as a node, and next = None marks the end of a list.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables holding one are references to it, not copies.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. lists is mergeKLists's parameter.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list, like curr or node here.",
+    "recursion": "A function calling itself to solve a smaller version of the same problem. Not used by this solution, which merges iteratively with a heap instead.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorting": "Putting items in order. vals.sort() in the brute-force version sorts from scratch in O(n log n); the pattern solution avoids this entirely by exploiting that each list is already sorted.",
+    "string": "Text written in quotes, like \"hello\". Not used by this solution, whose values are ints, but part of Python generally.",
+    "truthiness": "Using a non-boolean value as a condition. None and an empty list both count as False; any non-empty list or real node counts as True.",
+    "tuple": "A sequence written with round brackets or just commas, like (node.val, i, node). Tuples compare left to right, element by element, which is exactly how the heap decides which candidate is smallest.",
+    "tuple unpacking": "Assigning several names at once from one tuple, as in val, i, node = heapq.heappop(heap).",
+    "type hint": "A label like lists: List[Optional[ListNode]] that tells readers what type a value should be. Python doesn't enforce it.",
+    "typing (module)": "A built-in Python module of names used in type hints, like List and Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value; in a heap tuple, it's the first element used to compare candidates.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "the k lists, and the merged list growing behind dummy",
+      "node_class": "ListNode",
+      "pointers": {
+        "dummy": "dummy if __line__ in (10, 11, 13, 14, 15, 16, 17, 18, 20) else HIDE",
+        "curr": "curr if __line__ in (11, 13, 14, 15, 16, 17, 18, 20) else HIDE",
+        "node": "node if __line__ in (14, 15, 16, 17, 18) else HIDE"
+      }
+    },
+    {
+      "type": "array",
+      "title": "min heap (the heap list: index 0 is always the smallest candidate)",
+      "source": "[t[0] for t in heap]",
+      "pointers": {
+        "top": "0 if heap and __line__ in (13, 14) else HIDE"
+      },
+      "marks": {
+        "found": "[0] if heap and __line__ == 14 else []"
+      }
+    }
+  ]
+}
