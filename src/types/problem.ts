@@ -35,6 +35,9 @@ export type PanelSpec =
       pointers?: Record<string, string>;
       /** compared | found | done -> Python expression giving a list of indexes. */
       marks?: Partial<Record<MarkKind, string>>;
+      /** Draw a directed arrow from each index i to index source[i] (when it's a valid index),
+       *  treating the array itself as a "next pointer" at every position, like a linked list. */
+      edges?: boolean;
     }
   | {
       type: "hashmap";

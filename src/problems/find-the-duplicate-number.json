@@ -1,0 +1,557 @@
+{
+  "slug": "find-the-duplicate-number",
+  "title": "Find the Duplicate Number",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 287,
+  "statement": [
+    "You are given an array of integers nums containing n + 1 integers, where each value is in the range [1, n] inclusive.",
+    "There is exactly one number in nums that appears at least twice. Every other number appears exactly once.",
+    "Return the duplicate number, without modifying nums, and using only O(1) extra space (not counting the input itself)."
+  ],
+  "examples": [
+    {
+      "input": "nums = [1, 3, 4, 2, 2]",
+      "output": "2",
+      "explain": "n = 4 (since nums has n + 1 = 5 entries), and every value is between 1 and 4. The value 2 appears twice, at index 3 and index 4; every other value (1, 3, 4) appears exactly once. This is the example the visualizer runs."
+    },
+    {
+      "input": "nums = [3, 1, 3, 4, 2]",
+      "output": "3",
+      "explain": "The value 3 appears at index 0 and index 2. Following index → value → index as a chain, starting anywhere eventually loops back through index 3 and index 0, both of which point to value 3, exactly the duplicate."
+    }
+  ],
+  "pattern": {
+    "name": "Treat the array as a linked list, then run Floyd's cycle detection on it",
+    "summary": "Since every value in nums is a valid index (1 through n), reading nums[i] is exactly like reading a linked-list node's next field: it tells you where to go from index i. The duplicate value creates a cycle in this \"linked list\", because two different indexes both lead into it. Run Floyd's tortoise-and-hare algorithm (the same two-speed pointer trick as Linked List Cycle) to find any meeting point inside that cycle, then restart one pointer from the beginning and walk both one step at a time; where they meet again is the cycle's entrance, which is exactly the duplicate value.",
+    "recognize": [
+      "An array's values are all valid INDEXES into that same array (here, 1 through n for a list of length n + 1), which is the telltale sign you can treat index → value as index → \"next index\", turning the array into a linked list in disguise.",
+      "You need to find a repeated value using O(1) extra space, ruling out a hash set or sorting (which both need O(n) extra space or change the array).",
+      "The problem is phrased as finding a duplicate, but the deeper structure is a CYCLE: a repeated value is exactly what makes following \"next\" indexes loop back on itself instead of running off the end.",
+      "A problem you've already solved (Linked List Cycle) reappears in disguise once you notice the right analogy; the two-pointer, two-speed chase doesn't care whether \"next\" comes from a real node's .next field or from reading nums[i]."
+    ],
+    "avoid_when": [
+      "You're allowed extra space. Then a hash set that records every value seen so far, returning the first one seen twice, is far simpler to read, at the cost of O(n) extra memory.",
+      "You're allowed to modify nums. Then sorting it first makes any duplicate sit right next to its twin, found by comparing neighbors in one pass, though sorting itself takes O(n log n) time.",
+      "The values AREN'T guaranteed to be valid indexes into the array (for instance, if they could be negative or larger than n). Then the \"array as linked list\" trick doesn't apply, since nums[i] might not be a usable index at all."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "nums[i] is read here as \"the next index after i\", not just as \"a value\". That reinterpretation is what turns a plain array problem into a linked-list cycle problem.",
+      "Index 0 can never be pointed TO by any value (since every value is 1 through n), which makes it a safe, guaranteed-cycle-free place for slow and fast to both start from.",
+      "Phase 1 (while True / break) only finds SOME meeting point inside the cycle; it's phase 2, restarting one pointer from index 0, that pins down the EXACT cycle entrance, which is the duplicate value.",
+      "This is the exact same two-pointer chase as Linked List Cycle, just walking nums[i] instead of node.next; recognizing that reuse is the entire trick."
+    ],
+    "time": "O(n), linear time. Phase 1 and phase 2 each move the pointers a bounded number of steps proportional to n before meeting, by the same reasoning that makes Floyd's algorithm linear on an actual linked list.",
+    "space": "O(1), constant extra memory. slow, fast and slow2 are the only extra variables, regardless of how large nums is.",
+    "edge_cases": [
+      "The smallest possible input, nums = [1, 1] (n = 1). slow and fast both start at 0; nums[0] is 1 for both, so they meet on the very first pass of phase 1, and phase 2 immediately finds slow2 == slow at index 1, the duplicate.",
+      "The duplicate value appearing three or more times, like [2, 2, 2, 1]. The algorithm still works: the cycle just has more than one index leading into its entrance, but the entrance itself is still exactly the duplicate value.",
+      "The duplicate being the largest possible value, n itself, rather than a small one. Nothing in the algorithm depends on which value is duplicated, only on the fact that exactly one does.",
+      "A list where phase 1's meeting point happens to already BE the cycle's entrance. Phase 2's loop then exits immediately, since slow2 (starting at 0) and slow meet on the very first comparison."
+    ]
+  },
+  "code": "class Solution:\n    def findDuplicate(self, nums: List[int]) -> int:\n        slow, fast = 0, 0\n\n        while True:\n            slow = nums[slow]\n            fast = nums[nums[fast]]\n            if slow == fast:\n                break\n\n        slow2 = 0\n        while slow2 != slow:\n            slow2 = nums[slow2]\n            slow = nums[slow]\n\n        return slow\n",
+  "run": {
+    "prelude": "from typing import List\n\nnums = [1, 3, 4, 2, 2]\n",
+    "call": "Solution().findDuplicate(nums)",
+    "expected": 2,
+    "describe": "nums = [1, 3, 4, 2, 2]"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines the method findDuplicate. It receives nums, a list of n + 1 integers where every value is between 1 and n, and returns the one value that appears more than once.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def findDuplicate(",
+          "meaning": "def starts a method. findDuplicate is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "nums: List[int]",
+          "meaning": "The input list. List[int] is a type hint meaning \"a list of ints\". List comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": ") -> int",
+          "meaning": "The method returns a single int: the duplicate value."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode guarantees exactly one value repeats (possibly more than once), and every value is a valid INDEX into nums itself (1 through n, for a list of length n + 1), which is exactly what lets this method treat nums as if it were a linked list.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def findDuplicate(self, nums):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def findDuplicate(self, nums: list[int]) -> int:",
+          "difference": "The modern, lowercase spelling of the hint. It works in Python 3.9 and newer and needs no import."
+        }
+      ],
+      "mistake": "Assuming nums is sorted, or that the duplicate value tells you WHERE it appears. Neither is guaranteed; what IS guaranteed is that every value is a usable index.",
+      "caption": "Python remembers the findDuplicate instructions for later."
+    },
+    "3": {
+      "explain": "Start both slow and fast at index 0, the one position the problem's values can never point back to (since every value is 1 through n, never 0).",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "slow, fast",
+          "meaning": "Two variable names, assigned at once (tuple unpacking)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0, 0",
+          "meaning": "Both pointers start at the same place: index 0."
+        }
+      ],
+      "why": "Treating nums as a linked list, where index i's \"next\" is nums[i], index 0 is guaranteed to have no node pointing back AT it (no value in nums is ever 0), which makes it a safe, cycle-free starting point for both pointers.",
+      "if_removed": "The while loop below would crash with a NameError, since slow and fast wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "slow = fast = 0",
+          "difference": "A chained assignment instead of tuple unpacking. Same result."
+        }
+      ],
+      "mistake": "Starting slow and fast at different indexes. Floyd's algorithm specifically relies on both starting from the SAME place for the meeting point math to work out.",
+      "caption": "Start slow and fast both at index 0."
+    },
+    "5": {
+      "explain": "Start an unconditional loop: phase one, finding ANY meeting point inside the cycle that repeated values create.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while True:",
+          "meaning": "A loop whose condition is always True, so it repeats forever until something inside it (here, break) stops it."
+        }
+      ],
+      "why": "There's no simple index-based condition to check up front here; the loop needs to run until slow and fast land on the same index, which line 8's break handles once that happens.",
+      "if_removed": "A while loop needs some condition; without one, this would be a SyntaxError.",
+      "alternatives": [
+        {
+          "code": "while slow != fast or __visits__.get(5, 0) == 0:",
+          "difference": "Spells out \"keep going until they meet, but run at least once\" as an explicit condition instead of while True combined with break. Much harder to read for no benefit."
+        }
+      ],
+      "mistake": "Writing while slow != fast: as the condition instead, which would skip the loop's body entirely on the very first check, since slow and fast already start out equal (both 0).",
+      "caption": "Phase 1: advance slow and fast until they meet somewhere inside the cycle."
+    },
+    "6": {
+      "explain": "Move slow forward by ONE step: from index slow to index nums[slow], its \"next\" node.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "slow",
+          "meaning": "Reused: overwritten with the index one step ahead."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "nums[slow]",
+          "meaning": "Index into nums using slow's CURRENT value, reading the value stored there."
+        }
+      ],
+      "why": "Treating nums[i] as \"the next index after i\" turns the array into a linked list; slow walks it one node at a time, the same as any slow pointer in a cycle-detection problem.",
+      "if_removed": "slow would never move, and the loop would compare fast (which does move) against a slow stuck at 0 forever, almost certainly never finding a meeting point.",
+      "alternatives": [
+        {
+          "code": "slow = nums[slow]  # one step, like reading node.next",
+          "difference": "Same line; a note on the linked-list analogy."
+        }
+      ],
+      "mistake": "Writing slow = nums[nums[slow]], copying fast's double-step by accident. Then slow and fast move at the same speed and may never meet inside a cycle shorter than their combined stride.",
+      "caption": "slow steps once: from {slow} to nums[{slow}] = {nums[slow]}."
+    },
+    "7": {
+      "explain": "Move fast forward by TWO steps: from index fast, to nums[fast], to nums[nums[fast]].",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "fast",
+          "meaning": "Reused: overwritten with the index two steps ahead."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "nums[nums[fast]]",
+          "meaning": "Index into nums with fast's current value to get one step ahead, then index into nums AGAIN with that result to get a second step ahead."
+        }
+      ],
+      "why": "Moving fast at double slow's speed is exactly what Floyd's cycle-detection algorithm needs: if there's a cycle, a pointer moving twice as fast is guaranteed to lap a slower one and land on it eventually, rather than just chasing it forever.",
+      "if_removed": "fast would move at the same speed as slow, and two pointers moving in lockstep from the same start would simply never separate, making a meeting point meaningless.",
+      "alternatives": [
+        {
+          "code": "fast = nums[fast]\nfast = nums[fast]",
+          "difference": "Two separate one-step moves instead of one nested double-step expression. Same result, written as two lines."
+        }
+      ],
+      "mistake": "Writing fast = nums[fast] (only one step), which makes fast move at the SAME speed as slow, defeating the whole point of the two-speed chase.",
+      "caption": "fast steps twice: from {fast} to nums[nums[{fast}]] = {nums[nums[fast]]}."
+    },
+    "8": {
+      "explain": "Check whether slow and fast have landed on the same index yet.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "if",
+          "meaning": "Runs the indented block below only when its condition is True."
+        },
+        {
+          "token": "slow == fast",
+          "meaning": "A comparison: True exactly when both variables hold the same index right now."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition, starts the indented block."
+        }
+      ],
+      "why": "Because the duplicate value creates two indexes that both point to it, following nums[i] repeatedly eventually loops back on itself, exactly like a linked-list cycle; slow and fast meeting is the signal that both pointers are now somewhere inside that loop.",
+      "if_removed": "The loop would keep moving slow and fast forever (or until the visualizer's step cap stopped it), since nothing would ever break out of while True.",
+      "alternatives": [
+        {
+          "code": "if slow is fast:",
+          "difference": "is checks identity rather than equality. For small ints, Python happens to reuse the same object, so this behaves the same here, but == is the correct, general way to compare numbers."
+        }
+      ],
+      "mistake": "Checking nums[slow] == nums[fast] instead of slow == fast, comparing the VALUES one step ahead rather than the indexes themselves, which isn't the condition Floyd's algorithm is actually looking for.",
+      "caption": [
+        {
+          "when": "slow == fast",
+          "text": "slow and fast have met, both on index {slow}: break out of phase 1."
+        },
+        {
+          "text": "slow ({slow}) and fast ({fast}) haven't met yet: keep going."
+        }
+      ]
+    },
+    "9": {
+      "explain": "Exit the while loop immediately, now that slow and fast have met somewhere inside the cycle.",
+      "syntax": [
+        {
+          "token": "                (16 spaces)",
+          "meaning": "Indentation: inside the if block."
+        },
+        {
+          "token": "break",
+          "meaning": "A keyword that exits the nearest enclosing loop right away, skipping any remaining passes."
+        }
+      ],
+      "why": "Phase one's only job is finding ANY point where slow and fast coincide; once that happens, phase two (lines 11-14) takes over to find the EXACT duplicate value, not just a meeting point.",
+      "if_removed": "The loop would keep running past the meeting point, moving slow and fast onward through the cycle, instead of stopping to start phase two.",
+      "alternatives": [
+        {
+          "code": "return self._phase_two(nums, slow)",
+          "difference": "Not idiomatic here: breaking out and continuing in the same method, as the real code does, keeps both phases together instead of splitting into a helper method."
+        }
+      ],
+      "mistake": "Forgetting break entirely (or misindenting it outside the if), which would either loop forever or exit on the very first pass regardless of whether slow and fast actually met.",
+      "caption": "Meeting point found: break out of phase 1."
+    },
+    "11": {
+      "explain": "Start phase two: a second pointer, slow2, from the very beginning of the list, index 0.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the while loop."
+        },
+        {
+          "token": "slow2",
+          "meaning": "A new variable name: a second slow pointer, starting back at the beginning."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0",
+          "meaning": "Index 0, the same safe starting point used at the very start of the method."
+        }
+      ],
+      "why": "Floyd's algorithm's second half says: once any meeting point is found, a pointer restarted from the very beginning, moving one step at a time, meets the ORIGINAL slow pointer (also now moving one step at a time) exactly at the start of the cycle, which for this problem is the duplicate value itself.",
+      "if_removed": "The while loop below would crash with a NameError, since slow2 wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "slow2 = 0  # restart from the beginning, now walking at slow's original one-step pace",
+          "difference": "Same line; a note on the algorithm's second phase."
+        }
+      ],
+      "mistake": "Starting slow2 at slow's current (meeting-point) value instead of back at 0. Floyd's algorithm specifically needs ONE of the two pointers reset to the very start for the math behind it to work.",
+      "caption": "Phase 2: start slow2 at index 0, the list's beginning."
+    },
+    "12": {
+      "explain": "Keep looping as long as slow2 and slow (which is still at the phase-1 meeting point, about to move) haven't landed on the same index.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True."
+        },
+        {
+          "token": "slow2 != slow",
+          "meaning": "A comparison: True as long as the two indexes are different."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Once slow2 (walking from the start) and slow (still walking from the phase-1 meeting point) land on the same index, both one step at a time, that shared index is guaranteed to be the entrance to the cycle, which is exactly the duplicate value for this problem.",
+      "if_removed": "Lines 13 and 14 would never run, and slow2 would stay at 0 forever, so the method would end up returning 0 instead of the real duplicate.",
+      "alternatives": [
+        {
+          "code": "while slow2 is not slow:",
+          "difference": "is checks identity rather than equality. For small ints Python happens to reuse the same object, so this behaves the same here, but != is the correct, general way to compare numbers."
+        }
+      ],
+      "mistake": "Writing while slow2 != slow: but then forgetting to ALSO keep moving slow (line 14), which would leave slow stuck at the meeting point and break the guarantee that the two pointers meet at the cycle's entrance.",
+      "caption": [
+        {
+          "when": "slow2 == slow",
+          "text": "slow2 and slow have met at index {slow}: that's the cycle's entrance, and the answer."
+        },
+        {
+          "text": "slow2 ({slow2}) and slow ({slow}) haven't met yet: keep stepping both forward."
+        }
+      ]
+    },
+    "13": {
+      "explain": "Move slow2 forward by one step, from the start of the list toward the cycle.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "slow2",
+          "meaning": "The pointer walking from the beginning of the list."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "nums[slow2]",
+          "meaning": "Index into nums using slow2's current value, the same \"follow the value as a next index\" step used throughout."
+        }
+      ],
+      "why": "slow2 has to walk from the true beginning, one step at a time, for Floyd's algorithm's second phase to correctly land on the cycle's entrance when it meets slow.",
+      "if_removed": "slow2 would stay at 0 forever, and the while loop on line 12 would run until the visualizer's step cap stopped it (since slow keeps moving too, slow2 would never catch up).",
+      "alternatives": [
+        {
+          "code": "slow2 = nums[slow2]  # one step from the start, same pace as slow below",
+          "difference": "Same line; a note on why both pointers now move at the same (one-step) pace."
+        }
+      ],
+      "mistake": "Writing slow2 = nums[nums[slow2]] (a double step), copying phase 1's fast pointer by habit. Phase 2 specifically needs BOTH pointers moving at the same, single-step pace.",
+      "caption": "slow2 steps once: from {slow2} to nums[{slow2}] = {nums[slow2]}."
+    },
+    "14": {
+      "explain": "Move slow forward by one step too, continuing from wherever phase one left it (the meeting point).",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "slow",
+          "meaning": "Reused again: still the same pointer from phase 1, now moving at a single step per pass."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "nums[slow]",
+          "meaning": "Index into nums using slow's current value."
+        }
+      ],
+      "why": "Phase 1 left slow somewhere inside the cycle, already moving one step at a time (it only moved by one each pass of the FIRST loop too; fast was the one taking two). Phase 2 just keeps slow going at that same pace while slow2 catches up to it from the start.",
+      "if_removed": "slow would stay stuck at the phase-1 meeting point forever, and slow2 (walking from 0) would have to loop all the way around to reach that EXACT point, which isn't guaranteed to be the cycle's entrance.",
+      "alternatives": [
+        {
+          "code": "slow = nums[slow]  # continues from the phase-1 meeting point",
+          "difference": "Same line; a note on where slow is continuing from."
+        }
+      ],
+      "mistake": "Resetting slow = 0 here by confusing it with slow2. slow must keep going from where phase 1 left it; only slow2 starts over from the beginning.",
+      "caption": "slow steps once more: from {slow} to nums[{slow}] = {nums[slow]}."
+    },
+    "16": {
+      "explain": "Return slow (equivalently slow2, since the loop above only stops once they're equal): the index where both pointers met, which is also the duplicate VALUE, since every index 1 through n is also a possible value.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the second while loop."
+        },
+        {
+          "token": "return",
+          "meaning": "Ends the method and hands a value back to the caller."
+        },
+        {
+          "token": "slow",
+          "meaning": "The shared meeting index found by phase 2, which is this problem's answer."
+        }
+      ],
+      "why": "The cycle's entrance (where following nums[i] as a \"next index\" first loops back on itself) is exactly the duplicate value: it's the one index that TWO different earlier positions both point into.",
+      "if_removed": "The method would implicitly return None instead of the duplicate value LeetCode expects.",
+      "alternatives": [
+        {
+          "code": "return slow2",
+          "difference": "Equally correct: the while loop on line 12 only stops once slow2 == slow, so by this point they're guaranteed to hold the same value."
+        }
+      ],
+      "mistake": "Returning nums[slow] instead of slow itself, reading one step too far. slow already IS the duplicate value at this point; nums[slow] would be whatever that duplicate's own \"next\" happens to be.",
+      "caption": "Return slow: the duplicate value is {slow}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def findDuplicate(self, nums: List[int]) -> int:\n        seen = set()\n        for num in nums:\n            if num in seen:\n                return num\n            seen.add(num)\n        return -1",
+    "explain": "Walk nums once, keeping every value seen so far in a set. The first value that's already in the set is the duplicate, since LeetCode guarantees exactly one exists.",
+    "why_slow": "It's not slower in time (both approaches are O(n)); the cost is memory. seen can grow to hold up to n distinct values before the duplicate shows up, which is O(n) extra space, violating the problem's O(1) extra space requirement.",
+    "how_pattern_fixes": "Floyd's cycle detection finds the duplicate using only three index variables (slow, fast, slow2), no matter how large nums is, by treating the array itself as the structure being searched instead of building a separate record of what's been seen.",
+    "time": "O(n): one pass through nums, with O(1) average-case set operations.",
+    "space": "O(n): seen can hold up to n values before the duplicate is found."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "assignment": "Giving a name to a value with =. Here, assigning to slow or fast overwrites which index they refer to; nums itself is never changed.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n log n) grows a bit faster than that. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "break (keyword)": "A keyword that exits a loop immediately, skipping any remaining passes.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or recording everything. It's simple but often hungrier for memory than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like Solution().findDuplicate(nums).",
+    "class": "A blueprint for making objects. Solution holds the answer here.",
+    "colon": "The : character. At the end of class, def, while or if lines, it means an indented block follows.",
+    "comparison operator": "A symbol like ==, !=, < or > that compares two values and produces a boolean.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "cycle": "A loop in a chain of references (or, here, a chain of indexes) where following it forever never reaches an end. The duplicate value is exactly what creates one here.",
+    "cycle entrance": "The specific point where a cycle first loops back on itself: the node (or, here, index) that two different earlier positions both lead into.",
+    "edge case": "An unusual input that might break code: the smallest possible list, a value duplicated more than twice, or a meeting point that's already the cycle's entrance.",
+    "expression": "Any piece of code that produces a value, like nums[nums[fast]] or slow2 != slow.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next.",
+    "Floyd's algorithm": "A two-pointer technique (also called the tortoise and hare) for detecting a cycle in a chain of references using only O(1) extra memory: one pointer moves twice as fast as the other, and the two are guaranteed to meet if, and only if, a cycle exists.",
+    "for loop": "A loop that runs its block once for each item in a collection.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "if (keyword)": "A keyword that starts a condition check. The indented block below it runs only when the condition is True.",
+    "in (membership operator)": "The in keyword used as a check: x in collection is True exactly when x is already inside collection.",
+    "inclusive": "Including the end points. An inclusive range from 1 to n contains 1, n, and everything in between.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number like 0, 7 or -3. Python calls the type int.",
+    "keyword": "A word reserved by Python, like class, def, while, if, return, break.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. This problem has no real nodes, but reading nums[i] as a \"next index\" makes the array behave like one.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. nums is a list, used here as a stand-in for an array.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True, and a for loop repeats once per item in a collection.",
+    "method": "A function that belongs to a class, called with a dot: Solution().findDuplicate(nums).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "nested": "Placed inside another of the same kind: a loop inside a loop, an if inside an if, or brackets inside brackets.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next). This problem has no real node objects, but nums[i] plays the same role as a node's next field.",
+    "None": "Python's value for \"nothing\". A function with no return statement gives back None.",
+    "object": "A thing in memory with a type and data. nums itself, and the list typing.List refers to, are both objects.",
+    "parameter": "A name in a function's definition that receives an input. nums is findDuplicate's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like Floyd's two-speed cycle detection, reused here on an array instead of a real linked list.",
+    "pointer": "A variable that refers to a position (here, an index) so you can find your way around a structure. slow, fast and slow2 are all pointers here, even though they hold plain integers instead of node references.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2. Also, more loosely, the span of possible values something can take.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "sorting": "Putting items in order. Python's sorted(...) does this. Sorting takes about O(n log n) time.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "SyntaxError": "The error Python raises when it can't read your code at all, for example a missing colon.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "tortoise and hare": "Another name for Floyd's algorithm, from the fable of the slow tortoise and the fast hare: a slow pointer and a fast pointer, moving through the same structure at different speeds.",
+    "truthiness": "Using a non-boolean value as a condition. Not used directly by this solution's own conditions (slow == fast and slow2 != slow are already explicit comparisons), but the same idea behind while True always being True.",
+    "tuple": "Like a list, but it can't be changed after it's made. It is written with round brackets, like (0, 1).",
+    "tuple unpacking": "Assigning several names at once: slow, fast = 0, 0 puts 0 in slow and 0 in fast.",
+    "two pointers": "Using two position variables that move through data together, often at different speeds or through different structures, so comparing where they are reveals something useful. slow and fast (then slow and slow2) are the two pointers here.",
+    "type hint": "A label like nums: List[int] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like List.",
+    "value": "A piece of data. Here, nums[i] is read two ways at once: as a value in its own right, and as the next index to visit.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "array",
+      "title": "nums, read as index → \"next index\"",
+      "source": "nums",
+      "edges": true,
+      "pointers": {
+        "slow": "slow",
+        "fast": "fast if __line__ in (5, 6, 7, 8, 9) else HIDE",
+        "slow2": "slow2 if __line__ in (11, 12, 13, 14, 16) else HIDE"
+      },
+      "marks": {
+        "found": "[slow] if __line__ == 16 else []"
+      }
+    }
+  ]
+}

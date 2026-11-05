@@ -7,6 +7,7 @@ import { MARK, glow, pointerColor, tint } from "../lib/colors";
 const CELL = 48;
 const GAP = 8;
 const CHIP_ROW = 22;
+const EDGE_ROOM = 54; // space under the cells for edges-mode "index -> value" arrows
 
 type ArraySpec = Extract<PanelSpec, { type: "array" }>;
 
@@ -36,12 +37,50 @@ export default function ArrayRenderer({ spec, get }: RendererProps<ArraySpec>) {
     });
   const levels = Math.max(1, ...Array.from(stackAt.values()));
   const width = items.length * CELL + Math.max(0, items.length - 1) * GAP;
+  const top = levels * CHIP_ROW + 6;
+  const edgeRoom = spec.edges ? EDGE_ROOM : 0;
+  const xOf = (i: number) => i * (CELL + GAP) + CELL / 2;
 
   return (
     <div>
       <PanelTitle title={spec.title} />
       <div className="overflow-x-auto pb-1">
-        <div className="relative mx-auto" style={{ width: Math.max(width, CELL), paddingTop: levels * CHIP_ROW + 6 }}>
+        <div className="relative mx-auto" style={{ width: Math.max(width, CELL), paddingTop: top, paddingBottom: edgeRoom }}>
+          {/* edges: each index i arrows to index items[i], treating the array as a "next pointer" at every position */}
+          {spec.edges && (
+            <svg className="pointer-events-none absolute left-0 overflow-visible" style={{ top: top + CELL }} width={Math.max(width, CELL)} height={edgeRoom}>
+              <defs>
+                <marker id="arr-edge-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0 0 L10 5 L0 10 z" fill="#71717a" />
+                </marker>
+              </defs>
+              {items.map((v, i) => {
+                const j = typeof v === "number" ? v : null;
+                if (j === null || j < 0 || j >= items.length) return null;
+                const x1 = xOf(i);
+                const x2 = xOf(j);
+                const isMarked = (compared.has(i) && compared.has(j)) || (found.has(i) && found.has(j));
+                if (i === j) {
+                  const bow = 20;
+                  return (
+                    <path key={i} d={`M ${x1 - 3} -2 C ${x1 - CELL / 2} ${bow}, ${x1 + CELL / 2} ${bow}, ${x1 + 3} -2`} fill="none" stroke={isMarked ? MARK.compared : "#71717a"} strokeWidth={1.5} markerEnd="url(#arr-edge-head)" />
+                  );
+                }
+                const bow = Math.min(edgeRoom - 8, 16 + Math.abs(j - i) * 7);
+                return (
+                  <path
+                    key={i}
+                    d={`M ${x1} -2 C ${x1} ${bow}, ${x2} ${bow}, ${x2} -2`}
+                    fill="none"
+                    stroke={isMarked ? MARK.compared : "#71717a"}
+                    strokeWidth={isMarked ? 2 : 1.5}
+                    markerEnd="url(#arr-edge-head)"
+                  />
+                );
+              })}
+            </svg>
+          )}
+
           {/* pointer chips */}
           {placed.map((p) => {
             const outside = p.index! < 0 || p.index! >= items.length;
