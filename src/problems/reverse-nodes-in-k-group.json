@@ -1,0 +1,825 @@
+{
+  "slug": "reverse-nodes-in-k-group",
+  "title": "Reverse Nodes in K-Group",
+  "difficulty": "Hard",
+  "category": "Linked List",
+  "leetcode": 25,
+  "statement": [
+    "You're given the head of a linked list, and an integer k. Reverse the nodes of the list, k at a time, and return the new head.",
+    "k divides the list into consecutive groups of k nodes each, which must each be reversed. If the number of nodes isn't a multiple of k, the final, leftover group (fewer than k nodes) should be left exactly as it is, in its original order.",
+    "You may not change the values inside the nodes; only the links between them may be rearranged, and only O(1) extra memory may be used beyond the input list itself."
+  ],
+  "examples": [
+    {
+      "input": "head = [1,2,3,4,5], k = 2",
+      "output": "[2,1,4,3,5]",
+      "explain": "Grouped by 2: [1,2], [3,4], and a leftover [5]. The first two groups each reverse (1,2 becomes 2,1; 3,4 becomes 4,3); the leftover single node 5 has fewer than k=2 nodes, so it stays as-is. This is the exact example the visualizer runs."
+    },
+    {
+      "input": "head = [1,2,3,4,5], k = 3",
+      "output": "[3,2,1,4,5]",
+      "explain": "Grouped by 3: [1,2,3] and a leftover [4,5]. Only the first group has a full 3 nodes, so only it reverses, to 3,2,1. The leftover [4,5], with just 2 nodes, stays in its original order since it's shorter than k."
+    }
+  ],
+  "pattern": {
+    "name": "In-place group reversal, bounded by a lookahead",
+    "summary": "Repeatedly look ahead exactly k nodes from the end of the previous group (getKth) to check whether a full group exists. If one does, reverse just that group in place using the same prev/curr/tmp technique as a whole-list reversal, except bounded by groupNext (the node just past the group) instead of by None, so the reversed group links back into the rest of the list instead of ending it. Splice the reversed group in by reconnecting groupPrev (the end of the previous group, or a dummy node for the very first group) to the new start, then advance groupPrev to the new end, ready for the next group. Stop, leaving things untouched, the moment a full group of k can no longer be found.",
+    "recognize": [
+      "The problem asks for reversal in FIXED-SIZE chunks, not the whole structure at once, which rules out Reverse Linked List's simple single prev/curr walk from head to None.",
+      "A leftover piece shorter than the chunk size must be left UNTOUCHED, which means some kind of \"does a full chunk exist here\" check is needed before committing to reverse anything.",
+      "The reversal has to happen IN PLACE, with O(1) extra memory, which rules out copying everything into an array, chunking it there, and rebuilding the list.",
+      "Each finished group needs to be correctly RE-LINKED to its neighbors (the group before, and whatever comes after), not just internally reversed in isolation; a dummy node and a boundary pointer (groupNext) are what make that splicing uniform across every group, including the first."
+    ],
+    "avoid_when": [
+      "k is 1. Reversing every group of 1 node is a no-op; the list comes back completely unchanged, so there's nothing to reverse at all.",
+      "k is greater than or equal to the whole list's length. Then there's only ever one group, and this degenerates to exactly Reverse Linked List's full reversal, with the groupNext boundary always landing on None.",
+      "A recursive formulation is preferred for its own sake. Recursing once per group (reverse this group, then recurse on the rest and link to it) reaches the same result, trading the explicit groupPrev/dummy bookkeeping for O(n / k) call-stack depth instead of O(1) extra space.",
+      "The structure isn't a singly linked list, if backward pointers already exist (a doubly linked list), each group's prev references need updating too, which this exact next-only technique doesn't handle."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "dummy exists purely so the FIRST group's reversal can be spliced in by groupPrev.next = kth exactly like every later group, with no separate, special-cased \"if this is the first group\" branch anywhere.",
+      "getKth answers one question twice over: \"is there a full group here\" (line 8) and, if so, \"where exactly does it end\" (kth itself, used as the group's new head once reversed). Both answers come from the same single forward walk.",
+      "The inner reversal (lines 12-17) is Reverse Linked List's own prev/curr/tmp walk, with exactly one change: prev starts at groupNext instead of None, so the reversed group's tail links OUT to the rest of the list instead of ending it.",
+      "groupPrev always advances to tmp (the group's ORIGINAL first node, now its reversed LAST node), never to kth (the group's NEW first node). Advancing to the wrong one would make the next getKth call start from one group too early, re-reversing nodes that were just finished."
+    ],
+    "time": "O(n), linear in the number of nodes. Every node is visited a small, constant number of times: once by getKth's walk, and once during its own group's reversal.",
+    "space": "O(1), constant extra memory. Only a fixed handful of pointers (dummy, groupPrev, kth, groupNext, prev, curr, tmp) exist at once, regardless of how long the list is or how many groups it has.",
+    "edge_cases": [
+      "head is None (an empty list). getKth(groupPrev, k) on the very first call walks zero steps before finding curr already None, returns None immediately, the loop breaks right away, and dummy.next, still None, is correctly returned.",
+      "k is larger than the entire list. getKth runs out of nodes before counting down to 0, returns None, and the loop breaks on its very first pass: the list is returned completely unreversed, exactly as the problem requires for a group shorter than k.",
+      "The list's length is an exact multiple of k. Every group reverses, and the final call to getKth on the last group's new groupPrev finds nothing left (kth is None), stopping the loop cleanly with no leftover group to worry about.",
+      "k equals exactly the list's full length. There's only one group, encompassing the entire list; it reverses once, and the very next getKth call finds nothing left."
+    ]
+  },
+  "code": "class Solution:\n    def reverseKGroup(self, head: Optional[ListNode], k: int) -> Optional[ListNode]:\n        dummy = ListNode(0, head)\n        groupPrev = dummy\n\n        while True:\n            kth = self.getKth(groupPrev, k)\n            if not kth:\n                break\n            groupNext = kth.next\n\n            prev, curr = groupNext, groupPrev.next\n            while curr != groupNext:\n                tmp = curr.next\n                curr.next = prev\n                prev = curr\n                curr = tmp\n\n            tmp = groupPrev.next\n            groupPrev.next = kth\n            groupPrev = tmp\n\n        return dummy.next\n\n    def getKth(self, curr, k):\n        while curr and k > 0:\n            curr = curr.next\n            k -= 1\n        return curr\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(vals):\n    head = ListNode(vals[0])\n    cur = head\n    for v in vals[1:]:\n        cur.next = ListNode(v)\n        cur = cur.next\n    return head\n\ndef to_vals(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n\nhead = build([1, 2, 3, 4, 5])\n",
+    "call": "to_vals(Solution().reverseKGroup(head, 2))",
+    "expected": [
+      2,
+      1,
+      4,
+      3,
+      5
+    ],
+    "describe": "head = [1,2,3,4,5], k = 2"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates the class LeetCode tests: Solution. The whole answer lives inside two methods on a single-use Solution object: reverseKGroup itself, and a small helper, getKth.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The exact class name LeetCode's tester expects."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls reverseKGroup on it, so the method needs to live inside a class named exactly Solution.",
+      "if_removed": "There'd be nowhere to attach reverseKGroup as a method LeetCode's tester can find and call.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Naming the class something else, like KGroupReverser. LeetCode specifically looks for a class named Solution.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines reverseKGroup, the method that walks the list group by group, reversing each full group of k nodes in place and leaving any shorter leftover group at the end untouched.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "reverseKGroup",
+          "meaning": "The method name LeetCode's tester calls."
+        },
+        {
+          "token": "(self, head: Optional[ListNode], k: int)",
+          "meaning": "self, the Solution object; head, the first node of the list, or None; k, the group size."
+        },
+        {
+          "token": "-> Optional[ListNode]",
+          "meaning": "Return type hint: gives back either a ListNode (the new head) or None, if the list was empty."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode calls Solution().reverseKGroup(head, k) with exactly this signature.",
+      "if_removed": "Calling Solution().reverseKGroup(head, k) would fail with an AttributeError, since the object would have no reverseKGroup method.",
+      "alternatives": [
+        {
+          "code": "def reverseKGroup(self, head, k):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Assuming k always divides the list's length evenly. A leftover group shorter than k is explicitly left unreversed by this solution; it's not an error case to guard against separately.",
+      "caption": "Python remembers the reverseKGroup instructions for later."
+    },
+    "3": {
+      "explain": "This creates a dummy node whose next points at the real head, so the FIRST group's reversal can be wired to something, groupPrev, the exact same way every later group is.",
+      "syntax": [
+        {
+          "token": "dummy",
+          "meaning": "A local variable for the placeholder node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode(0, head)",
+          "meaning": "A brand new node, with val 0 (never read) and next already pointing at head."
+        }
+      ],
+      "why": "Without a dummy sitting before the list, reversing the FIRST group would need special-case code: there'd be no earlier node whose next could be re-pointed at that group's new head.",
+      "if_removed": "Line 4's groupPrev = dummy would crash with a NameError, since dummy would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "dummy = ListNode()\ndummy.next = head",
+          "difference": "Builds the node first, then wires its next separately. Identical result, one line longer."
+        }
+      ],
+      "mistake": "Writing dummy = ListNode(0) and forgetting to pass head as next. Then dummy.next would default to None, disconnecting the dummy from the actual list entirely.",
+      "caption": "Create a dummy node pointing at the real head: {head.val if head else None}."
+    },
+    "4": {
+      "explain": "This points groupPrev at dummy to start: groupPrev always tracks the node right BEFORE the group currently being reversed, the one whose next gets re-wired once that group is done.",
+      "syntax": [
+        {
+          "token": "groupPrev",
+          "meaning": "A local variable: the node just before the current group."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "dummy",
+          "meaning": "The placeholder node just created."
+        }
+      ],
+      "why": "The very first group starts right after dummy, so starting groupPrev there lets the loop below treat the first group exactly the same as every later one.",
+      "if_removed": "Line 7's self.getKth(groupPrev, k) would crash with a NameError, since groupPrev would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "groupPrev = dummy = ListNode(0, head)",
+          "difference": "Combines lines 3 and 4 into one chained assignment. groupPrev and dummy end up pointing at the same node either way; just written more compactly."
+        }
+      ],
+      "mistake": "Starting groupPrev at head instead of dummy. Then the very first group would have no earlier node to re-wire once reversed, breaking exactly the case dummy exists to avoid.",
+      "caption": "groupPrev starts at dummy, right before the list's real first node."
+    },
+    "6": {
+      "explain": "This starts a loop with no built-in stopping condition of its own: it keeps going, one group at a time, until something INSIDE the loop explicitly breaks out of it.",
+      "syntax": [
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "True",
+          "meaning": "A condition that's always True, so this loop never stops on its own; only break (line 9) can end it."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "How many groups the list has isn't known up front; it depends on the list's length and k, neither of which this loop needs to compute in advance. Checking \"is there a full group left\" (via getKth) at the top of each pass is simpler than precomputing a count.",
+      "if_removed": "Nothing would ever run, including the very first group's reversal.",
+      "alternatives": [
+        {
+          "code": "while groupPrev.next:",
+          "difference": "Stops once there's nothing left at all, but still needs the getKth + break logic inside to detect a group SHORTER than k, so this doesn't actually simplify anything."
+        }
+      ],
+      "mistake": "Forgetting the break on line 9 entirely. Since this loop's own condition never turns False by itself, that would make it loop forever once the list runs out of full groups.",
+      "caption": "Start (or continue) scanning for the next full group of {k}, right after {groupPrev.val if groupPrev is not dummy else 'the dummy node'}."
+    },
+    "7": {
+      "explain": "This looks ahead exactly k nodes from groupPrev to find what WOULD be the last node of the next group, without reversing anything yet.",
+      "syntax": [
+        {
+          "token": "kth",
+          "meaning": "A local variable for the k-th node from groupPrev, or None if there aren't that many left."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "self.getKth(groupPrev, k)",
+          "meaning": "Calls the helper defined on line 25, which walks forward k steps from groupPrev, or stops early at None."
+        }
+      ],
+      "why": "Before reversing anything, the solution needs to know whether a FULL group of k nodes even exists left. getKth answers that in one walk, used both to check (line 8) and, if a full group exists, to know exactly where it ends.",
+      "if_removed": "Line 8's if not kth: would crash with a NameError, since kth would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "kth = groupPrev\nfor _ in range(k):\n    if kth:\n        kth = kth.next",
+          "difference": "Inlines getKth's own logic here instead of calling it as a separate method. Functionally identical, just not factored out."
+        }
+      ],
+      "mistake": "Walking k nodes from head or from the group's own first node instead of from groupPrev. groupPrev is one step BEFORE the group; starting the count there is what makes kth land exactly on the group's LAST node, not one past it.",
+      "caption": "Look {k} nodes ahead from {groupPrev.val if groupPrev is not dummy else 'the dummy node'}, to see if a full group exists."
+    },
+    "8": {
+      "explain": "This checks whether that full group actually exists. If getKth ran out of nodes before reaching k steps, kth comes back as None.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "not kth",
+          "meaning": "True exactly when kth is None: fewer than k nodes remained from groupPrev onward."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "A group shorter than k is explicitly left unreversed by this problem. This check is what tells the loop \"there's nothing more to reverse\" and stop, rather than trying to reverse a partial, too-short group.",
+      "if_removed": "The loop would try to reverse a group using a kth of None, and line 10's kth.next would crash with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "if kth is None:",
+          "difference": "Spells out the same check explicitly instead of relying on None being falsy. Identical result."
+        }
+      ],
+      "mistake": "Writing if kth: break, inverting the condition. That would stop as soon as a FULL group WAS found, the opposite of what's needed, and never reverse anything at all.",
+      "caption": [
+        {
+          "when": "not kth",
+          "text": "Fewer than {k} nodes remain: no full group left to reverse."
+        },
+        "A full group of {k} ends at {kth.val}: time to reverse it."
+      ]
+    },
+    "9": {
+      "explain": "The current group is too short (or there's nothing left at all), so stop the loop entirely, leaving whatever remains exactly as it was.",
+      "syntax": [
+        {
+          "token": "break",
+          "meaning": "A keyword that exits the enclosing loop immediately, skipping any remaining passes."
+        }
+      ],
+      "why": "The problem specifically says a final group with fewer than k nodes should stay in its original order, not be reversed. break is what stops processing right at that point.",
+      "if_removed": "The loop would fall through to line 10, which crashes with an AttributeError trying to read kth.next on kth being None.",
+      "alternatives": [
+        {
+          "code": "return dummy.next",
+          "difference": "Returning directly here instead of breaking would also work, since nothing meaningful happens between here and line 23's return, but it duplicates the return statement instead of reusing the one already at the end."
+        }
+      ],
+      "mistake": "Writing continue instead of break. continue would jump back to re-check while True:, re-running getKth on the exact same groupPrev forever, since nothing ever changes: an infinite loop.",
+      "caption": "Stop: the leftover tail stays exactly as it was."
+    },
+    "10": {
+      "explain": "This remembers groupNext, the node right after the CURRENT group, the one the reversed group needs to end up pointing at once it's flipped around.",
+      "syntax": [
+        {
+          "token": "groupNext",
+          "meaning": "A local variable for the node just past the current group."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "kth.next",
+          "meaning": "Whatever comes after the group's last node: the start of the NEXT group, or None if this was the final group."
+        }
+      ],
+      "why": "Once this group's nodes get reversed, its ORIGINAL first node becomes its new LAST node, and that node's next has to be reconnected to whatever follows the group, groupNext, not left dangling or pointed at the wrong thing.",
+      "if_removed": "Line 12's prev, curr = groupNext, groupPrev.next would crash with a NameError, since groupNext would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "groupNext = kth.next if kth else None",
+          "difference": "Adds a fallback for kth being None. Redundant here, since line 8 already guarantees kth is a real node by the time this line runs."
+        }
+      ],
+      "mistake": "Reading groupPrev.next instead of kth.next. groupPrev.next is the group's FIRST node, not the one after its LAST node; this would misidentify where the group actually ends.",
+      "caption": "Remember what comes after this group: {kth.next.val if kth.next else None}."
+    },
+    "12": {
+      "explain": "This sets up the inner reversal: curr starts at the group's first node, and prev starts at groupNext, the boundary this group's reversed chain needs to end up pointing INTO.",
+      "syntax": [
+        {
+          "token": "prev, curr",
+          "meaning": "Two local variables, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "groupNext, groupPrev.next",
+          "meaning": "prev becomes groupNext (the far boundary); curr becomes groupPrev.next, the group's current first node."
+        }
+      ],
+      "why": "Starting prev at groupNext (instead of None, the way a whole-list reversal would) is exactly what makes the group's reversed tail link OUT to the rest of the list, instead of ending in None like Reverse Linked List's full reversal does.",
+      "if_removed": "Line 13's while curr != groupNext: would crash with a NameError, since curr would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "prev = groupNext\ncurr = groupPrev.next",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Writing prev, curr = None, groupPrev.next, starting prev at None the way a full-list reversal does. That would correctly reverse this group internally, but then line 15 would eventually set the group's original first node's next to None, severing the rest of the list instead of linking to groupNext.",
+      "caption": "Reverse from {groupPrev.next.val} up to (but not including) {groupNext.val if groupNext else None}: prev starts at the boundary, curr at the group's first node."
+    },
+    "13": {
+      "explain": "This loop reverses exactly one group: it keeps going as long as curr hasn't yet walked all the way to groupNext, the node just past this group.",
+      "syntax": [
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "curr != groupNext",
+          "meaning": "True until curr has advanced exactly k times and reached the far boundary."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "groupNext is a node OUTSIDE this group (or None). Stopping exactly when curr reaches it is what guarantees the loop reverses precisely this group's k nodes, no more and no fewer, without needing a separate counter.",
+      "if_removed": "Nothing in the current group would ever get reversed; the list would come back exactly as it started.",
+      "alternatives": [
+        {
+          "code": "for _ in range(k):\n    ...",
+          "difference": "Counts k iterations directly instead of comparing against groupNext. Works just as well here, since this group is already confirmed (line 8) to have exactly k nodes."
+        }
+      ],
+      "mistake": "Writing while curr: instead of while curr != groupNext:. Since curr eventually reaches groupNext, which might be a REAL node (not None) if more groups follow, curr: alone would keep going and reverse the NEXT group too, and the one after that, continuing all the way to the end of the list.",
+      "caption": [
+        {
+          "when": "curr != groupNext",
+          "text": "curr is at {curr.val}, not yet at the boundary: keep reversing."
+        },
+        "curr has reached the boundary: this group is fully reversed."
+      ]
+    },
+    "14": {
+      "explain": "This saves curr's next node before anything gets rewired, the same safeguard every in-place list reversal needs.",
+      "syntax": [
+        {
+          "token": "tmp",
+          "meaning": "A local variable, temporarily holding curr's original next node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "curr's own next reference, read before it's overwritten on the next line."
+        }
+      ],
+      "why": "The very next line is about to overwrite curr.next. Without saving it first, there'd be no way to continue walking forward into the rest of the group; the chain past curr would be lost the instant curr.next changes.",
+      "if_removed": "Line 17's curr = tmp would crash with a NameError, and even if it didn't, curr's original next node would already be lost by the time it's needed.",
+      "alternatives": [
+        {
+          "code": "nxt = curr.next",
+          "difference": "A different variable name. Works identically; tmp is reused again at line 19 for an unrelated purpose, which a reader needs to notice is a fresh assignment, not the same value."
+        }
+      ],
+      "mistake": "Saving curr.next.next (two steps ahead) instead of curr.next. That would skip over the very next node in the group entirely, leaving it unvisited and unreversed.",
+      "caption": "Remember what comes after {curr.val}: {curr.next.val if curr.next else None}, before rewiring it."
+    },
+    "15": {
+      "explain": "This is the actual reversal step: curr's next is pointed BACKWARDS, at prev, the node that came before it in the original order (or at groupNext, on the very first pass).",
+      "syntax": [
+        {
+          "token": "curr.next",
+          "meaning": "curr's own next reference."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "prev",
+          "meaning": "The node curr should now point at: whatever was processed just before it."
+        }
+      ],
+      "why": "Reversing a chain means every node's arrow has to flip direction, pointing at what used to be BEFORE it instead of what used to be after. This line is that flip, one node at a time.",
+      "if_removed": "curr.next would keep pointing forward, the original direction, and this group would never actually reverse.",
+      "alternatives": [
+        {
+          "code": "curr.next = prev if prev else None",
+          "difference": "Adds a redundant fallback. prev is never anything other than a real node or (on the very first pass of a final, non-None-bounded group) None itself already, so the plain assignment already handles both cases identically."
+        }
+      ],
+      "mistake": "Writing prev.next = curr instead of curr.next = prev. prev's own next field was already correctly set during a PREVIOUS pass (or never needs touching, on prev's first assignment); this group's reversal only ever needs to rewire curr's own next.",
+      "caption": "Point {curr.val}'s next backwards, at {prev.val if prev else groupNext}."
+    },
+    "16": {
+      "explain": "This moves prev forward to be curr: the node just reversed is now the \"previous\" one, ready for the NEXT node in the group to point back at it.",
+      "syntax": [
+        {
+          "token": "prev",
+          "meaning": "The running \"node before this one\" tracker."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr",
+          "meaning": "The node whose next was just flipped on the line above."
+        }
+      ],
+      "why": "Without advancing prev, every later node in the group would try to point back at the SAME node repeatedly, instead of correctly chaining each node to the one that was reversed immediately before it.",
+      "if_removed": "prev would stay fixed at groupNext (or wherever it started) forever, and every node in the group would end up pointing directly at groupNext instead of forming a proper reversed chain.",
+      "alternatives": [
+        {
+          "code": "prev, curr = curr, tmp",
+          "difference": "Combines this line and line 17 into one tuple assignment. Same result, one line instead of two."
+        }
+      ],
+      "mistake": "Writing prev = tmp instead of prev = curr. tmp is curr's OLD next, the node still waiting to be processed, not the node that was just reversed.",
+      "caption": "prev moves forward: prev is now {curr.val}."
+    },
+    "17": {
+      "explain": "This moves curr forward to tmp, the node that was curr's original next before any rewiring, continuing the walk deeper into the group.",
+      "syntax": [
+        {
+          "token": "curr",
+          "meaning": "The node currently being processed."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "tmp",
+          "meaning": "Saved back on line 14, before curr.next was overwritten."
+        }
+      ],
+      "why": "curr.next no longer points forward (line 15 just flipped it), so tmp, saved before that happened, is the only remaining way to continue walking toward groupNext.",
+      "if_removed": "curr would stay on the same node forever (or try to follow its now-backwards next, undoing the walk), and the while loop on line 13 would never reach groupNext: an infinite loop.",
+      "alternatives": [
+        {
+          "code": "curr = curr.next",
+          "difference": "Looks like the usual way to advance a list pointer, but curr.next was just overwritten on line 15 to point BACKWARDS, so this would send curr the wrong way, straight back toward prev instead of onward through the group."
+        }
+      ],
+      "mistake": "Writing curr = curr.next here instead of curr = tmp, forgetting that curr.next no longer means what it used to by this point in the loop.",
+      "caption": "curr moves forward to {tmp.val if tmp else groupNext.val if groupNext else None}."
+    },
+    "19": {
+      "explain": "The group is now fully reversed internally. This saves groupPrev.next, which still (for one more line) points at the group's ORIGINAL first node, now sitting at the END of the reversed group.",
+      "syntax": [
+        {
+          "token": "tmp",
+          "meaning": "Reused here for a different purpose than lines 14-17: the group's original first node, now its new last node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "groupPrev.next",
+          "meaning": "Still unchanged since before the reversal: the node that USED to start this group."
+        }
+      ],
+      "why": "The next line is about to overwrite groupPrev.next entirely, to point at the group's NEW first node instead. Without saving the old value first, there'd be no way to find the group's new tail, needed on line 21 to become the next groupPrev.",
+      "if_removed": "Line 21's groupPrev = tmp would crash with a NameError, and groupPrev would have no correct way to advance to the end of the just-reversed group.",
+      "alternatives": [
+        {
+          "code": "oldHead = groupPrev.next",
+          "difference": "A different variable name, avoiding reusing tmp a second time for an unrelated purpose. Functionally identical."
+        }
+      ],
+      "mistake": "Reading kth.next here instead of groupPrev.next. By this point kth IS the group's new first node (after reversal), and kth.next is groupNext, not the group's new tail, which is what's actually needed next.",
+      "caption": "Remember the group's original first node, {groupPrev.next.val}, now its new last node."
+    },
+    "20": {
+      "explain": "This reconnects the PREVIOUS group (or dummy, for the first group) to this group's new first node, kth, which, after reversal, is the group's ORIGINAL last node.",
+      "syntax": [
+        {
+          "token": "groupPrev.next",
+          "meaning": "The link from whatever came before this group."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "kth",
+          "meaning": "The node found on line 7: the group's original last node, now first after reversal."
+        }
+      ],
+      "why": "groupPrev.next still points at the group's OLD first node (now its last), left over from before the reversal. This is the line that actually splices the reversed group into the rest of the list, from the outside in.",
+      "if_removed": "groupPrev.next would still point at the group's original first node, now buried at the END of the reversed group, making the list skip right over every node that was just reversed.",
+      "alternatives": [
+        {
+          "code": "groupPrev.next = tmp",
+          "difference": "tmp at this point (after line 19) holds the group's ORIGINAL first node, not its new first node. This would wire the previous group straight to the END of the reversed group, backwards."
+        }
+      ],
+      "mistake": "Writing groupPrev.next = groupNext by mistake. That would skip the entire reversed group, linking the previous group directly to whatever comes after this one.",
+      "caption": "Link the previous part of the list to this group's new start: {kth.val}."
+    },
+    "21": {
+      "explain": "This advances groupPrev to the end of the group that was just reversed, ready for the next pass of the loop to find and reverse the group after it.",
+      "syntax": [
+        {
+          "token": "groupPrev",
+          "meaning": "The node just before the NEXT group to be processed."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "tmp",
+          "meaning": "Saved on line 19: the group's original first node, now sitting at its new, reversed end."
+        }
+      ],
+      "why": "getKth (line 7) always walks forward from groupPrev. If groupPrev stayed where it was, the next pass would try to reverse NODES THAT WERE JUST REVERSED all over again, instead of moving on to the next untouched group.",
+      "if_removed": "groupPrev would never move forward. The next loop pass would call getKth on the same old groupPrev, landing on nodes already reversed, and the solution would loop over the same group forever.",
+      "alternatives": [
+        {
+          "code": "groupPrev = groupPrev.next",
+          "difference": "Looks reasonable, but by this point groupPrev.next was JUST reassigned on line 20 to kth, the group's NEW first node, not its last. This would leave groupPrev one full group too early."
+        }
+      ],
+      "mistake": "Writing groupPrev = kth instead of groupPrev = tmp. kth is the group's new FIRST node; the next group actually starts after the group's new LAST node, tmp.",
+      "caption": "groupPrev moves to the end of this group: {tmp.val}."
+    },
+    "23": {
+      "explain": "Once the loop above has reversed every full group it can find, this returns the real answer: dummy.next, whatever node ended up right after the placeholder.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "dummy.next",
+          "meaning": "dummy itself was never part of the real answer, only what's linked after it."
+        }
+      ],
+      "why": "dummy only ever existed to make the first group's reversal uniform with every later one (line 3). dummy.next is where the real, now partially-reversed list actually begins.",
+      "if_removed": "The method would reach its end without returning anything, giving back None instead of the reversed list, even if every group was correctly reversed.",
+      "alternatives": [
+        {
+          "code": "head = dummy.next\nreturn head",
+          "difference": "Saves dummy.next in a variable first. Functionally identical; the variable is never read again before returning."
+        }
+      ],
+      "mistake": "Returning dummy instead of dummy.next. That would hand back the placeholder itself as the head, a single extra 0-valued node sitting in front of the real answer.",
+      "caption": "Return the new head of the list: {dummy.next.val if dummy.next else None}."
+    },
+    "25": {
+      "explain": "This defines getKth, a small helper that walks k steps forward from a starting node, stopping early with None if it runs out of nodes before reaching k.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "getKth",
+          "meaning": "The method name. It's an internal helper, never called by LeetCode's tester directly."
+        },
+        {
+          "token": "(self, curr, k)",
+          "meaning": "self, the Solution object; curr, the node to start walking from; k, how many steps to take."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "reverseKGroup needs to answer \"does a full group of k nodes exist starting after groupPrev, and if so, where does it end\" repeatedly, once per group. Writing that walk once, as a helper, avoids repeating it inline.",
+      "if_removed": "reverseKGroup would need to inline this exact walk-k-steps logic itself, making the main method longer and mixing two separate concerns (finding a boundary, and reversing between boundaries) into one block of code.",
+      "alternatives": [
+        {
+          "code": "def _getKth(self, curr, k):",
+          "difference": "A leading underscore is a Python convention hinting \"internal use only\". It runs identically either way, since Python doesn't enforce it."
+        }
+      ],
+      "mistake": "Forgetting self as the first parameter. Every method needs it, even an internal helper like this one.",
+      "caption": "Python remembers the getKth instructions for later."
+    },
+    "26": {
+      "explain": "This loop keeps stepping forward as long as there's still a real node to move to AND there are steps left to take.",
+      "syntax": [
+        {
+          "token": "while",
+          "meaning": "A keyword that starts a loop which repeats its block for as long as the condition stays True."
+        },
+        {
+          "token": "curr and k > 0",
+          "meaning": "Both conditions must hold: curr isn't None (there's still a node), and k hasn't yet counted all the way down."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Both failure modes have to be caught: running out of nodes before taking k steps (curr becomes None) must stop the walk just as surely as successfully taking all k steps (k reaches 0) does.",
+      "if_removed": "If only k > 0 were checked, curr.next on line 27 would eventually crash with an AttributeError the moment the list runs out of nodes before k steps are taken. If only curr were checked, the loop would walk past the k-th node and keep going to the end of the whole list.",
+      "alternatives": [
+        {
+          "code": "for _ in range(k):\n    if not curr:\n        break\n    curr = curr.next",
+          "difference": "Counts the k steps with a for loop instead, checking for running out of nodes inside the body. Same result, structured the other way around."
+        }
+      ],
+      "mistake": "Writing while curr or k > 0: with or instead of and. Then the loop would keep going even once curr becomes None, and curr.next on line 27 would crash trying to read a field off None.",
+      "caption": [
+        {
+          "when": "curr and k > 0",
+          "text": "At {curr.val} with {k} step(s) left: keep walking."
+        },
+        "Either the list ran out, or all steps were taken: stop here."
+      ]
+    },
+    "27": {
+      "explain": "This takes one step forward: curr moves to whatever node comes after it.",
+      "syntax": [
+        {
+          "token": "curr",
+          "meaning": "The node currently being visited."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The node right after curr, or None if curr was the list's last node."
+        }
+      ],
+      "why": "Walking forward one node at a time, k times total, is exactly how this helper counts off k positions from wherever it started.",
+      "if_removed": "curr would never advance, and the loop (bounded by k > 0 on line 26) would just count k down to 0 without curr ever actually moving, incorrectly returning the STARTING node instead of the one k steps ahead.",
+      "alternatives": [
+        {
+          "code": "curr = curr.next if curr else None",
+          "difference": "Adds a redundant guard. Line 26's while curr already guarantees curr is a real node by the time this line runs, so the fallback never actually triggers."
+        }
+      ],
+      "mistake": "Writing k = curr instead of curr = curr.next, mixing up which variable gets updated. That would corrupt k entirely and leave curr frozen in place.",
+      "caption": "Step forward to {curr.next.val if curr.next else None}."
+    },
+    "28": {
+      "explain": "This counts off one step taken, decreasing how many are left.",
+      "syntax": [
+        {
+          "token": "k",
+          "meaning": "The remaining number of steps."
+        },
+        {
+          "token": "-=",
+          "meaning": "Subtract-and-assign: shorthand for k = k - 1."
+        },
+        {
+          "token": "1",
+          "meaning": "Decrease by exactly one, matching the single step just taken on line 27."
+        }
+      ],
+      "why": "The loop's own stopping condition (line 26) checks k > 0. Without counting down, k would stay at its starting value forever, and the loop would only ever stop because curr eventually became None, walking all the way to the end of the list instead of stopping after exactly k steps.",
+      "if_removed": "k would never reach 0 on its own. The loop would keep going until curr ran out entirely (reaching the end of the whole list) instead of stopping after exactly k steps, breaking getKth's entire purpose.",
+      "alternatives": [
+        {
+          "code": "k = k - 1",
+          "difference": "Spells out the same subtraction explicitly instead of using the -= shorthand. Identical result."
+        }
+      ],
+      "mistake": "Writing k -= 1 BEFORE curr = curr.next (swapping lines 27 and 28). Since neither line reads the other's result before it's updated, the order between these two specific lines doesn't actually change the outcome here.",
+      "caption": "{k - 1} step(s) left after this one."
+    },
+    "29": {
+      "explain": "Once the loop stops, either because k steps were taken or the list ran out first, this hands back wherever curr ended up: the k-th node, or None.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "curr",
+          "meaning": "Either the real k-th node from the start (if enough nodes existed), or None (if the walk ran out early)."
+        }
+      ],
+      "why": "The caller (line 7) needs to tell the two outcomes apart: a real node means a full group exists; None means it doesn't. Returning curr as-is preserves exactly that distinction, with no extra translation needed.",
+      "if_removed": "The method would reach its end without returning anything, giving back None in every case, even when a real k-th node was found, which would make reverseKGroup incorrectly treat every group as too short.",
+      "alternatives": [
+        {
+          "code": "return curr if curr else None",
+          "difference": "Adds a redundant fallback. curr is already exactly None in the \"ran out\" case; wrapping it like this changes nothing."
+        }
+      ],
+      "mistake": "Returning k instead of curr. By the time the loop ends, k is just a leftover counter (0, if the walk succeeded), not the node itself.",
+      "caption": "Return {curr.val if curr else None}: the k-th node, or None if there weren't enough left."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def reverseKGroup(self, head: Optional[ListNode], k: int) -> Optional[ListNode]:\n        vals = []\n        node = head\n        while node:\n            vals.append(node.val)\n            node = node.next\n\n        for start in range(0, len(vals) - len(vals) % k, k):\n            vals[start:start + k] = vals[start:start + k][::-1]\n\n        dummy = ListNode()\n        curr = dummy\n        for v in vals:\n            curr.next = ListNode(v)\n            curr = curr.next\n        return dummy.next",
+    "explain": "Walk the whole list once, copying every value into a plain Python list, vals. Reverse each consecutive chunk of k values in that array directly with slicing and Python's [::-1], leaving any final chunk shorter than k untouched. Then rebuild a brand new linked list from the resulting array, the same dummy/curr pattern used elsewhere.",
+    "why_slow": "This isn't slower in Big-O time (it's still O(n)), but it fails the problem's own O(1) extra space requirement: vals holds a full copy of every value, and an entirely new set of ListNode objects gets built from scratch, instead of reusing and relinking the n nodes that already exist.",
+    "how_pattern_fixes": "The pattern solution rewires the EXISTING nodes' next fields directly, group by group, using only a fixed handful of pointers no matter how long the list is. Nothing is ever copied into a separate array, and no new nodes are ever created.",
+    "time": "O(n), the same as the pattern solution: one pass to collect values, one more to rebuild the list.",
+    "space": "O(n), linear, for the vals array and the brand new list of nodes built from it, versus O(1) for the pattern solution's fixed set of pointers."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev). Mentioned only as a structure this exact technique doesn't directly handle, since it only rewires next.",
+    "for loop": "A loop that runs its block once for each item in a collection. Not used by this solution, which walks the list with while loops instead.",
+    "infinite loop": "A loop whose condition never becomes False, so it runs forever and the program freezes. while True: on line 6 relies on break to avoid becoming one.",
+    "integer": "A whole number with no decimal point, like -2, 0 or 41.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True.",
+    "pattern": "A reusable technique that solves a whole family of problems, like reversing bounded groups instead of a whole structure at once.",
+    "reference": "What a variable or a field like next actually holds: a way to reach an object, not a copy of it.",
+    "singly linked list": "A linked list where each node points only forward, to the next node, which is exactly what ListNode here is.",
+    "splice": "Reconnecting a structure by rewiring what's directly around a piece of it, rather than rebuilding the whole thing. groupPrev.next = kth on line 20 splices the reversed group back into the rest of the list this way.",
+    "stack": "A collection where you only add and remove at one end. Not used by this solution, which tracks a fixed, small set of pointers instead.",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "top": "The end of a stack where items are added and removed. Not used by this solution, which has no stack, but the term also appears in \"call stack\" style discussions of recursive alternatives.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True.",
+    "argument": "The actual value passed into a function or method when it's called. In self.getKth(groupPrev, k), groupPrev and k are arguments.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names end up referring to the SAME object.",
+    "AttributeError": "The error Python raises when you ask an object for an attribute or method it doesn't have.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(1) doesn't grow at all. O(n) grows in step with the input.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False.",
+    "break (keyword)": "A keyword that exits a loop immediately, skipping any remaining passes.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or collecting everything. It's simple but often uses more memory than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like self.getKth(groupPrev, k).",
+    "class": "A blueprint that groups related functions (methods) and data (attributes) together. Solution and ListNode are both classes.",
+    "colon": "The : character. At the end of a class, def, if, or while line, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False, like > or !=.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1).",
+    "dummy node": "A placeholder node created before the real list starts, so the first real node (or group) can be attached the exact same way as every later one, with no special case. It's thrown away at the end; only dummy.next matters.",
+    "edge case": "An unusual input that might break code: an empty list, k larger than the whole list, or a list whose length is an exact multiple of k.",
+    "expression": "Any piece of code that produces a value, like curr.next or curr and k > 0.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node, by following next.",
+    "if (keyword)": "A keyword that starts a condition check. The indented block below it runs only when the condition is True.",
+    "in place": "Modifying existing data directly instead of building a separate copy. This solution rewires the EXISTING nodes' next fields, group by group, rather than copying values into new nodes.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "int": "Python's name for whole numbers (integers).",
+    "KeyError": "The error Python raises when you look up a dictionary key that doesn't exist. Not raised anywhere in this solution, which uses no dictionaries.",
+    "keyword": "A word reserved by Python, like class, def, while, if, break, return, not.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node, or None at the end.",
+    "list": "Python's built-in ordered collection, written with square brackets. Used only in the brute-force version's vals; the pattern solution works directly on the linked list's own nodes.",
+    "method": "A function that belongs to a class, called with a dot: Solution().reverseKGroup(head, k).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node.",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\"; getKth also returns None to mean \"fewer than k nodes remained\".",
+    "not (operator)": "A logical operator that flips True to False and False to True. not kth is True exactly when kth is None.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables holding one are references to it, not copies.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "parameter": "A name in a function's definition that receives an input. head and k are reverseKGroup's parameters; curr and k are getKth's.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list, like curr, prev, or groupPrev here.",
+    "recursion": "A function calling itself to solve a smaller version of the same problem. Mentioned as an alternative to this solution's iterative, groupPrev-tracking approach.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\". Not used by this solution's own values, which are ints, but part of Python generally.",
+    "subtract-and-assign": "The -= operator: k -= 1 means the same as k = k - 1.",
+    "truthiness": "Using a non-boolean value as a condition. None counts as False, and any real node object counts as True, which is what makes checks like if not kth: and while curr: work.",
+    "tuple": "A sequence written with round brackets or just commas, like (prev, curr). Also what makes tuple unpacking possible.",
+    "tuple unpacking": "Assigning several names at once from one tuple, as in prev, curr = groupNext, groupPrev.next.",
+    "type hint": "A label like k: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while loop": "A loop that repeats its block for as long as its condition stays True."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "reversing one group of k at a time, behind a dummy node",
+      "node_class": "ListNode",
+      "pointers": {
+        "dummy": "dummy if __line__ in (4, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 19, 20, 21, 23) else HIDE",
+        "groupPrev": "groupPrev if __line__ in (6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 19, 20, 21, 23) else HIDE",
+        "kth": "kth if __line__ in (8, 9, 10, 12, 13, 14, 15, 16, 17, 19, 20, 21) else HIDE",
+        "groupNext": "groupNext if __line__ in (10, 12, 13, 14, 15, 16, 17) else HIDE",
+        "prev": "prev if __line__ in (12, 13, 14, 15, 16, 17) else HIDE",
+        "curr": "curr if __line__ in (12, 13, 14, 15, 16, 17) else HIDE",
+        "tmp": "tmp if __line__ in (14, 15, 16, 17, 19, 20, 21) else HIDE",
+        "scan": "curr if __line__ in (26, 27, 28, 29) else HIDE"
+      }
+    }
+  ]
+}
