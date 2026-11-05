@@ -1,0 +1,1054 @@
+{
+  "slug": "lru-cache",
+  "title": "LRU Cache",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 146,
+  "statement": [
+    "Design a Least Recently Used (LRU) cache: a fixed-capacity key-value store that, whenever it's full and a new key needs room, evicts whichever key hasn't been touched for the longest time.",
+    "Implement the LRUCache class: LRUCache(capacity) creates the cache with that maximum number of entries. get(key) returns the value for key, or -1 if it isn't cached; a successful get also marks key as the most recently used. put(key, value) stores value for key, overwriting any existing value; if this makes the cache exceed its capacity, it evicts the least recently used key first.",
+    "Both get and put must run in O(1) average time."
+  ],
+  "examples": [
+    {
+      "input": "LRUCache(2); put(1,1); put(2,2); get(1); put(3,3); get(2)",
+      "output": "null, null, null, 1, null, -1",
+      "explain": "With room for only 2 keys, storing 1 and 2 fills the cache. get(1) returns 1 and also makes 1 the most recently used, leaving 2 as the least recently used. put(3,3) then has to evict something to make room, and evicts 2, the least recently used key, not 1. get(2) now finds nothing."
+    },
+    {
+      "input": "...continuing: put(4,4); get(1); get(3); get(4)",
+      "output": "null, -1, 3, 4",
+      "explain": "After the eviction above the cache holds {1: 1, 3: 3}, with 1 least recently used (it was touched before 3 was stored). put(4,4) evicts 1, the least recently used key. get(1) now misses, while get(3) and get(4) both still hit. This full sequence, run on a cache of capacity 2, is exactly what the visualizer plays."
+    }
+  ],
+  "pattern": {
+    "name": "Hash map + doubly linked list, kept in recency order",
+    "summary": "Keep a dictionary (cache) from key straight to a Node, so any key can be found in O(1), with no scanning. Keep those same nodes threaded into a doubly linked list, ordered from least recently used (next to a left sentinel) to most recently used (next to a right sentinel). Every get or put on an existing key removes that key's node from wherever it sits and re-inserts it at the most-recently-used end; a new key's node is simply inserted there directly. Whenever the dictionary's size exceeds capacity, the node right after the left sentinel is, by construction, the least recently used one, and gets evicted from both structures.",
+    "recognize": [
+      "The problem is described as \"design a data structure\" with several methods (here get and put) that share state across many calls, rather than one function computed from a fixed input.",
+      "An operation needs to find an entry by key instantly (a job for a hash map) AND needs to track an order that changes on every access (a job a hash map alone can't do, since it has no sense of sequence).",
+      "The required speed is O(1) for every operation, which rules out scanning a list to find the least-recently-used entry, or re-sorting anything.",
+      "Eviction policy depends on USAGE order (most/least recently touched), not insertion order or value order; a doubly linked list is what lets a node jump straight to one end in O(1), without shifting every other entry."
+    ],
+    "avoid_when": [
+      "You only need insertion order, not usage order (a First-In-First-Out cache). A single queue, with no re-ordering on every access, would be simpler, with no need for remove/insert splicing at all.",
+      "The eviction rule is based on FREQUENCY of use (an LFU cache) rather than RECENCY. That needs a different structure entirely, typically a frequency-bucketed map of its own.",
+      "Capacity is effectively unlimited or very small, and simplicity matters more than guaranteed O(1): Python's collections.OrderedDict already does exactly this internally, trading a dependency for not hand-rolling the linked list.",
+      "You need to evict based on some external signal (like a timestamp or TTL) rather than purely on access order. That calls for tracking expiry times alongside, or instead of, pure recency."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "Two structures track ONE piece of state together: self.cache answers \"where is this key's node\" instantly, and the linked list's order answers \"which key is least recently used\" instantly. Keeping them in sync on every call is the entire trick.",
+      "remove and insert are the only two places that ever touch prev/next directly. get and put just call them in the right order (remove-then-insert to promote, insert-only to create, remove-then-delete to evict), which is what keeps the linked list correct without repeating its logic.",
+      "self.left and self.right never hold real data. They exist purely so remove and insert never have to special-case an empty list or a list with only one real entry.",
+      "A node only remembers its own key (line 3) so that, once it's found by WALKING the list (self.left.next, to find the LRU entry), there's a way to look back and find which dictionary entry it belongs to, to delete it from there too."
+    ],
+    "time": "O(1) average, for both get and put. Dictionary lookups, and remove/insert's fixed handful of pointer rewrites, don't depend on how many keys are currently cached.",
+    "space": "O(capacity), linear in the cache's maximum size: one Node and one dictionary entry per cached key, plus the two fixed sentinel nodes.",
+    "edge_cases": [
+      "get on a key that was never stored, or that's already been evicted. key not in self.cache catches both the same way, since an evicted key is deleted from self.cache on line 37 and never re-added.",
+      "put on a key that's already cached. The old node is removed first (line 31) before a new one replaces it on lines 32-33, so the old node never leaks as an orphaned, unreachable entry in the linked list.",
+      "A cache with capacity 1. Every put either fits (the cache was empty) or immediately evicts the one existing entry; self.left.next and self.right.prev end up being the SAME node in that case, which remove and insert still handle correctly since they only ever look at direct neighbors.",
+      "put overwriting a key doesn't change len(self.cache) at all (one key removed from the dictionary's count, the same key immediately added back), so line 34's capacity check only ever triggers from a put that adds a genuinely NEW key."
+    ]
+  },
+  "code": "class Node:\n    def __init__(self, key, val):\n        self.key, self.val = key, val\n        self.prev = self.next = None\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.left, self.right = Node(0, 0), Node(0, 0)\n        self.left.next, self.right.prev = self.right, self.left\n\n    def remove(self, node):\n        prev, nxt = node.prev, node.next\n        prev.next, nxt.prev = nxt, prev\n\n    def insert(self, node):\n        prev, nxt = self.right.prev, self.right\n        prev.next = nxt.prev = node\n        node.prev, node.next = prev, nxt\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.remove(self.cache[key])\n        self.insert(self.cache[key])\n        return self.cache[key].val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.remove(self.cache[key])\n        self.cache[key] = Node(key, value)\n        self.insert(self.cache[key])\n        if len(self.cache) > self.cap:\n            lru = self.left.next\n            self.remove(lru)\n            del self.cache[lru.key]\n",
+  "run": {
+    "prelude": "def run_lru_demo():\n    cache = LRUCache(2)\n    cache.put(1, 1)\n    cache.put(2, 2)\n    r1 = cache.get(1)\n    cache.put(3, 3)\n    r2 = cache.get(2)\n    cache.put(4, 4)\n    r3 = cache.get(1)\n    r4 = cache.get(3)\n    r5 = cache.get(4)\n    return [r1, r2, r3, r4, r5]\n",
+    "call": "run_lru_demo()",
+    "expected": [
+      1,
+      -1,
+      -1,
+      3,
+      4
+    ],
+    "describe": "capacity 2: put(1,1), put(2,2), get(1), put(3,3), get(2), put(4,4), get(1), get(3), get(4)"
+  },
+  "lines": {
+    "1": {
+      "explain": "This creates a helper class named Node. LeetCode doesn't provide a node definition for this problem, so the solution defines its own, a small object meant only to live inside the cache's internal doubly linked list.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Node",
+          "meaning": "The name of this helper class. It's never created or called directly by LeetCode's tester, only used internally by LRUCache."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "Every cached entry needs to sit inside TWO structures at once: a dictionary, for instant lookup by key, and a doubly linked list, to track recency order. A list alone can't be found instantly by key, and a dictionary alone has no sense of order. Node is the one object that can sit in both.",
+      "if_removed": "Without a Node class, there'd be nothing to link together in order. The cache could still use a dictionary, but tracking which key was used most and least recently would need some other structure entirely.",
+      "alternatives": [
+        {
+          "code": "from collections import namedtuple\nNode = namedtuple('Node', ['key', 'val', 'prev', 'next'])",
+          "difference": "namedtuples are immutable, so prev and next couldn't be rewired after creation, which this solution needs to do constantly."
+        }
+      ],
+      "mistake": "Naming it ListNode out of habit from singly linked list problems. This Node carries prev as well as next, and a key alongside its val, neither of which ListNode has.",
+      "caption": "Python reads the Node blueprint. Nothing runs yet."
+    },
+    "2": {
+      "explain": "This defines __init__, the method Python runs automatically every time the code writes Node(key, val). It sets up a brand new node before anything else can use it.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "__init__",
+          "meaning": "A special method name. Python calls it automatically right after creating a new object, to set it up."
+        },
+        {
+          "token": "(self, key, val)",
+          "meaning": "self is the new node being built; key and val are the two pieces of data it needs to hold."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Every node needs its own key, val, prev and next from the moment it's created, since insert and remove start rewiring prev/next on it immediately.",
+      "if_removed": "Node(key, val) would use Python's default object creation, with no key, val, prev or next attributes at all, and the very next line that reads node.prev would crash with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "def __init__(self, key: int, val: int) -> None:",
+          "difference": "Adds type hints saying key and val are ints and __init__ gives back nothing. Changes nothing but the documentation."
+        }
+      ],
+      "mistake": "Forgetting key entirely and only storing val. Without key, a node pulled off the LRU end (self.left.next) has no way to tell put which dictionary entry to delete.",
+      "caption": "Python remembers the Node __init__ instructions for later."
+    },
+    "3": {
+      "explain": "This gives the new node its own key and val, the two pieces of data LRUCache actually cares about.",
+      "syntax": [
+        {
+          "token": "self.key, self.val",
+          "meaning": "Two attributes, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "key, val",
+          "meaning": "The two values passed in when this node was created."
+        }
+      ],
+      "why": "self.val is what get returns. self.key is what lets put's eviction step (del self.cache[lru.key]) find and remove the right dictionary entry, since the node itself, not the key, is what the linked list hands back when it's evicted.",
+      "if_removed": "self.val wouldn't exist, so line 27's return self.cache[key].val would crash with an AttributeError. self.key wouldn't exist either, breaking line 37's del self.cache[lru.key].",
+      "alternatives": [
+        {
+          "code": "self.key = key\nself.val = val",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Writing self.val, self.key = key, val, swapping the order on one side only. That would store the key where val belongs and vice versa.",
+      "caption": "Give this node its key {key} and value {val}."
+    },
+    "4": {
+      "explain": "This gives the new node its own prev and next references, both starting as None since the node isn't linked into anything yet.",
+      "syntax": [
+        {
+          "token": "self.prev = self.next = None",
+          "meaning": "Both self.prev and self.next are set to None in one statement, left to right."
+        }
+      ],
+      "why": "insert() is what actually links a node between two neighbors, right after it's created. Starting both references at None means a brand new node is safely \"unlinked\" until insert runs, with nothing stale left over.",
+      "if_removed": "self.prev and self.next wouldn't exist, and insert's node.prev, node.next = prev, nxt would still work (it assigns them), but remove's prev, nxt = node.prev, node.next on any node that was never inserted would crash with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "self.prev = None\nself.next = None",
+          "difference": "Two separate lines instead of one. Exactly the same result."
+        }
+      ],
+      "mistake": "Writing self.prev = self.next = Node(0, 0) or some other placeholder instead of None. A node's prev and next should mean \"not linked to anything\" until insert says otherwise, and only None reads that way.",
+      "caption": "This new node starts unlinked: prev = None, next = None."
+    },
+    "6": {
+      "explain": "This creates the class LeetCode actually tests: LRUCache. Like MinStack or TimeMap, it holds its own data (a dictionary and a doubly linked list) that lives for as long as the object does, across every later get and put call.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "LRUCache",
+          "meaning": "The class name LeetCode's tester creates and calls get/put on."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header."
+        }
+      ],
+      "why": "LeetCode creates one LRUCache object and then calls get and put on it many times in some order, so the object needs to remember its cache and its recency order between calls.",
+      "if_removed": "Without a class, there'd be nowhere to keep the cache and the linked list between separate get and put calls.",
+      "alternatives": [
+        {
+          "code": "class LRUCache(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Naming it Solution out of habit. LeetCode calls this class LRUCache directly, with LRUCache(capacity) and then obj.get(...) / obj.put(...), not through a Solution wrapper.",
+      "caption": "Python reads the LRUCache blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines __init__, the method Python runs automatically every time someone writes LRUCache(capacity). It sets up a brand new, empty cache before anything else can use it.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "__init__",
+          "meaning": "A special method name. Python calls it automatically right after creating a new object, to set it up."
+        },
+        {
+          "token": "(self, capacity: int)",
+          "meaning": "self, the new object; capacity, the maximum number of entries it may hold, hinted as an int."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Every later get and put call will read and change self.cap, self.cache, self.left and self.right, so they all need to exist before the very first call ever happens.",
+      "if_removed": "LRUCache(capacity) would use Python's default object creation, with none of those four attributes, and line 8's self.cap = capacity would never run, so put's len(self.cache) > self.cap on line 34 would crash with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "def __init__(self, capacity: int) -> None:",
+          "difference": "Adds a return type hint saying __init__ gives back nothing. Changes nothing but the documentation."
+        }
+      ],
+      "mistake": "Naming it init instead of __init__ (missing the double underscores). Python only treats the exact name __init__ as automatic setup.",
+      "caption": "Python remembers the LRUCache __init__ instructions for later."
+    },
+    "8": {
+      "explain": "This remembers the maximum number of entries the cache is allowed to hold, so put knows when it has to evict something.",
+      "syntax": [
+        {
+          "token": "self.cap",
+          "meaning": "An attribute on this object, storing the capacity."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "capacity",
+          "meaning": "The limit passed in when this LRUCache was created."
+        }
+      ],
+      "why": "capacity is only given once, when the cache is created. Storing it as self.cap is what lets every later put call (line 34) compare the current size against it.",
+      "if_removed": "Line 34's len(self.cache) > self.cap would crash with an AttributeError, since self wouldn't have a cap attribute at all.",
+      "alternatives": [
+        {
+          "code": "self.capacity = capacity",
+          "difference": "A longer attribute name. Works identically; cap is just shorter to read in the rest of the class."
+        }
+      ],
+      "mistake": "Storing capacity as a local variable instead of self.cap. A local variable disappears the moment __init__ returns, leaving put with no way to know the limit on later calls.",
+      "caption": "This cache can hold at most {capacity} entries."
+    },
+    "9": {
+      "explain": "This gives the new cache its own empty dictionary, self.cache, mapping each key directly to the Node that holds its value.",
+      "syntax": [
+        {
+          "token": "self.cache",
+          "meaning": "An attribute on this object: the dictionary."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "{}",
+          "meaning": "Curly brackets with nothing inside make a new, empty dictionary."
+        }
+      ],
+      "why": "A dictionary is what makes get and put O(1): self.cache[key] jumps straight to the right node, with no scanning through the linked list to find it by key.",
+      "if_removed": "self.cache[key] on line 23 or line 30 would crash with an AttributeError, since self wouldn't have a cache attribute yet.",
+      "alternatives": [
+        {
+          "code": "self.cache = dict()",
+          "difference": "Same empty dictionary, made by calling dict. {} is shorter."
+        }
+      ],
+      "mistake": "Mapping key to the raw value instead of to the Node. Then there'd be nothing to remove() or insert() when that key's recency needs updating, since the dictionary alone has no sense of order.",
+      "caption": "Give this cache an empty dictionary, ready to map keys straight to nodes."
+    },
+    "10": {
+      "explain": "This creates two permanent, empty placeholder nodes, left and right, that will sit at the two ends of the doubly linked list forever. They never hold a real cached value themselves; they just mark the boundaries.",
+      "syntax": [
+        {
+          "token": "self.left, self.right",
+          "meaning": "Two attributes, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "Node(0, 0), Node(0, 0)",
+          "meaning": "Two brand new Node objects, each with a throwaway key and val of 0 that are never read."
+        }
+      ],
+      "why": "Without placeholder nodes, insert and remove would need special-case code for \"the list is empty\" or \"this is the very first/last real node\". With permanent sentinels at both ends, every real node always has a genuine prev and next to rewire, even when the list holds zero or one entries.",
+      "if_removed": "self.left and self.right wouldn't exist, and line 11's self.left.next would crash with an AttributeError immediately after.",
+      "alternatives": [
+        {
+          "code": "self.left = Node(0, 0)\nself.right = Node(0, 0)",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Trying to skip the sentinels and leave self.left / self.right as None. Then remove and insert would need an if-check for the empty-list case on every single call, instead of handling it for free.",
+      "caption": "Create two permanent placeholder nodes, left and right, to mark the two ends of the list."
+    },
+    "11": {
+      "explain": "This links the two placeholders directly to each other, so the list starts as left ↔ right with nothing real between them yet: an empty cache.",
+      "syntax": [
+        {
+          "token": "self.left.next, self.right.prev",
+          "meaning": "Two attributes on two different nodes, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "self.right, self.left",
+          "meaning": "left's next becomes right, and right's prev becomes left: each placeholder now points at the other."
+        }
+      ],
+      "why": "Every later insert reads self.right.prev as \"whatever's currently the most-recent real node, or left if the cache is empty\". That only resolves correctly if left and right already point at each other from the very start.",
+      "if_removed": "self.left.next would stay None (Node.__init__'s default), and the very first insert's prev, nxt = self.right.prev, self.right would read self.right.prev as None, so prev.next = node on the next line would crash trying to set an attribute on None.",
+      "alternatives": [
+        {
+          "code": "self.right.prev, self.left.next = self.left, self.right",
+          "difference": "Same two assignments, written in the other order. Since both sides are evaluated before any assignment happens, the result is identical."
+        }
+      ],
+      "mistake": "Linking only one direction, like self.left.next = self.right, and forgetting self.right.prev = self.left. Then remove's prev, nxt = node.prev, node.next on the first real node would read a prev with no working next back to it.",
+      "caption": "Link the two placeholders to each other: left.next = right, right.prev = left. The list is empty."
+    },
+    "13": {
+      "explain": "This defines remove, a helper method that unlinks one node from wherever it currently sits in the doubly linked list, by reconnecting its two neighbors directly to each other.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "remove",
+          "meaning": "The method name. It's an internal helper, never called by LeetCode's tester directly."
+        },
+        {
+          "token": "(self, node)",
+          "meaning": "self, the cache; node, the Node to unlink."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Both get (when a key is reused) and put (when a key is updated or evicted) need to pull a node out of the list before re-inserting it elsewhere, or dropping it entirely. Writing that logic once, as remove, avoids repeating it in both places.",
+      "if_removed": "get and put would each need their own copy of this unlinking logic, written out twice, which is easy to let drift out of sync if one copy is ever changed without the other.",
+      "alternatives": [
+        {
+          "code": "def _remove(self, node):",
+          "difference": "A leading underscore is a Python convention hinting \"internal use only\". It runs identically either way, since Python doesn't enforce it."
+        }
+      ],
+      "mistake": "Forgetting self as the first parameter. Every method needs it, even an internal helper like this one.",
+      "caption": "Python remembers the remove instructions for later."
+    },
+    "14": {
+      "explain": "This reads node's current neighbors, the node just before it and just after it in the list, before anything gets rewired.",
+      "syntax": [
+        {
+          "token": "prev, nxt",
+          "meaning": "Two local variable names, assigned at once with tuple unpacking."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "node.prev, node.next",
+          "meaning": "node's own prev and next references, read before either is touched."
+        }
+      ],
+      "why": "Once node.prev or node.next changes, there'd be no way to ask node itself who its neighbors used to be. Saving them first is what lets the next line reconnect them to each other.",
+      "if_removed": "Line 15's prev.next, nxt.prev = nxt, prev would crash with a NameError, since prev and nxt would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "prev = node.prev\nnxt = node.next",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Reading node.next into prev and node.prev into nxt, swapping the names. That would reconnect the list backwards, splicing node's neighbors together in the wrong order.",
+      "caption": "Remember node {node.key}'s neighbors before unlinking it: prev = {node.prev.key}, next = {node.next.key}."
+    },
+    "15": {
+      "explain": "This is the actual unlinking: prev and nxt are wired directly to each other, closing the gap that node used to fill. node itself is untouched, it just no longer sits between anything.",
+      "syntax": [
+        {
+          "token": "prev.next, nxt.prev",
+          "meaning": "Two attributes on two different nodes, assigned at once."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "nxt, prev",
+          "meaning": "prev's next becomes nxt, and nxt's prev becomes prev: each of node's old neighbors now points straight at the other."
+        }
+      ],
+      "why": "A doubly linked list needs both directions kept consistent. Updating only prev.next would make the list look right when walked forward, but nxt.prev would still (wrongly) point back at node.",
+      "if_removed": "The list would still have node wedged in, as far as a backward walk from nxt is concerned, even though insert might then also link node in somewhere else, leaving node pointed at by two different neighbors at once.",
+      "alternatives": [
+        {
+          "code": "nxt.prev, prev.next = prev, nxt",
+          "difference": "Same two assignments, written in the other order. Since both right-hand sides were already read on the line above, the result is identical."
+        }
+      ],
+      "mistake": "Writing prev.next, nxt.prev = prev, nxt, swapping the right-hand side. That would point prev.next at prev itself and nxt.prev at nxt itself, both self-loops.",
+      "caption": "Close the gap: {prev.key}'s next becomes {nxt.key}, and {nxt.key}'s prev becomes {prev.key}. Node {node.key} is unlinked."
+    },
+    "17": {
+      "explain": "This defines insert, a helper method that links a brand new (or freshly removed) node in as the MOST recently used entry, right next to the right sentinel.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "insert",
+          "meaning": "The method name. Like remove, it's an internal helper, never called directly by LeetCode's tester."
+        },
+        {
+          "token": "(self, node)",
+          "meaning": "self, the cache; node, the Node to link in as the newest entry."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Every time a key is read (get) or written (put), it becomes the MOST recently used key. Always inserting right before self.right keeps that end of the list exactly meaning \"most recent\", with no extra bookkeeping needed elsewhere.",
+      "if_removed": "There'd be no way to mark a node as newly used; both get and put would need their own copy of this linking logic.",
+      "alternatives": [
+        {
+          "code": "def _insert(self, node):",
+          "difference": "A leading underscore convention. Runs identically."
+        }
+      ],
+      "mistake": "Forgetting self as the first parameter.",
+      "caption": "Python remembers the insert instructions for later."
+    },
+    "18": {
+      "explain": "This reads what's CURRENTLY the most-recently-used real node (self.right.prev), or the left sentinel itself if the cache is empty, along with the right sentinel.",
+      "syntax": [
+        {
+          "token": "prev, nxt",
+          "meaning": "Two local variable names, assigned at once. Reused here for a different pair of neighbors than in remove, since insert is a separate method with its own local scope."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "self.right.prev, self.right",
+          "meaning": "self.right.prev is whichever node currently sits just before the right sentinel; self.right is the sentinel itself."
+        }
+      ],
+      "why": "node needs to be spliced in BETWEEN the current most-recent node and the right sentinel. Reading both ends of that gap first is what lets the next two lines wire node into it correctly.",
+      "if_removed": "Line 19's prev.next = nxt.prev = node would crash with a NameError, since prev and nxt would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "prev = self.right.prev\nnxt = self.right",
+          "difference": "Two separate lines. Exactly the same result."
+        }
+      ],
+      "mistake": "Reading self.left.prev instead of self.right.prev. self.left has no meaningful prev (it's the far end), so this would reach into the wrong part of the list entirely.",
+      "caption": "Find the gap just before the right sentinel: between {self.right.prev.key} and right."
+    },
+    "19": {
+      "explain": "This points BOTH of node's new neighbors at node itself: prev's next becomes node, and nxt's (the right sentinel's) prev becomes node too.",
+      "syntax": [
+        {
+          "token": "prev.next = nxt.prev = node",
+          "meaning": "node is assigned to prev.next AND to nxt.prev in one statement, both ending up equal to the same object."
+        }
+      ],
+      "why": "Both of node's new neighbors need to point AT it for the splice to be complete from either direction. Doing both assignments together (rather than forgetting one) is exactly what keeps the list's two directions consistent.",
+      "if_removed": "Only prev.next = node would run, so nxt.prev would still point at whatever used to sit before nxt, not at the new node, leaving a backward walk from nxt skipping right over it.",
+      "alternatives": [
+        {
+          "code": "prev.next = node\nnxt.prev = node",
+          "difference": "Two separate lines instead of one. Exactly the same result, just spelled out."
+        }
+      ],
+      "mistake": "Writing prev.next, nxt.prev = node, node, which looks similar but tries to unpack node (a single object, not a 2-item sequence) into two targets, and crashes with a TypeError.",
+      "caption": "Point {prev.key}'s next at node {node.key}, and right's prev at node {node.key} too."
+    },
+    "20": {
+      "explain": "This finishes the splice by pointing node's OWN prev and next back at its two new neighbors, completing the link in both directions.",
+      "syntax": [
+        {
+          "token": "node.prev, node.next",
+          "meaning": "Two attributes on node, assigned at once."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "prev, nxt",
+          "meaning": "node.prev becomes prev (the node before it), node.next becomes nxt (the right sentinel, or whatever used to be there)."
+        }
+      ],
+      "why": "Lines 18-19 already pointed node's NEIGHBORS at node. This line is what makes node itself agree, pointing back at exactly those same two neighbors, so the list reads correctly walked from either direction.",
+      "if_removed": "node.prev and node.next would be left over from before insert was called (None for a brand new node), so a later remove(node) reading node.prev and node.next on line 14 would unlink node from the WRONG place, or crash trying to use None as a node.",
+      "alternatives": [
+        {
+          "code": "node.next, node.prev = nxt, prev",
+          "difference": "Same two assignments, right-hand side reordered to match. Since the names on the right are swapped to match, the result is identical."
+        }
+      ],
+      "mistake": "Writing node.prev, node.next = nxt, prev, swapping the order. That would point node backwards: its \"next\" would actually be the earlier node and its \"prev\" the later one, silently reversing the list's sense of direction at that spot.",
+      "caption": "Node {node.key} now points back: prev = {prev.key}, next = {nxt.key}. The splice is complete."
+    },
+    "22": {
+      "explain": "This defines get, the method LeetCode calls to read a value by key. Reading a key also makes it the most-recently-used one, so get does more than just look the value up.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "get",
+          "meaning": "The method name LeetCode's tester calls."
+        },
+        {
+          "token": "(self, key: int)",
+          "meaning": "self, the cache; key, the key to look up, hinted as an int."
+        },
+        {
+          "token": "-> int",
+          "meaning": "Return type hint: get always hands back an int, either a stored value or -1."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode calls obj.get(key) whenever a value needs reading. -> int documents that it always returns a number, never None.",
+      "if_removed": "Calling obj.get(key) would fail with an AttributeError, since the object would have no get method.",
+      "alternatives": [
+        {
+          "code": "def get(self, key):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Implementing get so it only reads the value, without calling remove and insert to refresh its recency. That would make the cache forget which keys were actually used recently, breaking which one put evicts later.",
+      "caption": "Python remembers the get instructions for later."
+    },
+    "23": {
+      "explain": "This checks whether key has ever been stored. If not, there's nothing to promote or return.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "key not in",
+          "meaning": "A membership check: True when key is NOT a key of self.cache."
+        },
+        {
+          "token": "self.cache",
+          "meaning": "The dictionary mapping every currently cached key to its node."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "self.cache[key] on line 25 would crash with a KeyError on a key that was never put, so this check has to happen first, before anything tries to use it.",
+      "if_removed": "get(key) for a missing key would crash with a KeyError on line 25 instead of returning -1 as the problem requires.",
+      "alternatives": [
+        {
+          "code": "if key in self.cache:\n    ...\nreturn -1",
+          "difference": "The same logic inverted: handle the found case first, return -1 afterwards for everything else. Works the same, but needs the found-case body indented one level deeper."
+        }
+      ],
+      "mistake": "Writing if key in self.cache: return -1, inverting the condition. That would return -1 for every key that WAS found, and crash with a KeyError on every key that wasn't.",
+      "caption": [
+        {
+          "when": "key not in self.cache",
+          "text": "{key} has never been stored: there's nothing to return."
+        },
+        "{key} is already cached: promote it to most-recently-used."
+      ]
+    },
+    "24": {
+      "explain": "key was never stored, so hand back -1, exactly as the problem specifies for a cache miss.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method immediately."
+        },
+        {
+          "token": "-1",
+          "meaning": "The problem's agreed-upon signal for \"not found\", since real stored values could be any int, including 0 or negative numbers that could otherwise be confused with a real value."
+        }
+      ],
+      "why": "The problem defines -1 as what a missing key must return. Any other sentinel wouldn't match what LeetCode's tester checks for.",
+      "if_removed": "The method would fall through to line 25, which crashes with a KeyError on a key that doesn't exist.",
+      "alternatives": [
+        {
+          "code": "return None",
+          "difference": "A reasonable generic \"nothing here\" signal in Python, but not the specific -1 this problem's return type requires."
+        }
+      ],
+      "mistake": "Returning 0 instead of -1. 0 is a value a real put call could legitimately store, so it can't double as \"not found\".",
+      "caption": "Return -1: {key} isn't in the cache."
+    },
+    "25": {
+      "explain": "key IS cached, so pull its node out of wherever it currently sits in the recency order, as the first half of \"move it to most-recently-used\".",
+      "syntax": [
+        {
+          "token": "self.remove(",
+          "meaning": "Calls the remove helper defined on line 13."
+        },
+        {
+          "token": "self.cache[key])",
+          "meaning": "Looks up the Node currently stored for key."
+        }
+      ],
+      "why": "A node has to be unlinked from its OLD position before it can be relinked at the MOST-recent end; it can't be in two places in the list at once.",
+      "if_removed": "The node would stay at its old position in the recency order, and the next line's insert would try to splice it in a SECOND time, corrupting the list's prev/next links around it.",
+      "alternatives": [
+        {
+          "code": "node = self.cache[key]\nself.remove(node)",
+          "difference": "Saves the node in a local variable first instead of looking it up twice (once here, once on line 26). Slightly more efficient, but functionally identical."
+        }
+      ],
+      "mistake": "Calling self.insert first, before self.remove. insert assumes node isn't currently linked anywhere; splicing it in while it's still attached to its old neighbors would corrupt the list.",
+      "caption": "Pull node {self.cache[key].key} out of its current spot in the order."
+    },
+    "26": {
+      "explain": "Immediately relink that same node back in, this time right at the most-recently-used end, completing the promotion.",
+      "syntax": [
+        {
+          "token": "self.insert(",
+          "meaning": "Calls the insert helper defined on line 17."
+        },
+        {
+          "token": "self.cache[key])",
+          "meaning": "The same node just removed, looked up again by key."
+        }
+      ],
+      "why": "Reading a key is exactly the kind of \"use\" that should count toward recency. Re-inserting it right after removing it is what actually updates its position, rather than just reading its value and leaving its place in the order untouched.",
+      "if_removed": "The node would stay removed, no longer linked into the list at all, and a future put's eviction step (reading self.left.next) could end up evicting entries incorrectly, or remove(lru) on line 36 could later crash trying to unlink something already unlinked.",
+      "alternatives": [
+        {
+          "code": "node = self.cache[key]\nself.remove(node)\nself.insert(node)",
+          "difference": "Looks the node up once and reuses it for both calls instead of indexing self.cache[key] twice. Functionally identical, a shade more efficient."
+        }
+      ],
+      "mistake": "Forgetting this line entirely. get would still return the right value, but the cache would never learn that key was just used, breaking which key counts as least-recently-used later.",
+      "caption": "Insert node {self.cache[key].key} back in as the most recently used."
+    },
+    "27": {
+      "explain": "Finally, hand back the value that was asked for.",
+      "syntax": [
+        {
+          "token": "return",
+          "meaning": "Hand back the answer and end the method."
+        },
+        {
+          "token": "self.cache[key].val",
+          "meaning": "Look up the node for key one more time, then read its val field."
+        }
+      ],
+      "why": "This is the actual answer get is supposed to produce. By this point the node has already been promoted to most-recently-used (lines 25-26); reading its value now doesn't change that.",
+      "if_removed": "The method would reach its end without returning anything, giving back None instead of the stored int.",
+      "alternatives": [
+        {
+          "code": "node = self.cache[key]\n...\nreturn node.val",
+          "difference": "Reuses a node variable captured earlier instead of indexing self.cache[key] a third time. Same result, marginally less repetitive."
+        }
+      ],
+      "mistake": "Writing return self.cache[key] without .val, which would return the whole Node object instead of the plain int the problem's -> int return type promises.",
+      "caption": "Return {self.cache[key].val}: the value stored for {key}."
+    },
+    "29": {
+      "explain": "This defines put, the method LeetCode calls to store a value for a key, creating the entry if it's new or overwriting it if it already exists, and always marking it as most recently used.",
+      "syntax": [
+        {
+          "token": "def",
+          "meaning": "Starts a function or method definition."
+        },
+        {
+          "token": "put",
+          "meaning": "The method name LeetCode's tester calls."
+        },
+        {
+          "token": "(self, key: int, value: int)",
+          "meaning": "self, the cache; key and value, the pair to store, both hinted as ints."
+        },
+        {
+          "token": "-> None",
+          "meaning": "Return type hint: put doesn't hand anything back, it just changes the cache."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "LeetCode calls obj.put(key, value) whenever a value needs storing. -> None documents that put is only ever used for its side effect.",
+      "if_removed": "Calling obj.put(key, value) would fail with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "def put(self, key, value):",
+          "difference": "No type hints. It runs identically."
+        }
+      ],
+      "mistake": "Forgetting that put also needs to check capacity and possibly evict. A put that only ever adds, never evicts, would let the cache grow without bound, which isn't an LRU cache at all.",
+      "caption": "Python remembers the put instructions for later."
+    },
+    "30": {
+      "explain": "This checks whether key is already cached. If it is, its OLD node has to be removed from the list before a new one replaces it, the same way get removes before re-inserting.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "key in",
+          "meaning": "A membership check: True when key IS already a key of self.cache."
+        },
+        {
+          "token": "self.cache",
+          "meaning": "The dictionary of currently cached keys."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Overwriting a key creates a brand NEW Node on line 32, replacing the old one. Without unlinking the old node first, the old one would stay in the linked list forever, abandoned and unreachable, a memory leak the capacity check could never fix.",
+      "if_removed": "An updated key would end up with TWO nodes: the stale old one still linked into the list, and the new one that self.cache now points to, with no key ever referencing the stale one again.",
+      "alternatives": [
+        {
+          "code": "if self.cache.get(key):",
+          "difference": "dict.get returns None for a missing key, which is falsy, so this behaves the same as key in self.cache here. Slightly more roundabout for a plain membership check."
+        }
+      ],
+      "mistake": "Skipping this check and always just creating a new node. For a key that's already cached, the old node silently leaks, still linked into the list but never cleaned up or reachable again.",
+      "caption": [
+        {
+          "when": "key in self.cache",
+          "text": "{key} is already cached: remove its old node before replacing it."
+        },
+        "{key} is new: nothing to remove yet."
+      ]
+    },
+    "31": {
+      "explain": "key already exists, so unlink its current node from the list, the same remove helper get uses.",
+      "syntax": [
+        {
+          "token": "self.remove(",
+          "meaning": "Calls the remove helper defined on line 13."
+        },
+        {
+          "token": "self.cache[key])",
+          "meaning": "The OLD node currently stored for key, about to be replaced."
+        }
+      ],
+      "why": "This clears the old node out of the list's prev/next chain cleanly, so line 32 can replace self.cache[key] with a fresh node without leaving the old one dangling.",
+      "if_removed": "The old node would stay linked in the list even after self.cache[key] is overwritten on line 32, becoming an orphaned entry with no key pointing to it, wasting a position in the linked list forever that no future remove or insert call would ever clean up.",
+      "alternatives": [
+        {
+          "code": "old = self.cache[key]\nself.remove(old)",
+          "difference": "Saves the old node in a local variable first. Functionally identical, since it's only read once either way."
+        }
+      ],
+      "mistake": "Calling self.remove AFTER line 32 has already overwritten self.cache[key]. By then self.cache[key] refers to the brand new node, so this would try to unlink the wrong one, or even unlink the new node before it's ever been inserted.",
+      "caption": "Remove the old node for {key} before replacing it."
+    },
+    "32": {
+      "explain": "This creates a brand new Node holding the key and value being stored, and immediately makes it the one self.cache[key] points to.",
+      "syntax": [
+        {
+          "token": "self.cache[key]",
+          "meaning": "Sets (or overwrites) the dictionary entry for key."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "Node(key, value)",
+          "meaning": "A brand new node, with prev and next both starting as None until insert links it in."
+        }
+      ],
+      "why": "Every value put stores needs its own node to sit in the linked list. Creating it here, right after any old node was removed on line 31, means self.cache always points at exactly the node that's ABOUT to be (or already is) correctly linked in.",
+      "if_removed": "self.cache[key] would keep pointing at the OLD node (if key existed) or wouldn't exist at all (if key is new), and insert on the next line would either re-link a stale node or crash with a KeyError trying to find one.",
+      "alternatives": [
+        {
+          "code": "node = Node(key, value)\nself.cache[key] = node",
+          "difference": "Builds the node in a local variable first, then stores it. Functionally identical; line 33's self.cache[key] just looks it up again instead of reusing node directly."
+        }
+      ],
+      "mistake": "Writing Node(value, key), swapping the argument order. Node.__init__ takes key first, then val; swapping them would store the key as the cached VALUE and the value as the lookup KEY.",
+      "caption": "Create a new node for {key} → {value}, and store it in the cache."
+    },
+    "33": {
+      "explain": "This links the brand new node into the list, right at the most-recently-used end, the same insert helper get uses when promoting an existing key.",
+      "syntax": [
+        {
+          "token": "self.insert(",
+          "meaning": "Calls the insert helper defined on line 17."
+        },
+        {
+          "token": "self.cache[key])",
+          "meaning": "The node just created and stored on line 32."
+        }
+      ],
+      "why": "A freshly stored key is, by definition, the most recently used one. insert always links right before the right sentinel, which is exactly where the newest entry belongs.",
+      "if_removed": "self.cache[key] would point at a node that exists but isn't linked into the list at all (its prev and next are still None from Node.__init__). A later get(key) calling remove on it would crash, since node.prev and node.next being None means prev.next on line 15 tries to set an attribute on None.",
+      "alternatives": [
+        {
+          "code": "node = self.cache[key]\nself.insert(node)",
+          "difference": "Reuses a node variable instead of indexing self.cache[key] again. Functionally identical."
+        }
+      ],
+      "mistake": "Calling self.insert BEFORE self.cache[key] = Node(key, value) ever runs. Then self.cache[key] wouldn't exist yet, and this line would crash with a KeyError.",
+      "caption": "Link the new node for {key} in as the most recently used."
+    },
+    "34": {
+      "explain": "This checks whether the cache has grown past its allowed capacity, which can only just now have happened, since line 32 may have just added a brand new entry.",
+      "syntax": [
+        {
+          "token": "if",
+          "meaning": "Starts a condition."
+        },
+        {
+          "token": "len(self.cache)",
+          "meaning": "How many keys are currently stored."
+        },
+        {
+          "token": ">",
+          "meaning": "\"Greater than\" comparison."
+        },
+        {
+          "token": "self.cap",
+          "meaning": "The maximum allowed, set once in __init__."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the condition."
+        }
+      ],
+      "why": "Updating an EXISTING key never grows self.cache (it was removed and re-added, but the dictionary size stays the same). Only a genuinely NEW key can push the size past self.cap, and only by exactly one, so checking after every put catches it immediately.",
+      "if_removed": "self.cache could keep growing forever past capacity, since nothing would ever remove the least-recently-used entry. The cache would stop being an LRU cache at all, just an ever-growing dictionary.",
+      "alternatives": [
+        {
+          "code": "if len(self.cache) > self.cap:\n    ...\nelif len(self.cache) == self.cap:",
+          "difference": "Nothing to add: since a single put can grow the cache by at most one entry, strictly greater than is the only case that can ever actually happen here."
+        }
+      ],
+      "mistake": "Writing len(self.cache) >= self.cap instead of >. Since this check runs AFTER the new entry was already added on line 32, >= would incorrectly evict even when the cache is exactly AT capacity, one entry too early.",
+      "caption": [
+        {
+          "when": "len(self.cache) > self.cap",
+          "text": "The cache now holds {len(self.cache)} entries, over the limit of {self.cap}: evict the least-recently-used one."
+        },
+        "The cache holds {len(self.cache)} of {self.cap} allowed entries: no eviction needed."
+      ]
+    },
+    "35": {
+      "explain": "This finds the actual least-recently-used node: the real entry sitting immediately after the left sentinel, the end of the list farthest from \"most recently used\".",
+      "syntax": [
+        {
+          "token": "lru",
+          "meaning": "A local variable name for the least-recently-used node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "self.left.next",
+          "meaning": "The node right after the left sentinel: by construction, always the least-recently-used real entry, or self.right itself if the cache happens to be empty (which can't occur here, since a put just added an entry)."
+        }
+      ],
+      "why": "Every get or put promotes its key to the MOST-recently-used end (next to self.right). That means whatever's been promoted the LONGEST ago, the one actually due for eviction, naturally drifts to the OTHER end, right after self.left.",
+      "if_removed": "Line 36's self.remove(lru) would crash with a NameError, since lru would never have been assigned.",
+      "alternatives": [
+        {
+          "code": "lru_node = self.left.next",
+          "difference": "A longer variable name. Works identically."
+        }
+      ],
+      "mistake": "Reading self.right.next (which is always None, since right is the list's rightmost placeholder with nothing after it) instead of self.left.next. remove(None) would then crash trying to read None.prev on line 14.",
+      "caption": "The least recently used entry is node {self.left.next.key}, right after the left sentinel."
+    },
+    "36": {
+      "explain": "This unlinks the LRU node from the list, the same remove helper used everywhere else, freeing it from the recency chain.",
+      "syntax": [
+        {
+          "token": "self.remove(",
+          "meaning": "Calls the remove helper defined on line 13."
+        },
+        {
+          "token": "lru)",
+          "meaning": "The node found on the line above."
+        }
+      ],
+      "why": "lru still being linked into the list would leave stale prev/next references around after it's deleted from self.cache on the next line, and more importantly, it needs to be gone from the list's chain so it stops counting as part of the recency order at all.",
+      "if_removed": "lru would stay linked in the list even after being deleted from self.cache below, leaving the list's left end pointing at a node that no key maps to anymore, and no future remove or insert call would ever visit it again to clean it up.",
+      "alternatives": [
+        {
+          "code": "# lru must come out of the list before it's deleted from the dictionary; there's no safe way to skip this call",
+          "difference": ""
+        }
+      ],
+      "mistake": "Deleting lru from self.cache (line 37) before removing it from the list. Since remove just reads lru.prev and lru.next directly off the node object (not through the dictionary), the order between these two lines doesn't actually matter functionally, but doing it after reads more naturally: \"take it out of the list, then forget it existed\".",
+      "caption": "Unlink the least recently used node {lru.key} from the list."
+    },
+    "37": {
+      "explain": "This deletes the evicted entry's key from the dictionary, the last step of eviction: the key is now gone from both the list and the lookup table.",
+      "syntax": [
+        {
+          "token": "del",
+          "meaning": "A keyword that removes a key (and its value) from a dictionary entirely."
+        },
+        {
+          "token": "self.cache[lru.key]",
+          "meaning": "lru.key, not lru itself: the ORIGINAL key this now-unlinked node was storing, read straight off the node since the dictionary never handed back a key on its own."
+        }
+      ],
+      "why": "This is exactly why Node stores key on line 3: once a node is reached by walking the list (self.left.next), its key is the only way to know which dictionary entry to clean up. Without it, there'd be no way back from the node to its key.",
+      "if_removed": "self.cache would still have an entry pointing at a node no longer reachable through the list at all: a phantom key that get would still find and incorrectly return a value for, even though it was supposed to be evicted.",
+      "alternatives": [
+        {
+          "code": "self.cache.pop(lru.key, None)",
+          "difference": "dict.pop with a default never raises even if the key is somehow already missing. del crashes with a KeyError in that case, but here lru.key is always guaranteed to be present, so both behave identically."
+        }
+      ],
+      "mistake": "Writing del self.cache[lru] instead of del self.cache[lru.key]. self.cache is keyed by the ORIGINAL key (an int), not by the Node object, so this would crash with a KeyError.",
+      "caption": "Delete key {lru.key} from the cache. Eviction complete."
+    }
+  },
+  "brute_force": {
+    "code": "class LRUCache:\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}  # key -> [value, last_used_tick]\n        self.tick = 0\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.tick += 1\n        self.cache[key][1] = self.tick\n        return self.cache[key][0]\n\n    def put(self, key: int, value: int) -> None:\n        self.tick += 1\n        if key in self.cache:\n            self.cache[key] = [value, self.tick]\n            return\n        if len(self.cache) >= self.cap:\n            lru_key = min(self.cache, key=lambda k: self.cache[k][1])\n            del self.cache[lru_key]\n        self.cache[key] = [value, self.tick]",
+    "explain": "Store each key with its value AND a \"last used\" tick number that increases on every single get or put. Finding the least recently used key, when eviction is needed, means scanning every cached key to find whichever has the smallest tick.",
+    "why_slow": "min(self.cache, key=...) has to look at every one of the n currently cached keys to find the smallest tick, every single time eviction happens. That's O(n) per eviction, when the problem expects O(1) for every operation.",
+    "how_pattern_fixes": "A doubly linked list, kept in recency order as entries are used, makes \"which key is least recently used\" a question that's always already answered, at a fixed position (right after the left sentinel), with zero scanning. Splicing a node out of a linked list and back in elsewhere is O(1), unlike finding a minimum over a whole dictionary.",
+    "time": "O(1) for get. O(n) for any put that needs to evict, where n is the number of cached keys, because of the min(...) scan.",
+    "space": "O(capacity), the same as the pattern solution: one dictionary entry per cached key, each slightly bigger (value plus a tick) instead of pointing at a linked-list node."
+  },
+  "glossary": {
+    ".get": "A dictionary method: d.get(key) returns the value for key, or a default you choose (d.get(key, 0)) if key is missing, without crashing. Not used directly by this solution, which checks key in self.cache instead, but useful to recognize in alternatives.",
+    "algorithm": "A step-by-step recipe for solving a problem.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True.",
+    "argument": "The actual value passed into a function or method when it's called. In Node(key, value), key and value are arguments.",
+    "frequency": "How many times something appears or is used. An LFU cache (mentioned as an alternative) evicts by frequency of use instead of recency.",
+    "int": "Python's name for whole numbers (integers).",
+    "key": "The part of a dictionary entry you look things up by. In self.cache[key], key is what's looked up to find a node.",
+    "loop": "Code that repeats. Not used directly inside this solution's own methods, which rely on dictionary lookups and fixed pointer rewrites instead.",
+    "min": "A built-in function that returns the smallest of its arguments, or (with a key= argument) the item with the smallest key. Used only in the brute-force version, to scan for the oldest tick.",
+    "pattern": "A reusable technique that solves a whole family of problems, like a hash map paired with a doubly linked list.",
+    "pop": "A list method that removes the last item and gives it back. Not used by this solution's own cache, which removes nodes from a hand-linked doubly linked list instead.",
+    "push": "Adding an item to the top of a stack. Not used by this solution, which inserts nodes at a specific end of a doubly linked list instead of a stack.",
+    "queue": "A first in, first out line: the oldest item leaves first. Mentioned as the simpler structure a FIFO (rather than LRU) cache would use.",
+    "reference": "What a variable or a field like next actually holds: a way to reach an object, not a copy of it.",
+    "side effect": "A change a function makes beyond just returning a value, like modifying an attribute. remove and insert change a node's prev/next instead of returning anything.",
+    "singly linked list": "A linked list where each node points only forward, to the next node. This solution's Node is a step up from that: a doubly linked list node, with both prev and next.",
+    "sorting": "Putting items in order. Not used by this solution, since recency order is maintained incrementally by remove/insert rather than by sorting anything.",
+    "splice": "Inserting something into (or pulling it out of) the middle of a structure by rewiring what's directly around it, rather than rebuilding the whole thing. remove and insert splice a node out of, and into, the doubly linked list this way.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names end up referring to the SAME object.",
+    "attribute": "A named piece of data stored on an object, read or written with a dot, as in self.cache or node.prev.",
+    "AttributeError": "The error Python raises when you ask an object for an attribute or method it doesn't have.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(1) doesn't grow at all. O(n) grows in step with the input.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or scanning everything. It's simple but often slow.",
+    "call": "Running a function or method by writing its name followed by brackets, like self.remove(node).",
+    "class": "A blueprint that groups related functions (methods) and data (attributes) together. Node and LRUCache are both classes.",
+    "colon": "The : character. At the end of a class, def, or if line, it means an indented block follows.",
+    "comparison operator": "A symbol that compares two values and gives True or False, like > or ==.",
+    "condition": "An expression that is True or False, used by if.",
+    "constant time": "Taking the same tiny amount of time no matter how much data there is. Written O(1).",
+    "dictionary": "Python's built-in hash map, written with curly braces like {}. It stores key -> value pairs and finds any key instantly.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev), so it can be walked, or spliced into, from either direction.",
+    "eviction": "Removing an entry from a cache to make room, chosen by whatever policy the cache uses (here, least recently used).",
+    "expression": "Any piece of code that produces a value, like node.prev.next or len(self.cache) > self.cap.",
+    "field": "A named piece of data stored on an object, read with a dot: node.key, node.prev.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "hash map": "Another name for a dictionary: a structure that maps keys to values and finds any key in O(1).",
+    "if (keyword)": "A keyword that starts a condition check. The indented block below it runs only when the condition is True.",
+    "in place": "Changing an object directly instead of making a new one. remove and insert rewire existing nodes' prev/next in place.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "index": "A position in a list, counting from 0. Not used directly by this solution's own logic, but still part of how Python indexes sequences in general.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in Node(key, val) or LRUCache(capacity). It sets up the object's attributes.",
+    "KeyError": "The error Python raises when you look up a dictionary key that doesn't exist with [].",
+    "keyword": "A word reserved by Python, like class, def, if, return, del, in, not.",
+    "len": "A built-in function that gives the number of items in something: len(self.cache) is how many keys are currently stored.",
+    "linked list": "A chain of node objects, each holding data and a reference (next, here also prev) to a neighboring node.",
+    "list": "Python's built-in ordered collection, written with square brackets. Not the structure this solution's cache uses (it uses a hand-linked doubly linked list of Node objects instead), but the general term still applies to sequences in Python.",
+    "method": "A function that belongs to a class, called with a dot: cache.get(1), cache.put(1, 1).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding data and references to its neighbors. Here, a node holds a key, a val, and both a prev and a next.",
+    "None": "Python's value for \"nothing\". A brand new node's prev and next both start as None, meaning \"not linked to anything yet\".",
+    "object": "A thing in memory with a type and data, created from a class. Node(1, 1) creates one object.",
+    "operator": "A symbol that combines or compares values, like =, >, or not in.",
+    "parameter": "A name in a function's definition that receives an input. key and val are Node.__init__'s parameters.",
+    "pointer": "A variable or field that refers to an object (or None), used here to mean prev and next, the references that thread nodes into a list.",
+    "recursion": "A function calling itself to solve a smaller version of the same problem. Not used anywhere in this solution.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "sentinel": "A placeholder node that marks a boundary (here, the two ends of the list) and is never treated as real data, only as a fixed anchor to simplify the edge cases.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "stack": "A collection where you only add and remove at one end. Not used by this solution, which needs access at BOTH ends of its list instead.",
+    "string": "Text written in quotes, like \"hello\". Not used by this solution's own keys or values, which are ints, but part of Python generally.",
+    "tuple": "A sequence written with round brackets or just commas, like (prev, nxt). Also what makes tuple unpacking (prev, nxt = node.prev, node.next) possible.",
+    "tuple unpacking": "Assigning several names at once from one tuple, as in prev, nxt = node.prev, node.next.",
+    "type hint": "A label like capacity: int that tells readers what type a value should be. Python doesn't enforce it.",
+    "value": "A piece of data. In this cache, the thing stored and returned for a given key.",
+    "variable": "A name that refers to a value, created with =."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "doubly linked list, oldest (left) to newest (right)",
+      "node_class": "Node",
+      "val_field": "key",
+      "pointers": {
+        "left": "self.left",
+        "right": "self.right",
+        "node": "node if __line__ in (13, 14, 15, 17, 18, 19, 20) else HIDE",
+        "entry": "self.cache[key] if __line__ in (23, 24, 25, 26, 27, 30, 31) and key in self.cache else HIDE",
+        "new": "self.cache[key] if __line__ in (32, 33) and key in self.cache else HIDE",
+        "lru": "lru if __line__ in (35, 36, 37) else HIDE"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "cache (key → value)",
+      "source": "[[k, v.val] for k, v in self.cache.items()]",
+      "lookup": "key if __line__ in (23, 24, 25, 26, 27, 30, 31, 32, 33) else None"
+    }
+  ]
+}
