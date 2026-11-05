@@ -1,0 +1,829 @@
+{
+  "slug": "add-two-numbers",
+  "title": "Add Two Numbers",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 2,
+  "statement": [
+    "A linked list is a chain of nodes. Each node holds a value (val) and an arrow (next) pointing to the node after it. The last node's next is None.",
+    "You are given the heads of two linked lists, l1 and l2, each representing a non-negative integer. The digits are stored in reverse order (the ones digit first), and each node holds exactly one digit, 0 through 9.",
+    "Add the two numbers together and return the sum as a new linked list, also with its digits in reverse order.",
+    "You may assume the two numbers don't have leading zeros, except the number 0 itself."
+  ],
+  "examples": [
+    {
+      "input": "l1 = 2 → 4 → 3, l2 = 5 → 6 → 4",
+      "output": "7 → 0 → 8",
+      "explain": "l1 reversed is 342, l2 reversed is 465. 342 + 465 = 807, written in reverse as 7 → 0 → 8. This is the example the visualizer runs."
+    },
+    {
+      "input": "l1 = 9 → 9, l2 = 1",
+      "output": "0 → 0 → 1",
+      "explain": "99 + 1 = 100. The sum needs one MORE digit than either input, which is exactly why the loop keeps going as long as carry is still nonzero, even after both l1 and l2 have run out."
+    }
+  ],
+  "pattern": {
+    "name": "Walk both lists together, adding column by column with a carry",
+    "summary": "Build the answer as a brand-new list behind a dummy node, exactly like long addition done by hand: at each column, add whichever digits l1 and l2 still have (or 0 once a list runs out) plus any carry from the column before. Keep the ones digit for this column's node, and carry the tens digit into the next pass. Keep going until both lists AND the carry are exhausted.",
+    "recognize": [
+      "A number is given as a linked list of its digits, usually in reverse order so the ones digit comes first, which lines the lists up the same way you'd line up digits by hand.",
+      "You need to combine two sequences of DIFFERENT lengths, column by column, where a value can spill over into the next position (a carry).",
+      "The answer is itself a new sequence, built one piece at a time as you go, rather than a single number or boolean.",
+      "Simulating a manual arithmetic process (addition, multiplication) digit by digit is a common shape for linked-list problems, since each node naturally holds one digit."
+    ],
+    "avoid_when": [
+      "Both numbers are already given as plain integers (or you're free to convert them to integers), and you don't actually need to produce a linked-list answer. Then int(a) + int(b) does the whole thing in one line, no digit-by-digit walk needed.",
+      "The digits are stored MOST significant digit first instead of least significant first. Then you'd either reverse both lists first, or add from the two tails backward, since lining up digits for addition always starts from the ones place.",
+      "You only need the digits' sum as a single number, not as a new linked list. Then building int(l1's digits) + int(l2's digits) directly is simpler than constructing new nodes."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "This is long addition, the same process you'd do by hand, just written with pointers instead of pencil and paper: add a column, keep one digit, carry the rest.",
+      "v1 = l1.val if l1 else 0 (and the same for l2) is what lets the loop keep adding even after the SHORTER list runs out, treating its missing digits as 0.",
+      "while l1 or l2 or carry (not and) is what keeps the loop going for a trailing carry even after BOTH lists are exhausted, which is exactly what makes 99 + 1 = 100 produce three digits from two two-digit inputs.",
+      "A dummy node, exactly like in Merge Two Sorted Lists, lets curr.next = ListNode(...) attach every digit, including the very first, with no special case."
+    ],
+    "time": "O(max(m, n)), linear time, where m and n are the lengths of l1 and l2. The loop runs once per column, and the number of columns is at most one more than the longer list.",
+    "space": "O(max(m, n)), linear extra memory for the new list of digit nodes being built; l1 and l2 themselves are only walked, not copied.",
+    "edge_cases": [
+      "Lists of different lengths, like 9→9 and 1. The shorter list (l2) runs out first; v2 becomes 0 for every remaining column, and the loop still continues because l1 (and later carry) keeps it going.",
+      "A carry that spills past both lists, like 99 + 1 = 100. Once both l1 and l2 are None, carry alone (1) is still truthy, so the loop produces one final extra digit, then carry becomes 0 and the loop stops.",
+      "Adding zero to zero: l1 and l2 each a single node holding 0. total is 0, carry stays 0, and the loop produces exactly one digit node (0) before stopping, matching LeetCode's guarantee that a number is never given as an empty list.",
+      "A column whose digits sum to exactly 10, like 5 + 5. total is 10, so total % 10 is 0 (the digit kept) and total // 10 is 1 (the carry passed on), not the other way around."
+    ]
+  },
+  "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:\n        dummy = ListNode()\n        curr = dummy\n        carry = 0\n\n        while l1 or l2 or carry:\n            v1 = l1.val if l1 else 0\n            v2 = l2.val if l2 else 0\n            total = v1 + v2 + carry\n            carry = total // 10\n            curr.next = ListNode(total % 10)\n            curr = curr.next\n            l1 = l1.next if l1 else None\n            l2 = l2.next if l2 else None\n\n        return dummy.next\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    head = None\n    for v in reversed(values):\n        head = ListNode(v, head)\n    return head\n\ndef to_list(node):\n    out = []\n    while node:\n        out.append(node.val)\n        node = node.next\n    return out\n\nl1 = build([2, 4, 3])\nl2 = build([5, 6, 4])\n",
+    "call": "Solution().addTwoNumbers(l1, l2)",
+    "check": "to_list(__result__)",
+    "expected": [
+      7,
+      0,
+      8
+    ],
+    "describe": "l1 = 2 → 4 → 3 (342), l2 = 5 → 6 → 4 (465)"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first five lines to tell you how a list node is built. They start with #, so Python ignores them. LeetCode defines ListNode for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for singly-linked list.",
+          "meaning": "Plain text for the reader. \"Singly\" linked means each node points in ONE direction only: forward, to the next node."
+        }
+      ],
+      "why": "Your code uses ListNode objects to represent each digit, so you need to know what's inside one. LeetCode documents it as a comment because it's already defined, and defining it again would be unnecessary.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for singly-linked list.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called ListNode: the blueprint for one node of the list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class ListNode:",
+          "meaning": "What the real definition looks like: class starts a blueprint, ListNode is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in each input list, and every node you build for the answer, comes from this same blueprint, so each one has the same two fields: val and next.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass ListNode:\n    val: int = 0\n    next: 'ListNode' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Thinking ListNode is something Python provides. It isn't built in. LeetCode defines it for these problems.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing ListNode's __init__ method: the code that runs when a new node is created, as in ListNode(5). It takes a value and the next node, and both have defaults.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "val=0,",
+          "meaning": "A parameter with a default value: if you don't pass a value, val is 0."
+        },
+        {
+          "token": "next=None",
+          "meaning": "The node after this one. It defaults to None (no next node), so ListNode(5) makes a lone node."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "Defaults make creating a brand-new digit node convenient: line 17 calls ListNode(total % 10) and leans on next defaulting to None.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, x):",
+          "difference": "Older LeetCode problems use this shorter form with one parameter and no defaults. In that version next is always set to None, and you link nodes afterwards."
+        }
+      ],
+      "mistake": "Calling the parameter next and later trying to use Python's built-in next() function inside __init__. The parameter hides the built-in. It's harmless here, but it's a common surprise.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value (one digit) in a field named val.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node. The dot means \"the val that belongs to self\"."
+        },
+        {
+          "token": "= val",
+          "meaning": "Store the val parameter in that field."
+        }
+      ],
+      "why": "Fields are how an object remembers data. l1.val, l2.val and curr.val are how this method reads and writes each digit.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.digit = val",
+          "difference": "A different field name. All code would then have to say node.digit. Names must match everywhere."
+        }
+      ],
+      "mistake": "Confusing the parameter val with the field self.val. They're different names that happen to share a word.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following digit (or None at the end of a number).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is what chains individual digit nodes into one whole number, least significant digit first, and it's what curr.next = ListNode(...) rewires on every pass of the loop.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.carry = 0",
+          "difference": "A node could store its own carry-out, but this method tracks carry separately in a plain variable instead, since carry belongs to the ADDITION, not to any one digit."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "7": {
+      "explain": "This defines the method addTwoNumbers. It receives l1 and l2, the first nodes of two numbers written backwards (least significant digit first), and returns the first node of their sum, written the same way.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def addTwoNumbers(",
+          "meaning": "def starts a method. addTwoNumbers is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "l1: Optional[ListNode]",
+          "meaning": "The first number's head node. Optional[ListNode] is a type hint meaning \"a ListNode or None\". Optional comes from Python's typing module, which LeetCode imports for you."
+        },
+        {
+          "token": "l2: Optional[ListNode]",
+          "meaning": "The second number's head node, hinted the same way."
+        },
+        {
+          "token": ") -> Optional[ListNode]",
+          "meaning": "The method returns a ListNode or None: the head of the sum, as a new list of digit nodes."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "Each number is passed around by the head of its digit chain, so two numbers means two parameters, and the answer is the head of a third, brand-new chain.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def addTwoNumbers(self, l1, l2):",
+          "difference": "No type hints. It runs identically."
+        },
+        {
+          "code": "def addTwoNumbers(self, l1: ListNode | None, l2: ListNode | None) -> ListNode | None:",
+          "difference": "The modern spelling of Optional, using | to mean \"or\". It works in Python 3.10 and newer, and needs no import."
+        }
+      ],
+      "mistake": "Assuming l1 and l2 are the same length. They usually aren't, which is exactly why line 13 and line 14 each guard with if l1 else 0 / if l2 else 0 instead of reading .val directly.",
+      "caption": "Python remembers the addTwoNumbers instructions for later."
+    },
+    "8": {
+      "explain": "This creates a brand-new, throwaway node called dummy, using ListNode()'s defaults: val = 0, next = None. It isn't part of the answer; it just gives curr somewhere to start.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "dummy",
+          "meaning": "A new variable name for the placeholder node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode()",
+          "meaning": "Calls ListNode's __init__ with no arguments, so val defaults to 0 and next defaults to None. This makes a brand-new node, separate from every node in l1 or l2."
+        }
+      ],
+      "why": "Without a dummy, attaching the very first digit of the sum would need its own special-case line (since there's no earlier node yet to set .next on). dummy gives every attachment, including the first, the exact same curr.next = ListNode(...) shape.",
+      "if_removed": "Line 9 (curr = dummy) would crash with a NameError, since dummy wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "dummy = ListNode(-1)",
+          "difference": "Any value works for dummy's val, since this node is thrown away at the end and never appears in the answer. 0 (the default) is just as good as -1."
+        }
+      ],
+      "mistake": "Reusing one of l1 or l2's real nodes as the dummy instead of creating a new one. That would silently corrupt one of the input numbers.",
+      "caption": "Create a throwaway dummy node (val 0, next None) to build the sum behind."
+    },
+    "9": {
+      "explain": "This points curr at dummy. curr always marks the last digit node attached to the sum so far, and right now that's just the dummy.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "curr",
+          "meaning": "A new variable name: the current end of the sum's digit chain being built."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: curr now refers to the same node as dummy. No node is copied."
+        },
+        {
+          "token": "dummy",
+          "meaning": "The placeholder node just created."
+        }
+      ],
+      "why": "curr is what the rest of the method moves forward, one new digit at a time. dummy itself never moves, so we can always get back to the start of the sum through dummy.next, even after curr has walked far ahead.",
+      "if_removed": "The while loop below would crash with a NameError, since curr wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "dummy = curr = ListNode()",
+          "difference": "Combines this line and the one above into a chained assignment. Same result, one line instead of two."
+        }
+      ],
+      "mistake": "Setting curr = dummy.next instead of curr = dummy. dummy.next is still None at this point, so curr would start as None and crash the moment the loop tried curr.next = ListNode(...).",
+      "caption": "Point curr at dummy: the sum starts empty, right behind the placeholder."
+    },
+    "10": {
+      "explain": "Start carry at 0: before adding any digits, there's nothing carried in from a column to the right.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "carry",
+          "meaning": "A new variable name: the extra 1 (or 0) that spills over into the next column, exactly like carrying a digit in long addition."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "0",
+          "meaning": "No carry yet."
+        }
+      ],
+      "why": "Every later column's total depends on whatever carried in from the column before it. Starting at 0 means the very first column is added with nothing extra.",
+      "if_removed": "Line 15 (total = v1 + v2 + carry) would crash with a NameError on its very first pass.",
+      "alternatives": [
+        {
+          "code": "carry = 0  # nothing carried in yet",
+          "difference": "Same line, with a note about what it means. Pure style."
+        }
+      ],
+      "mistake": "Forgetting to update carry inside the loop (line 16) and leaving it at 0 forever, which would silently drop any digit sum of 10 or more.",
+      "caption": "Start carry at 0: nothing carried in yet."
+    },
+    "12": {
+      "explain": "Keep looping as long as there's still a digit left in l1, a digit left in l2, or a carry left over from the last column. Any one of the three is enough reason to produce one more digit of the answer.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "l1",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": "or",
+          "meaning": "True if at least one side is True. Python checks left to right and stops at the first True it finds."
+        },
+        {
+          "token": "l2",
+          "meaning": "Checked the same way as l1."
+        },
+        {
+          "token": "or carry",
+          "meaning": "carry alone as a condition: any non-zero number counts as True, and 0 counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "The two numbers can have different lengths, and their sum can need one more digit than either input (like 9 + 9 = 18), so the loop has to keep going until every source of a digit, including a trailing carry, is used up.",
+      "if_removed": "Writing while l1 and l2: instead would stop the moment the SHORTER number ran out, silently dropping the longer number's remaining digits and any final carry.",
+      "alternatives": [
+        {
+          "code": "while l1 or l2 or carry != 0:",
+          "difference": "Spells out the carry check explicitly instead of relying on 0 being falsy. Behaves the same."
+        }
+      ],
+      "mistake": "Writing while l1 and l2 and carry, which stops as soon as ANY of the three is empty or zero, usually long before the real sum is finished.",
+      "caption": [
+        {
+          "when": "not l1 and not l2 and not carry",
+          "text": "l1, l2 and carry are all empty: the sum is complete."
+        },
+        {
+          "text": "At least one of l1 ({l1.val if l1 else 'None'}), l2 ({l2.val if l2 else 'None'}) or carry ({carry}) still has something to add."
+        }
+      ]
+    },
+    "13": {
+      "explain": "Read l1's current digit, or 0 if l1 has already run out. This lets the loop keep adding even after the shorter number is exhausted.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "v1",
+          "meaning": "A new variable name: the digit from l1 to add this column, or 0 if there isn't one."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l1.val if l1 else 0",
+          "meaning": "A conditional expression: l1.val when l1 is a real node (truthy), otherwise the plain value 0."
+        }
+      ],
+      "why": "Once l1 runs out (becomes None), l1.val would crash. Treating a used-up number as contributing 0 to every later column is exactly how long addition lines up numbers of different lengths.",
+      "if_removed": "Reading l1.val directly would crash with an AttributeError the moment l1 became None, on any pair of numbers with different lengths.",
+      "alternatives": [
+        {
+          "code": "v1 = l1.val if l1 is not None else 0",
+          "difference": "Spells out the None check explicitly instead of relying on truthiness. Behaves the same."
+        }
+      ],
+      "mistake": "Writing v1 = l1.val and only guarding with if l1: around the whole loop body instead of per-read, which still crashes once l1 runs out before l2 does.",
+      "caption": [
+        {
+          "when": "l1",
+          "text": "v1 is l1's digit, {l1.val}."
+        },
+        {
+          "text": "l1 has run out, so v1 is 0."
+        }
+      ]
+    },
+    "14": {
+      "explain": "Read l2's current digit, or 0 if l2 has already run out. Same idea as line 13, for the other number.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "v2",
+          "meaning": "A new variable name: the digit from l2 to add this column, or 0 if there isn't one."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l2.val if l2 else 0",
+          "meaning": "A conditional expression: l2.val when l2 is a real node, otherwise 0."
+        }
+      ],
+      "why": "l1 and l2 can run out on different passes, so each needs its own independent 0-if-empty check; there's no single point where \"the shorter number\" is used up for both at once.",
+      "if_removed": "Reading l2.val directly would crash with an AttributeError once l2 ran out.",
+      "alternatives": [
+        {
+          "code": "v2 = l2.val if l2 is not None else 0",
+          "difference": "Spells out the None check explicitly. Behaves the same."
+        }
+      ],
+      "mistake": "Copy-pasting line 13 but forgetting to change l1 to l2, which would add l1's digit to itself and ignore l2 entirely.",
+      "caption": [
+        {
+          "when": "l2",
+          "text": "v2 is l2's digit, {l2.val}."
+        },
+        {
+          "text": "l2 has run out, so v2 is 0."
+        }
+      ]
+    },
+    "15": {
+      "explain": "Add this column's two digits and whatever carried in from the column before it.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "total",
+          "meaning": "A new variable name: this column's full sum, which can run from 0 up to 9 + 9 + 1 = 19."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "v1 + v2 + carry",
+          "meaning": "Plain addition of the three numbers."
+        }
+      ],
+      "why": "total can be two digits wide (as large as 19), which is exactly why the next two lines split it into a ones digit, kept here, and a carry, passed on to the next column.",
+      "if_removed": "Line 16 and line 17 would crash with a NameError, since total wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "total = v1 + v2 + carry  # 0 to 19",
+          "difference": "Same line, with a note about the range of possible values."
+        }
+      ],
+      "mistake": "Forgetting to add carry here and only adding it in later, which would drop every carried-in 1 from the answer.",
+      "caption": "total will be v1 + v2 + carry = {v1} + {v2} + {carry}."
+    },
+    "16": {
+      "explain": "Split off the new carry: whatever is left over once this column keeps only one digit (0 to 9).",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "carry",
+          "meaning": "Reused from line 10: overwritten with this column's carry-out, ready for the next pass."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: overwrites carry's old value."
+        },
+        {
+          "token": "total // 10",
+          "meaning": "Floor division by 10: how many whole tens are in total. 0 for 0-9, 1 for 10-19."
+        }
+      ],
+      "why": "total can be up to 19, too big for one digit. Floor division by 10 is exactly \"how many times does 10 fit\", which is 0 or 1 here, and that's the digit that spills into the next column.",
+      "if_removed": "carry would still hold the PREVIOUS column's value when line 19's l1 = l1.next if l1 else None runs, and the next pass's total would silently use a stale carry instead of this column's real one.",
+      "alternatives": [
+        {
+          "code": "carry = 1 if total >= 10 else 0",
+          "difference": "Spells out the same result with a comparison instead of floor division. Works only because total never exceeds 19 here; // 10 generalizes to totals of any size."
+        }
+      ],
+      "mistake": "Writing total % 10 here by mixing up this line with the next one, which would store the ones digit as the carry and corrupt every later column.",
+      "caption": "carry becomes total // 10 = {total} // 10 = {total // 10}."
+    },
+    "17": {
+      "explain": "Create the next digit node, holding just the ones digit of total, and attach it right after curr.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "On the left of =, the next field of curr, the slot being filled in."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "ListNode(total % 10)",
+          "meaning": "A brand-new node. total % 10 (the remainder after dividing by 10) is passed as val; next defaults to None."
+        }
+      ],
+      "why": "Only the ones digit of total belongs in this column of the answer; the tens digit was already split off into carry on the line above.",
+      "if_removed": "curr.next would stay None, so the new digit would never actually join the answer's chain, and dummy.next would end up None at the very end.",
+      "alternatives": [
+        {
+          "code": "curr.next = ListNode(total % 10, None)",
+          "difference": "Passes next explicitly instead of relying on its default. Identical result."
+        }
+      ],
+      "mistake": "Writing ListNode(total) instead of ListNode(total % 10), which would store a two-digit number (like 13) in a single node meant to hold one digit (0-9).",
+      "caption": "Attach a new node holding total % 10 = {total} % 10 = {total % 10}."
+    },
+    "18": {
+      "explain": "Move curr forward onto the node just created, so the NEXT digit gets attached after this one instead of overwriting it.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "curr",
+          "meaning": "The current end of the sum's digit chain."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "curr.next",
+          "meaning": "The node just attached on line 17."
+        }
+      ],
+      "why": "If curr never moved, every pass would overwrite the same curr.next slot, and the sum would end up with only one digit.",
+      "if_removed": "Every digit node created afterward would overwrite dummy.next directly, and the sum would be left with just the very last digit computed.",
+      "alternatives": [
+        {
+          "code": "curr = curr.next  # curr is now the newest digit",
+          "difference": "Same line; a note on what curr becomes."
+        }
+      ],
+      "mistake": "Writing curr = ListNode(total % 10) again here, creating a SECOND new node instead of advancing onto the one already attached on line 17.",
+      "caption": "Move curr forward onto the node just attached, {curr.next.val}."
+    },
+    "19": {
+      "explain": "Move l1 forward by one digit, or leave it at None if l1 had already run out.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "l1",
+          "meaning": "Reused: overwritten with the next node in l1's chain."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l1.next if l1 else None",
+          "meaning": "A conditional expression: step forward when l1 is a real node, otherwise stay at None."
+        }
+      ],
+      "why": "l1.next would crash once l1 is already None, which happens whenever the two numbers have different lengths and l1 is the shorter one.",
+      "if_removed": "Once l1 became None, this line would try None.next and crash with an AttributeError instead of leaving l1 harmlessly at None.",
+      "alternatives": [
+        {
+          "code": "if l1:\n    l1 = l1.next",
+          "difference": "Same effect written as an if statement instead of a conditional expression."
+        }
+      ],
+      "mistake": "Writing l1 = l1.next unconditionally, which crashes with an AttributeError the moment l1 runs out while l2 or carry still need another pass.",
+      "caption": [
+        {
+          "when": "l1 and l1.next",
+          "text": "Move l1 forward to {l1.next.val}."
+        },
+        {
+          "when": "l1",
+          "text": "Move l1 forward to None: that number is used up."
+        },
+        {
+          "text": "l1 is already None; it stays that way."
+        }
+      ]
+    },
+    "20": {
+      "explain": "Move l2 forward by one digit, or leave it at None if l2 had already run out. Same idea as line 19, for the other number.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "l2",
+          "meaning": "Reused: overwritten with the next node in l2's chain."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "l2.next if l2 else None",
+          "meaning": "A conditional expression: step forward when l2 is a real node, otherwise stay at None."
+        }
+      ],
+      "why": "l1 and l2 can run out on different passes, so each needs its own guarded step forward.",
+      "if_removed": "Once l2 became None, this line would try None.next and crash with an AttributeError.",
+      "alternatives": [
+        {
+          "code": "if l2:\n    l2 = l2.next",
+          "difference": "Same effect written as an if statement instead of a conditional expression."
+        }
+      ],
+      "mistake": "Copy-pasting line 19 but forgetting to change l1 to l2, which would advance l1 twice per pass and never move l2 at all.",
+      "caption": [
+        {
+          "when": "l2 and l2.next",
+          "text": "Move l2 forward to {l2.next.val}."
+        },
+        {
+          "when": "l2",
+          "text": "Move l2 forward to None: that number is used up."
+        },
+        {
+          "text": "l2 is already None; it stays that way."
+        }
+      ]
+    },
+    "22": {
+      "explain": "Hand back the real start of the sum: dummy.next, skipping the throwaway dummy node itself.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after the while loop."
+        },
+        {
+          "token": "return",
+          "meaning": "Ends the method and hands a value back to the caller."
+        },
+        {
+          "token": "dummy.next",
+          "meaning": "The first real digit node ever attached, back on the earliest pass of the loop."
+        }
+      ],
+      "why": "dummy itself was never part of the answer; it only existed so curr always had a node to set .next on, even for the very first digit.",
+      "if_removed": "The method would implicitly return None, and the caller would see an empty sum instead of the real answer.",
+      "alternatives": [
+        {
+          "code": "return dummy.next if dummy.next else ListNode(0)",
+          "difference": "Not needed here: the loop condition on line 12 guarantees at least one digit is always produced (since l1, l2 and carry start out either holding a real digit or already covering the 0 + 0 + 0 case correctly), so dummy.next is never None for a valid input."
+        }
+      ],
+      "mistake": "Returning dummy instead of dummy.next, which would hand back the placeholder node (val 0) glued in front of the real answer.",
+      "caption": "Return dummy.next, the head of the sum: {to_list(dummy.next)}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:\n        def to_int(node):\n            digits = []\n            while node:\n                digits.append(str(node.val))\n                node = node.next\n            return int(\"\".join(reversed(digits)))\n\n        total = to_int(l1) + to_int(l2)\n        digits = [int(d) for d in reversed(str(total))]\n        return build(digits)",
+    "explain": "Walk each list once to rebuild the whole number as a Python int (reading the digits backwards, since the list stores the ones digit first), add the two integers directly, then split the sum's digits back out into a brand-new list of nodes.",
+    "why_slow": "It's not slower in the usual Big-O sense; converting to a string and back is still linear work. The real cost is that it leans on Python's arbitrarily large integers to do the addition for you, which doesn't reflect how addition with carries actually works at the digit level, and wouldn't translate to a language without built-in big integers.",
+    "how_pattern_fixes": "The column-by-column pattern adds digits the way the hardware (and a human) actually would: one column at a time, tracking only a single carry value, without ever assembling the whole number as one giant integer.",
+    "time": "O(m + n): one pass to read each list into a string of digits, plus O(max(m, n)) to split the sum back into nodes.",
+    "space": "O(m + n): the digit strings and the lists of digits built along the way."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "and (operator)": "A logical operator. A and B is True only if both A and B are True. If A is False, Python skips checking B at all (short-circuiting).",
+    "argument": "The actual value you pass into a function or method when you call it. In ListNode(5), 5 is the argument.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "AttributeError": "The error Python raises when you ask an object for a field it doesn't have, most often None.next or None.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or copying everything. It's simple but often hungrier for memory, or relies on tricks (like unlimited-size integers) that don't generalize.",
+    "call": "Running a function or method by writing its name followed by brackets, like ListNode(5) or Solution().addTwoNumbers(l1, l2).",
+    "class": "A blueprint for making objects. ListNode is the blueprint for list nodes, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def or while lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "conditional expression": "A compact if/else written as one expression: a if condition else b. It produces a value, unlike a full if statement.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in val=0.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev).",
+    "dummy node": "A placeholder node created before the real list starts, so the first real node can be attached the exact same way as every later one, with no special case for an empty answer. It's thrown away at the end; only dummy.next matters.",
+    "edge case": "An unusual input that might break code: lists of different lengths, a carry that spills past both lists, or a number that's just a single 0.",
+    "expression": "Any piece of code that produces a value, like v1 + v2 + carry or l1.val if l1 else 0.",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in ListNode(5). It sets up the object's fields.",
+    "int": "Python's name for whole numbers (integers). Python's ints can grow as large as memory allows, which is why the brute-force approach can rebuild a whole number in one variable.",
+    "integer": "A whole number, with no fractional part. Each input list represents one non-negative integer, one digit per node.",
+    "join": "A string method that glues every item of a list together into one string, with the string it's called on placed between each pair: \"\".join([\"a\", \"b\"]) makes \"ab\". Used loosely in English here too: a new digit node \"joins\" the chain, meaning it becomes part of it.",
+    "keyword": "A word reserved by Python, like class, def, while, if, return.",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position by index.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True.",
+    "max": "A built-in function that returns the largest of its arguments: max(3, 7) is 7.",
+    "method": "A function that belongs to a class, called with a dot: Solution().addTwoNumbers(l1, l2).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next).",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\", and it's also how this method represents a used-up input list.",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[ListNode] means \"a ListNode or None\".",
+    "or (operator)": "A logical operator. A or B is True if at least one side is True. while l1 or l2 or carry keeps looping as long as any one of the three still needs attention.",
+    "parameter": "A name in a function's definition that receives an input. l1 and l2 are addTwoNumbers's parameters.",
+    "pattern": "A reusable technique that solves a whole family of problems, like walking two sequences together while tracking a running carry.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list. l1, l2, dummy and curr are all pointers here.",
+    "range": "A built-in function that produces whole numbers. range(3) gives 0, 1, 2. Also, more loosely, the span of possible values something can take.",
+    "reference": "What a variable or a next field actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "tail": "The last node of a linked list, the one whose next is None.",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "type hint": "A label like l1: Optional[ListNode] that tells readers what type a value should be. Python doesn't enforce it.",
+    "truthiness": "Using a non-boolean value as a condition. None and 0 count as False, and any node object or nonzero number counts as True.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a list node, val holds the node's value.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "two pointers": "Using two position variables that move through data together, often at different speeds or through different structures, so comparing where they are reveals something useful. Here l1 and l2 are the two pointers being walked together, column by column.",
+    "in place": "Modifying existing data directly instead of building a separate copy. This method does the opposite: it builds a brand-new list rather than changing l1 or l2."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "l1, l2, and the sum growing behind dummy",
+      "node_class": "ListNode",
+      "pointers": {
+        "l1": "l1",
+        "l2": "l2",
+        "dummy": "dummy",
+        "curr": "curr"
+      }
+    }
+  ]
+}
