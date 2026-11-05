@@ -65,6 +65,9 @@ export type PanelSpec =
       /** Field holding the node's value / the next node. Default "val" and "next". */
       val_field?: string;
       next_field?: string;
+      /** Field holding a second, non-chain reference (e.g. a "random" pointer), drawn as a
+       *  curved dashed arrow above the node row instead of the usual chain arrow below it. */
+      random_field?: string;
       /** label -> Python expression giving a node or None. Return HIDE to hide the pointer on a step. */
       pointers?: Record<string, string>;
       /** Pointer labels whose None should sit at the left end instead of the right. */

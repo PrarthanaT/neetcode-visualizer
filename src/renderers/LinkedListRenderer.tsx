@@ -17,12 +17,15 @@ const GAP = 32;
 const NULL_W = 42;
 const CHIP_ROW = 22;
 const ARROW_ROOM = 34; // space under the nodes for arrows that point backwards
+const RANDOM_ROOM = 44; // space above the nodes for a random_field's curved arrows
+const RANDOM_COLOR = "#c084fc";
 
 /** Nodes drawn in a fixed order (the order Python first saw them), each with a val box and a next box.
  *  Arrows follow the real `next` references, so you can watch them flip as the list is rewired. */
 export default function LinkedListRenderer({ spec, step, get, cursor }: RendererProps<ListSpec>) {
   const valField = spec.val_field ?? "val";
   const nextField = spec.next_field ?? "next";
+  const randomField = spec.random_field;
   const prevStep = useStepBefore(cursor);
   const nodes = nodesOf(step, spec.node_class);
   if (!nodes.length) return <Empty title={spec.title} text="no nodes yet" />;
@@ -50,7 +53,7 @@ export default function LinkedListRenderer({ spec, step, get, cursor }: Renderer
     return { ...p, level: l };
   });
   const levels = Math.max(1, ...level.values());
-  const top = levels * CHIP_ROW + 8;
+  const top = levels * CHIP_ROW + 8 + (randomField ? RANDOM_ROOM : 0);
   const midY = top + NODE_H / 2;
   const pointed = new Map(placed.filter((p) => !p.isNull).map((p) => [p.x, p.color]));
 
@@ -74,6 +77,9 @@ export default function LinkedListRenderer({ spec, step, get, cursor }: Renderer
                   <path d="M0 0 L10 5 L0 10 z" fill={k === "changed" ? MARK.compared : "#71717a"} />
                 </marker>
               ))}
+              <marker id="ll-random-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill={RANDOM_COLOR} />
+              </marker>
             </defs>
             {nodes.map(([id, o], i) => {
               const target = refOf(o.fields[nextField]);
@@ -105,6 +111,30 @@ export default function LinkedListRenderer({ spec, step, get, cursor }: Renderer
                 />
               );
             })}
+
+            {/* random-pointer arrows: dashed arcs above the node row, kept apart from the chain arrows below it */}
+            {randomField &&
+              nodes.map(([id, o], i) => {
+                const target = refOf(o.fields[randomField]);
+                if (!target || !col.has(target)) return null;
+                const j = col.get(target)!;
+                const x1 = xOf(i) + VAL_W / 2;
+                const x2 = xOf(j) + VAL_W / 2;
+                const bow = Math.min(RANDOM_ROOM - 6, 22 + Math.abs(j - i) * 5);
+                const d = i === j ? selfLoop(x1, top, bow) : arcAbove(x1, x2, top, bow);
+                return (
+                  <path
+                    key={`random-${id}`}
+                    d={d}
+                    fill="none"
+                    stroke={RANDOM_COLOR}
+                    strokeWidth={1.4}
+                    strokeDasharray="4 3"
+                    opacity={0.85}
+                    markerEnd="url(#ll-random-head)"
+                  />
+                );
+              })}
           </svg>
 
           {/* nodes */}
@@ -163,6 +193,12 @@ export default function LinkedListRenderer({ spec, step, get, cursor }: Renderer
 const forward = (x1: number, y: number, x2: number) => `M ${x1} ${y} C ${x1 + 12} ${y}, ${x2 - 14} ${y}, ${x2 - 2} ${y}`;
 const backward = (x1: number, y1: number, x2: number, y2: number) => `M ${x1} ${y1 - 4} C ${x1} ${y1 + 30}, ${x2} ${y2 + 30}, ${x2} ${y2 + 2}`;
 const stub = (x: number, y: number) => `M ${x} ${y - 4} C ${x} ${y}, ${x} ${y}, ${x} ${y - 4}`;
+
+// random-pointer arcs live entirely above the node row, bowing up by `bow` pixels
+const arcAbove = (x1: number, x2: number, y: number, bow: number) =>
+  `M ${x1} ${y - 2} C ${x1} ${y - bow}, ${x2} ${y - bow}, ${x2} ${y - 2}`;
+const selfLoop = (x: number, y: number, bow: number) =>
+  `M ${x - 3} ${y - 2} C ${x - VAL_W / 2} ${y - bow}, ${x + VAL_W / 2} ${y - bow}, ${x + 3} ${y - 2}`;
 
 const refOf = (v: Value | undefined) => (v && v.k === "ref" ? v.id : null);
 

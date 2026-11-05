@@ -1,0 +1,828 @@
+{
+  "slug": "copy-list-with-random-pointer",
+  "title": "Copy List with Random Pointer",
+  "difficulty": "Medium",
+  "category": "Linked List",
+  "leetcode": 138,
+  "statement": [
+    "A linked list is a chain of nodes. Each node in THIS problem holds a value (val), an arrow to the next node (next), and a second, independent arrow (random) that can point to ANY node in the list, or to None.",
+    "You are given the head of such a list. Construct a deep copy of it: a completely separate list with the same values, the same next structure, and random pointers that land on the matching COPIES, not on any of the original nodes.",
+    "Return the head of the copied list. The original list must be left unchanged."
+  ],
+  "examples": [
+    {
+      "input": "head = [[7,None],[13,0],[11,4],[10,2],[1,0]] (value, index of the node its random points to, or None)",
+      "output": "[[7,None],[13,0],[11,4],[10,2],[1,0]]",
+      "explain": "Node 13's random points to node 0 (value 7); node 11's random points to node 4 (value 1); node 10's random points to node 2 (value 11); node 1's random points to node 0 (value 7). The copy must reproduce this exact web of random pointers, between brand-new nodes. This is the example the visualizer runs."
+    },
+    {
+      "input": "head = [[1,1],[2,1]]",
+      "output": "[[1,1],[2,1]]",
+      "explain": "Both nodes' random points to node 1 (value 2): node 1's random points at itself. The copy of node 1 must likewise have its random point at ITSELF (the copy), not at the original node 1."
+    }
+  ],
+  "pattern": {
+    "name": "Two passes with a hashmap from old node to new node",
+    "summary": "First pass: walk the original list once, creating a brand-new, empty-linked copy of every node, and record old node → new node in a dictionary (oldToNew) as you go. Second pass: walk the original list again, and for every node, look its copy up in oldToNew, then wire that copy's next and random by looking up cur.next and cur.random in oldToNew too. Since every node's copy already exists by the second pass, a lookup always succeeds, no matter which direction (forward, backward, or at itself) random points.",
+    "recognize": [
+      "You need to build a DEEP copy of a structure where some reference can point ANYWHERE within it, not just to an adjacent element, so you can't resolve it on a single forward walk alone.",
+      "The structure contains cross-references between its own elements (here, random), and a correct copy needs those references to land on the NEW elements, never on the originals.",
+      "A single pass isn't enough because a node's random might point to a node that hasn't been copied yet (or ever, if it's later in the list); splitting the work into \"create everything\" then \"connect everything\" sidesteps that ordering problem entirely.",
+      "A dictionary keyed by object identity (not by value) is the natural tool whenever you need to ask \"what's the NEW version of this specific old thing?\" for many things that could share the same value."
+    ],
+    "avoid_when": [
+      "The structure has no cross-references at all, just a simple forward chain (like a plain singly linked list). Then one pass, copying as you go, like Merge Two Sorted Lists does, is all you need; there's no reason for a second pass or a hashmap.",
+      "You're allowed to temporarily modify the original list's structure. An advanced O(1)-extra-space technique interleaves each copy directly after its original (old1, copy1, old2, copy2, ...), reads random through that interleaving without any hashmap, and then unweaves the two lists apart again.",
+      "Memory is tight and the list is huge, making a full hashmap of every node too expensive. The weaving technique above avoids it, at the cost of being noticeably trickier to get right."
+    ]
+  },
+  "notes": {
+    "takeaways": [
+      "random can point ANYWHERE: forward, backward, at the node itself, or at None. That's exactly why this can't be solved in one single forward pass the way copying a plain linked list can.",
+      "oldToNew is keyed by the NODE itself, not by its value, since two different nodes could hold equal values; only identity reliably tells copies apart.",
+      "Splitting the work into two passes (create everything, then connect everything) guarantees that by the time ANY next or random lookup happens, the node it needs to find has already been created.",
+      ".get(x) returning None when x itself is None (since None is never stored as a key) is what lets copy.next and copy.random fall back to None without a separate if check for the empty case."
+    ],
+    "time": "O(n), linear time, where n is the number of nodes. Each of the two passes visits every node exactly once, and every dictionary lookup is O(1).",
+    "space": "O(n), linear extra memory for oldToNew, which ends up holding one entry per original node, plus the n new nodes themselves (required for any deep copy, regardless of approach).",
+    "edge_cases": [
+      "An empty list: head is None. The first while loop never runs, oldToNew stays empty, and oldToNew.get(head) (i.e. .get(None)) correctly returns None.",
+      "A node whose random is None, meaning it doesn't point anywhere extra. oldToNew.get(cur.random) is then oldToNew.get(None), which returns None, exactly matching the original.",
+      "A node whose random points at ITSELF. Since oldToNew[cur] is filled in before the second pass ever looks anything up, oldToNew.get(cur.random) correctly resolves to the SAME copy as oldToNew[cur].",
+      "Two different nodes sharing the same val. Keying oldToNew by the node object (not the value) keeps their copies distinct even though cur.val would be identical for both."
+    ]
+  },
+  "code": "# Definition for a Node.\n# class Node:\n#     def __init__(self, x: int, next: 'Node' = None, random: 'Node' = None):\n#         self.val = int(x)\n#         self.next = next\n#         self.random = random\n\nclass Solution:\n    def copyRandomList(self, head: 'Optional[Node]') -> 'Optional[Node]':\n        oldToNew = {}\n\n        cur = head\n        while cur:\n            oldToNew[cur] = Node(cur.val)\n            cur = cur.next\n\n        cur = head\n        while cur:\n            copy = oldToNew[cur]\n            copy.next = oldToNew.get(cur.next)\n            copy.random = oldToNew.get(cur.random)\n            cur = cur.next\n\n        return oldToNew.get(head)\n",
+  "run": {
+    "prelude": "from typing import Optional\n\nclass Node:\n    def __init__(self, x: int, next: 'Node' = None, random: 'Node' = None):\n        self.val = int(x)\n        self.next = next\n        self.random = random\n\ndef build(pairs):\n    nodes = [Node(v) for v, _ in pairs]\n    for i in range(len(nodes)):\n        nodes[i].next = nodes[i + 1] if i + 1 < len(nodes) else None\n        r = pairs[i][1]\n        nodes[i].random = nodes[r] if r is not None else None\n    return nodes[0] if nodes else None\n\ndef to_pairs(node):\n    nodes = []\n    cur = node\n    while cur:\n        nodes.append(cur)\n        cur = cur.next\n    index = {id(n): i for i, n in enumerate(nodes)}\n    out = []\n    cur = node\n    while cur:\n        r = index[id(cur.random)] if cur.random else None\n        out.append([cur.val, r])\n        cur = cur.next\n    return out\n\nhead = build([[7, None], [13, 0], [11, 4], [10, 2], [1, 0]])\n",
+    "call": "Solution().copyRandomList(head)",
+    "check": "to_pairs(__result__)",
+    "expected": [
+      [
+        7,
+        null
+      ],
+      [
+        13,
+        0
+      ],
+      [
+        11,
+        4
+      ],
+      [
+        10,
+        2
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "describe": "head = [7, 13, 11, 10, 1], with random pointers [None, 0, 4, 2, 0] (by index)"
+  },
+  "lines": {
+    "1": {
+      "explain": "A comment. LeetCode shows these first six lines to tell you how a Node is built for this problem. They start with #, so Python ignores them. LeetCode defines Node for you behind the scenes (the visualizer does the same).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Starts a comment. Python ignores everything from # to the end of the line."
+        },
+        {
+          "token": "Definition for a Node.",
+          "meaning": "Plain text for the reader, describing the class defined in the comment lines below."
+        }
+      ],
+      "why": "Your code uses Node objects, so you need to know what's inside one, including the extra random field this problem adds beyond the usual val and next.",
+      "if_removed": "Nothing changes when the code runs. It's a comment. You'd just lose the reminder of what a node looks like.",
+      "alternatives": [
+        {
+          "code": "\"\"\"Definition for a Node.\"\"\"",
+          "difference": "A string in triple quotes, often used as a multi-line note called a docstring. It's not a comment: Python creates the string and throws it away. # is the usual way to write a note."
+        }
+      ],
+      "mistake": "Uncommenting these lines (removing the #) on LeetCode. It usually still works, but it redefines a class LeetCode already provides, and an indentation slip can cause an IndentationError.",
+      "caption": "A comment: Python skips it."
+    },
+    "2": {
+      "explain": "Still a comment. It describes a class called Node: the blueprint for one node of this list.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker. The rest of the line is ignored."
+        },
+        {
+          "token": "class Node:",
+          "meaning": "What the real definition looks like: class starts a blueprint, Node is its name, and the colon means an indented body follows."
+        }
+      ],
+      "why": "Every node in the original list, and every copy you build, comes from this same blueprint, so each one has the same three fields: val, next and random.",
+      "if_removed": "Nothing changes. It's documentation only.",
+      "alternatives": [
+        {
+          "code": "from dataclasses import dataclass\n@dataclass\nclass Node:\n    val: int = 0\n    next: 'Node' = None\n    random: 'Node' = None",
+          "difference": "A dataclass writes the __init__ method for you from the listed fields. It makes the same kind of nodes with less typing. The @ line is a decorator, which adds behaviour to the class below it."
+        }
+      ],
+      "mistake": "Confusing this Node with ListNode from other linked-list problems. They're different classes; this one additionally has a random field.",
+      "caption": "A comment: Python skips it."
+    },
+    "3": {
+      "explain": "A comment showing Node's __init__ method: the code that runs when a new node is created, as in Node(5). It takes a value, an optional next node, and an optional random node.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "def __init__(",
+          "meaning": "__init__ (two underscores on each side) is a special method name. Python runs it automatically whenever a new object is made from the class."
+        },
+        {
+          "token": "self,",
+          "meaning": "The new node being created."
+        },
+        {
+          "token": "x: int,",
+          "meaning": "The value for this node, type-hinted as an int."
+        },
+        {
+          "token": "next: 'Node' = None,",
+          "meaning": "The node after this one in the chain, defaulting to None. The type hint is written in quotes because Node isn't fully defined yet at the point this line is read."
+        },
+        {
+          "token": "random: 'Node' = None",
+          "meaning": "A second, independent pointer to any node in the list (or None), also defaulting to None."
+        },
+        {
+          "token": "):",
+          "meaning": "Closes the parameter list and starts the body."
+        }
+      ],
+      "why": "This is what makes the problem harder than a plain linked-list copy: every node has a SECOND reference, random, that can point anywhere in the list, not just forward.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#     def __init__(self, val, next=None, random=None):",
+          "difference": "Drops the type hints and renames x to val. It behaves identically; LeetCode's own definition happens to call the parameter x."
+        }
+      ],
+      "mistake": "Assuming random works like next, i.e. that following it repeatedly walks the list in some order. It doesn't: random can point to any node, including one earlier in the list, itself, or None.",
+      "caption": "A comment: Python skips it."
+    },
+    "4": {
+      "explain": "A comment showing that the new node stores its value in a field named val, converted to a plain int just in case x arrived as something else.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.val",
+          "meaning": "A field (also called an attribute) named val on this node."
+        },
+        {
+          "token": "= int(x)",
+          "meaning": "Convert x to a plain int before storing it. int(x) returns x unchanged if it's already an int."
+        }
+      ],
+      "why": "Fields are how an object remembers data. cur.val and Node(cur.val) are how this method reads and copies each node's value.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.val = x",
+          "difference": "Skips the int() conversion. Harmless here since the inputs are already plain integers, but less defensive against unexpected input types."
+        }
+      ],
+      "mistake": "Confusing the parameter x with the field self.val. They're different names for the same data.",
+      "caption": "A comment: Python skips it."
+    },
+    "5": {
+      "explain": "A comment showing the node's next field, the arrow to the following node in the original order (or None at the end of the list).",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.next = next",
+          "meaning": "Store the next parameter in the node's next field."
+        }
+      ],
+      "why": "next is what makes this a linked list at all, exactly as in every other linked-list problem. copy.next is wired up on line 20 to rebuild this same chain, one new node at a time.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.prev = None",
+          "difference": "A doubly linked list would add a prev field pointing backward too. This problem's random field is different: it can point ANYWHERE, not just to the previous node."
+        }
+      ],
+      "mistake": "Thinking next holds a value or a position. It holds a reference to another node object (or None).",
+      "caption": "A comment: Python skips it."
+    },
+    "6": {
+      "explain": "A comment showing the node's random field: a reference to any node in the list (including itself or None), independent of next.",
+      "syntax": [
+        {
+          "token": "#",
+          "meaning": "Comment marker."
+        },
+        {
+          "token": "self.random = random",
+          "meaning": "Store the random parameter in the node's random field."
+        }
+      ],
+      "why": "random is the whole reason a plain node-by-node copy isn't enough: once you've built brand-new nodes, each new node's random also has to point at the CORRECT new node, not at any node from the original list.",
+      "if_removed": "Nothing changes. It's a comment.",
+      "alternatives": [
+        {
+          "code": "#         self.random = None  # always None",
+          "difference": "Would make this an ordinary singly linked list with no random pointers at all, turning this into a much simpler copy problem."
+        }
+      ],
+      "mistake": "Assuming every node's random is set. Some nodes can have random = None, meaning they don't point anywhere extra.",
+      "caption": "A comment: Python skips it."
+    },
+    "8": {
+      "explain": "This creates the class named Solution that LeetCode expects your answer to live in.",
+      "syntax": [
+        {
+          "token": "class",
+          "meaning": "A keyword meaning \"I am defining a class\"."
+        },
+        {
+          "token": "Solution",
+          "meaning": "The class name LeetCode looks for."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented block below belongs to the class."
+        }
+      ],
+      "why": "LeetCode's tester creates a Solution object and calls your method on it.",
+      "if_removed": "LeetCode can't find Solution and reports a NameError.",
+      "alternatives": [
+        {
+          "code": "class Solution(object):",
+          "difference": "The older Python 2 style. In Python 3 it behaves exactly the same."
+        }
+      ],
+      "mistake": "Lowercase class solution:.",
+      "caption": "Python reads the Solution blueprint. Nothing runs yet."
+    },
+    "9": {
+      "explain": "This defines the method copyRandomList. It receives head, the first node of the original list, and returns the first node of a completely separate, equal copy: same values, same next structure, same random targets, but no node shared with the original.",
+      "syntax": [
+        {
+          "token": "    (4 spaces)",
+          "meaning": "Indentation: inside the class."
+        },
+        {
+          "token": "def copyRandomList(",
+          "meaning": "def starts a method. copyRandomList is the name LeetCode calls."
+        },
+        {
+          "token": "self,",
+          "meaning": "The Solution object, required in every method."
+        },
+        {
+          "token": "head: 'Optional[Node]'",
+          "meaning": "The original list's head. The type hint is written in quotes (a \"forward reference\") since it refers to Optional, from the typing module."
+        },
+        {
+          "token": ") -> 'Optional[Node]'",
+          "meaning": "The method returns a Node or None: the head of the brand-new, deep copy."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the header. The indented body follows."
+        }
+      ],
+      "why": "A deep copy means no part of the answer is shared with the input: new val fields (copied, not shared, since ints are immutable anyway), new next links, and new random links, all pointing only at OTHER new nodes.",
+      "if_removed": "Without self, the call crashes with a TypeError. Without the hints, nothing changes when the code runs.",
+      "alternatives": [
+        {
+          "code": "def copyRandomList(self, head: Optional['Node']) -> Optional['Node']:",
+          "difference": "Moves the quotes to just around Node instead of the whole expression. Both spellings work; this problem's own LeetCode template quotes the whole hint."
+        }
+      ],
+      "mistake": "Returning one of the ORIGINAL nodes anywhere in the new list. Every node reachable from the answer must be a copy made with Node(...), never a node from head's own chain.",
+      "caption": "Python remembers the copyRandomList instructions for later."
+    },
+    "10": {
+      "explain": "Create an empty dictionary, oldToNew, that will map each original node to the new copy made for it.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "oldToNew",
+          "meaning": "A new variable name: a dictionary from an original node (the key) to its copy (the value)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "{}",
+          "meaning": "An empty dictionary literal."
+        }
+      ],
+      "why": "Once a node's copy exists somewhere in oldToNew, any OTHER node's random or next that points back at it can look the copy up in O(1), instead of needing to know it in advance or search for it.",
+      "if_removed": "Line 14 (oldToNew[cur] = Node(cur.val)) would crash with a NameError, since oldToNew wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "oldToNew = dict()",
+          "difference": "The dict() constructor instead of the {} literal. Makes the same empty dictionary."
+        }
+      ],
+      "mistake": "Using a plain list instead of a dictionary. A list would need a linear search through every entry to find a given original node's copy, instead of dictionary's direct, near-instant lookup.",
+      "caption": "Create an empty dictionary: old node → new node. Nothing copied yet."
+    },
+    "12": {
+      "explain": "Start cur at head, ready to walk the original list from the very beginning for the first pass: creating every copy.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "cur",
+          "meaning": "A new variable name: the pointer that walks the ORIGINAL list, one node at a time."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head",
+          "meaning": "The first node of the original list, or None if the list is empty."
+        }
+      ],
+      "why": "The first pass needs to visit every original node exactly once, in order, to create its copy; cur is what makes that walk possible.",
+      "if_removed": "The while loop below would crash with a NameError, since cur wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "node = head",
+          "difference": "A different variable name. cur (short for \"current\") is the conventional name for a walking pointer."
+        }
+      ],
+      "mistake": "Forgetting that cur gets reused for a SECOND walk starting on line 17. Both walks start over from head; neither continues from where the other left off.",
+      "caption": "Start cur at head: {head.val if head else 'None'}."
+    },
+    "13": {
+      "explain": "Keep looping as long as cur hasn't run off the end of the original list.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True. It's checked before every pass."
+        },
+        {
+          "token": "cur",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "This pass has to visit every original node exactly once to give each one a copy, so it keeps going until cur falls off the end (becomes None).",
+      "if_removed": "The lines below would never run, oldToNew would stay empty, and the second pass would find nothing to look up.",
+      "alternatives": [
+        {
+          "code": "while cur is not None:",
+          "difference": "Spells out the None check explicitly. Behaves the same."
+        }
+      ],
+      "mistake": "Writing if cur: instead of while cur:, which would create a copy of only the FIRST node and then stop.",
+      "caption": [
+        {
+          "when": "not cur",
+          "text": "cur is None: every original node now has a copy in oldToNew."
+        },
+        {
+          "text": "cur is on {cur.val}: give it a copy."
+        }
+      ]
+    },
+    "14": {
+      "explain": "Create a brand-new node holding cur's value, and record in oldToNew that cur (the original) maps to this new node.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "oldToNew[cur]",
+          "meaning": "On the left of =, a new entry in the dictionary, keyed by the original node cur itself (not by its value)."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment: creates the dictionary entry."
+        },
+        {
+          "token": "Node(cur.val)",
+          "meaning": "A brand-new node, holding a copy of cur's value. next and random both default to None for now."
+        }
+      ],
+      "why": "Keying by the node OBJECT (not cur.val) matters because two different nodes could hold the same value; identity, not value, is what next and random actually need to look up.",
+      "if_removed": "A copy would be created but immediately lost (never stored anywhere), so the second pass's oldToNew.get(cur) on line 19 would find nothing for every node.",
+      "alternatives": [
+        {
+          "code": "oldToNew[cur.val] = Node(cur.val)",
+          "difference": "Keys by VALUE instead of by node identity. This breaks the moment two nodes share a value, since the second one would silently overwrite the first's entry."
+        }
+      ],
+      "mistake": "Setting next or random on the new node here already. They can't be wired up correctly yet, since the copies they'd need to point at might not exist until later passes of this very loop.",
+      "caption": "Map old node {cur.val} → a brand-new copy of {cur.val}."
+    },
+    "15": {
+      "explain": "Move cur forward to the next node in the ORIGINAL list, continuing the first pass.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "cur",
+          "meaning": "The pointer walking the original list."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "cur.next",
+          "meaning": "The next node in the ORIGINAL list (never a copy, since cur only ever walks head's own chain)."
+        }
+      ],
+      "why": "Without moving cur, this loop would create copies of the same node forever, repeatedly overwriting the same oldToNew entry.",
+      "if_removed": "cur would never change, and the while loop on line 13 would run until the visualizer's step cap stopped it, forever remaking a copy of the very first node.",
+      "alternatives": [
+        {
+          "code": "cur = cur.next  # still walking the ORIGINAL list, never a copy",
+          "difference": "Same line; a note on what cur always refers to in this pass."
+        }
+      ],
+      "mistake": "Writing cur = oldToNew[cur].next by accident, which would try to walk the new list (still being built, with next all None so far) instead of the original one.",
+      "caption": [
+        {
+          "when": "cur.next",
+          "text": "Move cur forward to {cur.next.val}."
+        },
+        {
+          "text": "Move cur forward to None: every original node has a copy now."
+        }
+      ]
+    },
+    "17": {
+      "explain": "Start cur back at head for the SECOND pass: this time, wiring up each copy's next and random.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "cur",
+          "meaning": "Reused: the pointer walking the original list again, from the very start."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "head",
+          "meaning": "The first node of the original list."
+        }
+      ],
+      "why": "The first pass couldn't wire up any links, since it needed EVERY node's copy to exist first. Now that oldToNew is complete, a second walk from the beginning can safely connect them.",
+      "if_removed": "cur would still be None (or wherever the first loop left it) from the earlier pass, and the while loop below would never run, leaving every copy's next and random at their default None.",
+      "alternatives": [
+        {
+          "code": "cur = head  # second pass: wire up next and random",
+          "difference": "Same line; a note on what this pass does differently from the first."
+        }
+      ],
+      "mistake": "Skipping this line and reusing cur as the first loop left it (None), which would make the second while loop never run at all.",
+      "caption": "Start the second pass: cur back at head, {head.val if head else 'None'}."
+    },
+    "18": {
+      "explain": "Keep looping as long as cur hasn't run off the end of the original list, same shape as the first pass.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method."
+        },
+        {
+          "token": "while",
+          "meaning": "Repeat the indented block for as long as the condition stays True."
+        },
+        {
+          "token": "cur",
+          "meaning": "Used alone as a condition: a node object counts as True, and None counts as False."
+        },
+        {
+          "token": ":",
+          "meaning": "Ends the loop header."
+        }
+      ],
+      "why": "Every original node's copy needs its next and random wired up, so this pass visits each one exactly once, just like the first pass did.",
+      "if_removed": "No copy would ever get its next or random set, leaving a list of disconnected single nodes.",
+      "alternatives": [
+        {
+          "code": "while cur is not None:",
+          "difference": "Spells out the None check explicitly. Behaves the same."
+        }
+      ],
+      "mistake": "Writing for cur in oldToNew: instead, which would loop over the dictionary's KEYS in whatever order Python stored them, not necessarily the original list's order (though as of Python 3.7+, dict order does happen to match insertion order here).",
+      "caption": [
+        {
+          "when": "not cur",
+          "text": "cur is None: every copy's next and random are wired up."
+        },
+        {
+          "text": "cur is on {cur.val}: wire up its copy next."
+        }
+      ]
+    },
+    "19": {
+      "explain": "Look up the copy already made for cur, back in the first pass.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "copy",
+          "meaning": "A new variable name: the new node that corresponds to cur."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "oldToNew[cur]",
+          "meaning": "Square-bracket lookup: find the value stored under the key cur. Every cur is guaranteed to be in oldToNew, since the first pass added every original node."
+        }
+      ],
+      "why": "copy is what the next two lines actually wire up. Looking it up by the ORIGINAL node cur is exactly the lookup oldToNew exists for.",
+      "if_removed": "Line 20 and line 21 would crash with a NameError, since copy wouldn't exist.",
+      "alternatives": [
+        {
+          "code": "copy = oldToNew.get(cur)",
+          "difference": ".get(cur) returns None instead of raising if cur were missing. Not needed here: cur always came from walking head, so it's always a key already in oldToNew."
+        }
+      ],
+      "mistake": "Writing oldToNew[cur.val] instead of oldToNew[cur]. The dictionary was built keyed by the node itself, not by its value, so this would raise a KeyError (or find the wrong entry if some value happened to also be a stored key by coincidence, which it never is here).",
+      "caption": "Look up cur's own copy: the new node holding {cur.val}."
+    },
+    "20": {
+      "explain": "Wire the copy's next to the COPY of cur's next, not to cur's next itself.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "copy.next",
+          "meaning": "On the left of =, the next field of the new node, the slot being filled in."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "oldToNew.get(cur.next)",
+          "meaning": ".get looks up cur.next in oldToNew, returning its copy if cur.next is a real node, or None if cur.next is already None (since None was never added as a key)."
+        }
+      ],
+      "why": "If copy.next were set to cur.next directly, the new list would be tangled up with the ORIGINAL nodes instead of being a fully separate copy. Looking the copy up by key keeps the new list entirely self-contained.",
+      "if_removed": "copy.next would stay None for every node, so the new list would be a chain of nodes that are each correctly valued but completely disconnected from one another.",
+      "alternatives": [
+        {
+          "code": "copy.next = oldToNew[cur.next] if cur.next else None",
+          "difference": "The same result spelled out with an explicit None check instead of relying on .get's default. .get(None) conveniently returns None here since None is never a key."
+        }
+      ],
+      "mistake": "Writing copy.next = cur.next, which attaches an ORIGINAL node into what's supposed to be an entirely separate deep copy.",
+      "caption": [
+        {
+          "when": "cur.next",
+          "text": "copy.next becomes the copy of {cur.next.val}."
+        },
+        {
+          "text": "cur.next is None, so copy.next becomes None too."
+        }
+      ]
+    },
+    "21": {
+      "explain": "Wire the copy's random to the COPY of cur's random, the same way line 20 just did for next.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "copy.random",
+          "meaning": "On the left of =, the random field of the new node."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "oldToNew.get(cur.random)",
+          "meaning": "Looks up cur.random in oldToNew, returning its copy if cur.random is a real node, or None if cur.random is already None."
+        }
+      ],
+      "why": "This is the line that actually solves the problem's hard part: random can point ANYWHERE in the list, including backward or at nodes far away, but oldToNew already has every node's copy ready, so the lookup works no matter where random points.",
+      "if_removed": "Every copy's random would stay None, silently dropping all of the random pointers from the answer, even though next would still be correct.",
+      "alternatives": [
+        {
+          "code": "copy.random = oldToNew[cur.random] if cur.random else None",
+          "difference": "Same result, spelled out with an explicit None check instead of relying on .get's default."
+        }
+      ],
+      "mistake": "Writing copy.random = cur.random, which would make the copy's random point at an ORIGINAL node instead of the matching copy, breaking the deep-copy guarantee.",
+      "caption": [
+        {
+          "when": "cur.random",
+          "text": "copy.random becomes the copy of {cur.random.val}."
+        },
+        {
+          "text": "cur.random is None, so copy.random becomes None too."
+        }
+      ]
+    },
+    "22": {
+      "explain": "Move cur forward to the next node in the original list, continuing the second pass.",
+      "syntax": [
+        {
+          "token": "            (12 spaces)",
+          "meaning": "Indentation: inside the while loop."
+        },
+        {
+          "token": "cur",
+          "meaning": "The pointer walking the original list."
+        },
+        {
+          "token": "=",
+          "meaning": "Assignment."
+        },
+        {
+          "token": "cur.next",
+          "meaning": "The next node in the original list."
+        }
+      ],
+      "why": "Without moving cur, this loop would rewire the very same copy's next and random forever.",
+      "if_removed": "cur would never change, and the while loop on line 18 would run until the visualizer's step cap stopped it, forever rewiring the first node's copy.",
+      "alternatives": [
+        {
+          "code": "cur = cur.next  # still the ORIGINAL list",
+          "difference": "Same line; a note on what cur refers to."
+        }
+      ],
+      "mistake": "Writing cur = copy.next, which would switch to walking the NEW list instead of the original one, visiting copies out of sync with their originals.",
+      "caption": [
+        {
+          "when": "cur.next",
+          "text": "Move cur forward to {cur.next.val}."
+        },
+        {
+          "text": "Move cur forward to None: every copy's next and random are wired up."
+        }
+      ]
+    },
+    "24": {
+      "explain": "Hand back the copy of head: the new list's own first node, found by one last lookup in oldToNew.",
+      "syntax": [
+        {
+          "token": "        (8 spaces)",
+          "meaning": "Indentation: inside the method, after both while loops."
+        },
+        {
+          "token": "return",
+          "meaning": "Ends the method and hands a value back to the caller."
+        },
+        {
+          "token": "oldToNew.get(head)",
+          "meaning": "Looks up head in oldToNew, giving its copy, or None if head itself was None (an empty input list)."
+        }
+      ],
+      "why": "head is still the ORIGINAL first node; the answer needs the first node of the NEW list, which is exactly what oldToNew maps head to.",
+      "if_removed": "The method would implicitly return None, discarding the entire copy that was just built.",
+      "alternatives": [
+        {
+          "code": "return oldToNew[head] if head else None",
+          "difference": "The same result spelled out with an explicit None check instead of relying on .get's default."
+        }
+      ],
+      "mistake": "Returning head itself instead of oldToNew.get(head), which would hand back the ORIGINAL list instead of the new, separate copy.",
+      "caption": "Return the copy of head: a new list holding {[v for v, _ in to_pairs(oldToNew.get(head))] if head else 'None'}."
+    }
+  },
+  "brute_force": {
+    "code": "class Solution:\n    def copyRandomList(self, head: 'Optional[Node]') -> 'Optional[Node]':\n        if not head:\n            return None\n\n        originals = []\n        node = head\n        while node:\n            originals.append(node)\n            node = node.next\n\n        copies = [Node(n.val) for n in originals]\n\n        for i, n in enumerate(originals):\n            copies[i].next = copies[i + 1] if i + 1 < len(originals) else None\n            if n.random is not None:\n                j = originals.index(n.random)\n                copies[i].random = copies[j]\n\n        return copies[0]",
+    "explain": "Collect every original node into a plain list, originals, so each one has a known position (index). Build one copy per original. Then, for any node whose random isn't None, find WHERE that random target sits in originals using list.index(), a linear search from the front, and use that position to find the matching copy.",
+    "why_slow": "originals.index(n.random) scans from the start of the list every single time, instead of jumping straight there. In the worst case (many nodes with a random pointer), that's O(n) work per node, making the whole method O(n²) instead of linear.",
+    "how_pattern_fixes": "A dictionary turns \"where is this node?\" from a linear search into a single O(1) lookup, since oldToNew already has every node mapped to its copy by the time any lookup happens.",
+    "time": "O(n²) worst case: building originals and copies is O(n), but up to n calls to originals.index(...), each up to O(n), dominate.",
+    "space": "O(n): originals and copies each hold one reference per node."
+  },
+  "glossary": {
+    "algorithm": "A step-by-step recipe for solving a problem. The same algorithm can be written in any programming language.",
+    "assignment": "Giving a name to a value with =. For objects, assignment never copies: both names refer to the same object.",
+    "attribute": "Another word for a field: a named piece of data stored on an object, read with a dot, as in node.val.",
+    "Big O": "A shorthand for how work or memory grows as the input grows. O(n) grows in step with the input. O(n²) grows much faster. O(1) doesn't grow at all.",
+    "block": "The group of indented lines under a line that ends with a colon (:).",
+    "boolean": "A value that is either True or False. Conditions in if and while statements produce booleans.",
+    "brute force": "Solving a problem in the most direct way, usually by checking or searching everything. It's simple but often slower than a more targeted approach.",
+    "call": "Running a function or method by writing its name followed by brackets, like Node(5) or Solution().copyRandomList(head).",
+    "class": "A blueprint for making objects. Node is the blueprint for list nodes here, and Solution holds the answer.",
+    "colon": "The : character. At the end of class, def, while, if or for lines, it means an indented block follows. After a parameter name it introduces a type hint.",
+    "comment": "Text after a # that Python ignores. Comments are notes for humans.",
+    "condition": "An expression that is True or False, used by if and while.",
+    "constant time": "Taking the same tiny amount of time, or amount of memory, no matter how much data there is. Written O(1).",
+    "constructor": "The function that creates a new object from a class, like Node(5). In Python, calling a class runs its __init__ method.",
+    "dataclass": "A shortcut from Python's dataclasses module that writes __init__ for you from a list of fields.",
+    "decorator": "A line starting with @ placed above a function or class, which adds behaviour to it, like @dataclass.",
+    "deep copy": "A copy where every part of the structure, not just the top level, is rebuilt from new objects, so nothing in the copy is shared with (or can accidentally change) the original.",
+    "default value": "A value a parameter takes when the caller doesn't pass one, as in next=None.",
+    "dictionary": "Python's built-in key → value mapping, written with curly braces like {}. Looking up a value by its key is close to instant, no matter how many entries there are. oldToNew is a dictionary.",
+    "docstring": "A string in triple quotes at the top of a function or class, used as built-in documentation.",
+    "doubly linked list": "A linked list where each node points both forward (next) and backward (prev). This problem's random field is different: it can point to ANY node, not just the one before it.",
+    "edge case": "An unusual input that might break code: an empty list, a node whose random is None, or a node whose random points at itself.",
+    "enumerate": "A built-in function that pairs up each item of a sequence with its index: enumerate(originals) gives (0, originals[0]), (1, originals[1]), and so on.",
+    "expression": "Any piece of code that produces a value, like oldToNew.get(cur.next) or Node(cur.val).",
+    "field": "A named piece of data stored on an object, read with a dot: node.val, node.next. Also called an attribute.",
+    "forward reference": "A type hint written as a string in quotes, like 'Node', used when the name it refers to isn't fully defined yet at that point in the file.",
+    "function": "A named, reusable set of instructions you define with def and call by name.",
+    ".get": "A dictionary method: d.get(key) returns the value for key, or a default you choose (d.get(key, 0)) if key is missing, without crashing. Here, oldToNew.get(cur.next) returns None whenever cur.next is None, since None is never stored as a key.",
+    "hash map": "Another name for a dictionary: a key → value mapping with near-instant lookup by key.",
+    "head": "The first node of a linked list. Holding the head is enough to reach every other node by following next.",
+    "indentation": "Spaces at the start of a line. In Python they decide which block a line belongs to.",
+    "IndentationError": "The error Python raises when a line's indentation doesn't make sense.",
+    "index": "A position in a list, counting from 0.",
+    "__init__": "A special method Python runs automatically when you create a new object, as in Node(5). It sets up the object's fields.",
+    "int": "Python's name for whole numbers (integers).",
+    "integer": "A whole number like 0, 7 or -3. Python calls the type int.",
+    "key": "In a dictionary, the thing you look values up by. oldToNew's keys are original node objects.",
+    "KeyError": "The error Python raises when you look up a dictionary key, with square brackets, that doesn't exist.",
+    "keyword": "A word reserved by Python, like class, def, while, if, return.",
+    "linear search": "Checking items one by one from the start until you find what you want. It's O(n).",
+    "linked list": "A chain of node objects, each holding a value and a reference (next) to the following node. The last node's next is None.",
+    "list": "Python's built-in ordered collection, written with square brackets like [1, 2, 3]. It's NOT a linked list: it has no nodes, and you can jump straight to any position by index.",
+    "list.index": "A list method that searches from the front for the first matching item and returns its position, raising ValueError if it's never found. It's a LINEAR search: slow compared to a dictionary lookup.",
+    "loop": "Code that repeats. A while loop repeats as long as its condition stays True, and a for loop repeats once per item in a collection.",
+    "method": "A function that belongs to a class, called with a dot: Solution().copyRandomList(head).",
+    "NameError": "The error Python raises when you use a name that hasn't been assigned yet.",
+    "node": "One link in a linked list: an object holding a value (val) and a reference to the next node (next). In this problem, each node also has a random reference.",
+    "None": "Python's value for \"nothing\". In a linked list, next = None means \"no node after this one\", and random = None means \"this node doesn't point anywhere extra\".",
+    "object": "A thing in memory with a type and data. Each node is an object, and variables are names pointing at objects.",
+    "Optional": "A type hint from the typing module: Optional[Node] means \"a Node or None\".",
+    "parameter": "A name in a function's definition that receives an input. head is copyRandomList's parameter.",
+    "pattern": "A reusable technique that solves a whole family of problems, like splitting a copy into a \"create everything\" pass and a \"connect everything\" pass.",
+    "pointer": "A variable that refers to a node (or None) so you can find your way around a list. cur and copy are pointers here.",
+    "random pointer": "This problem's name for the random field: a reference from a node to any other node in the list (or to itself, or to None), independent of the next chain.",
+    "reference": "What a variable or a field like next or random actually holds: a way to reach an object, not a copy of it.",
+    "return": "A keyword that ends a function and hands a value back to whoever called it.",
+    "self": "The first parameter of every method. It refers to the object the method was called on.",
+    "singly linked list": "A linked list where each node points only forward, to the next node.",
+    "sorted": "Arranged in order, smallest to largest (ascending) unless stated otherwise.",
+    "space complexity": "How much extra memory an algorithm needs as the input grows.",
+    "string": "Text written in quotes, like \"hello\".",
+    "time complexity": "How the running time grows as the input grows, written in Big O.",
+    "type hint": "A label like head: Optional[Node] that tells readers what type a value should be. Python doesn't enforce it.",
+    "TypeError": "The error Python raises when a value is the wrong type for an operation, or a function gets the wrong number of arguments.",
+    "typing (module)": "A built-in Python module of names used in type hints, like Optional.",
+    "value": "A piece of data. In a dictionary, it's what a key maps to; in a list node, val holds the node's value.",
+    "ValueError": "The error Python raises when a value is the right type but not an acceptable one for the operation, such as list.index() finding no match.",
+    "variable": "A name that refers to a value, created with =.",
+    "while (loop)": "A loop that repeats its block for as long as its condition stays True.",
+    "two pointers": "Using two position variables that move through data together, often at different speeds or through different structures, so comparing where they are reveals something useful."
+  },
+  "visualizer": [
+    {
+      "type": "linkedlist",
+      "title": "originals and their copies, with random pointers arcing above",
+      "node_class": "Node",
+      "random_field": "random",
+      "pointers": {
+        "cur": "cur",
+        "copy": "copy if __line__ in (20, 21, 22) else HIDE"
+      }
+    },
+    {
+      "type": "hashmap",
+      "title": "oldToNew (old node's val → new node's val)",
+      "source": "[[o.val, n.val] for o, n in oldToNew.items()]",
+      "lookup": "cur.val if __line__ in (19, 20, 21) else None"
+    }
+  ]
+}
